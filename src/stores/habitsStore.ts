@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 
 import type { Habit, HabitDraft } from '@/core/habits/types';
@@ -85,5 +86,15 @@ export const useHabitsStore = create<HabitsState>()((set, get) => {
   };
 });
 
+/**
+ * Non-archived habits. Use with `getState()` only: as a hook selector it would return a new
+ * array on every call (infinite re-render in Zustand v5). In components use `useActiveHabits()`.
+ */
 export const selectActiveHabits = (state: HabitsState) =>
   state.habits.filter((h) => h.archivedAt === null);
+
+/** Non-archived habits, memoized. */
+export function useActiveHabits(): Habit[] {
+  const habits = useHabitsStore((state) => state.habits);
+  return useMemo(() => habits.filter((h) => h.archivedAt === null), [habits]);
+}

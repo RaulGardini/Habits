@@ -35,3 +35,15 @@ export function formatClock(totalSeconds: number): string {
 export function formatPercent(ratio: number): string {
   return `${Math.round(ratio * 100)}%`;
 }
+
+/** Keeps only digits and inserts the colon while typing a time: "930" → "9:30". */
+export function normalizeTimeInput(text: string): string {
+  const digits = text.replace(/\D/g, '').slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, digits.length - 2)}:${digits.slice(-2)}`;
+}
+
+/** "segunda-feira" → "Segunda-feira". */
+export function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}

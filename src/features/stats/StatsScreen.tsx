@@ -3,14 +3,14 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { formatDayLabel, type LocalDate } from '@/core/dates/localDate';
-import { formatPercent } from '@/core/format';
+import { capitalize, formatPercent } from '@/core/format';
 import { habitStats, overallDailyScores, summarizeScores } from '@/core/stats/stats';
 import { HabitIcon } from '@/features/habits/HabitIcon';
 import { describeStreak } from '@/features/habits/labels';
 import { useStreaks } from '@/features/habits/useStreaks';
 import { useToday } from '@/hooks/useNow';
 import { useEntriesInRange } from '@/stores/entriesStore';
-import { useHabitsStore } from '@/stores/habitsStore';
+import { useActiveHabits, useHabitsStore } from '@/stores/habitsStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH_SIZE, spacing } from '@/theme/tokens';
@@ -28,7 +28,7 @@ export function StatsScreen() {
   const today = useToday();
   const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
   const habits = useHabitsStore((state) => state.habits);
-  const active = useMemo(() => habits.filter((h) => h.archivedAt === null), [habits]);
+  const active = useActiveHabits();
   const period = useStatsPeriod('month');
   const entries = useEntriesInRange(period.range.from, period.range.to);
   const streaks = useStreaks(active);
@@ -149,10 +149,6 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
       </AppText>
     </View>
   );
-}
-
-export function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 const styles = StyleSheet.create({

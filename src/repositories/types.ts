@@ -1,6 +1,17 @@
 import type { LocalDate } from '@/core/dates/localDate';
 import type { EntryInput, Habit, HabitDraft, HabitEntry } from '@/core/habits/types';
 
+import type {
+  DayNote,
+  EventDraft,
+  Goal,
+  GoalDraft,
+  GoalScope,
+  PlannerEvent,
+  Task,
+  TaskDraft,
+} from '@/core/planner/types';
+
 export type { EntryInput };
 
 /**
@@ -39,8 +50,49 @@ export interface SettingsRepository {
   set<T>(key: string, value: T): Promise<void>;
 }
 
+export interface TaskRepository {
+  /** Inclusive range, any order. */
+  listByRange(from: LocalDate, to: LocalDate): Promise<Task[]>;
+  /** Pending tasks planned before `date`. */
+  listOverdue(date: LocalDate): Promise<Task[]>;
+  getById(id: string): Promise<Task | null>;
+  create(draft: TaskDraft): Promise<Task>;
+  update(id: string, draft: TaskDraft): Promise<Task>;
+  setCompleted(id: string, completed: boolean): Promise<void>;
+  /** Moves tasks to another day, remembering the original day in `rolledFrom`. */
+  moveToDate(ids: readonly string[], date: LocalDate): Promise<void>;
+  remove(id: string): Promise<void>;
+}
+
+export interface EventRepository {
+  listByRange(from: LocalDate, to: LocalDate): Promise<PlannerEvent[]>;
+  getById(id: string): Promise<PlannerEvent | null>;
+  create(draft: EventDraft): Promise<PlannerEvent>;
+  update(id: string, draft: EventDraft): Promise<PlannerEvent>;
+  remove(id: string): Promise<void>;
+}
+
+export interface DayNoteRepository {
+  get(date: LocalDate): Promise<DayNote | null>;
+  /** Saves the note of a day; an empty text deletes it. */
+  save(date: LocalDate, content: string): Promise<void>;
+}
+
+export interface GoalRepository {
+  listByPeriod(scope: GoalScope, period: string): Promise<Goal[]>;
+  getById(id: string): Promise<Goal | null>;
+  create(draft: GoalDraft): Promise<Goal>;
+  update(id: string, draft: GoalDraft): Promise<Goal>;
+  setCurrent(id: string, current: number): Promise<void>;
+  remove(id: string): Promise<void>;
+}
+
 export interface Repositories {
   habits: HabitRepository;
   entries: EntryRepository;
   settings: SettingsRepository;
+  tasks: TaskRepository;
+  events: EventRepository;
+  dayNotes: DayNoteRepository;
+  goals: GoalRepository;
 }

@@ -95,5 +95,75 @@ export const settings = sqliteTable('settings', {
   updatedAt: text('updated_at').notNull(),
 });
 
+export const tasks = sqliteTable(
+  'tasks',
+  {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    /** Day the task is planned for (local `YYYY-MM-DD`). */
+    date: text('date').notNull(),
+    priority: text('priority', { enum: ['low', 'normal', 'high'] })
+      .notNull()
+      .default('normal'),
+    completedAt: text('completed_at'),
+    /** Original day when the task was rolled over to a later day. */
+    rolledFrom: text('rolled_from'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [index('tasks_date_idx').on(t.date)],
+);
+
+export const events = sqliteTable(
+  'events',
+  {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    date: text('date').notNull(),
+    /** Local time `HH:mm`. */
+    startTime: text('start_time').notNull(),
+    endTime: text('end_time'),
+    /** Habit palette key. */
+    color: text('color').notNull(),
+    note: text('note'),
+    ...timestamps,
+  },
+  (t) => [index('events_date_idx').on(t.date)],
+);
+
+export const dayNotes = sqliteTable(
+  'day_notes',
+  {
+    id: text('id').primaryKey(),
+    date: text('date').notNull(),
+    content: text('content').notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('day_notes_date_uq').on(t.date)],
+);
+
+export const goals = sqliteTable(
+  'goals',
+  {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    scope: text('scope', { enum: ['month', 'year'] }).notNull(),
+    /** `YYYY-MM` for monthly goals, `YYYY` for yearly goals. */
+    period: text('period').notNull(),
+    target: real('target').notNull(),
+    unit: text('unit'),
+    /** Manual progress (ignored when linked to a habit). */
+    current: real('current').notNull().default(0),
+    /** When set, progress is computed from this habit's entries in the period. */
+    habitId: text('habit_id'),
+    ...timestamps,
+  },
+  (t) => [index('goals_scope_period_idx').on(t.scope, t.period)],
+);
+
 export type HabitRow = typeof habits.$inferSelect;
 export type HabitEntryRow = typeof habitEntries.$inferSelect;
+export type TaskRow = typeof tasks.$inferSelect;
+export type EventRow = typeof events.$inferSelect;
+export type DayNoteRow = typeof dayNotes.$inferSelect;
+export type GoalRow = typeof goals.$inferSelect;

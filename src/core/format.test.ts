@@ -1,4 +1,11 @@
-import { formatClock, formatDuration, formatNumber, formatPercent, parseDecimal } from './format';
+import {
+  formatClock,
+  formatDuration,
+  formatNumber,
+  formatPercent,
+  normalizeTimeInput,
+  parseDecimal,
+} from './format';
 
 describe('formatNumber', () => {
   it('uses a comma and at most 2 decimals', () => {
@@ -46,5 +53,18 @@ describe('formatClock', () => {
 describe('formatPercent', () => {
   it('rounds to whole percent', () => {
     expect(formatPercent(0.756)).toBe('76%');
+  });
+});
+
+describe('normalizeTimeInput', () => {
+  it.each([
+    ['9', '9'],
+    ['093', '0:93'],
+    ['0930', '09:30'],
+    ['09:30', '09:30'],
+    ['9h30', '9:30'],
+    ['123456', '12:34'],
+  ])('%s → %s', (input, expected) => {
+    expect(normalizeTimeInput(input)).toBe(expected);
   });
 });

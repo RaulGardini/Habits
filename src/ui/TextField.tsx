@@ -25,6 +25,7 @@ export function TextField({ label, error, ...props }: TextFieldProps) {
         style={[
           styles.input,
           typography.body,
+          props.multiline && styles.multiline,
           {
             color: colors.text,
             backgroundColor: colors.surface,
@@ -43,6 +44,7 @@ export function TextField({ label, error, ...props }: TextFieldProps) {
 
 const styles = StyleSheet.create({
   container: { gap: spacing.xs },
+  multiline: { minHeight: 96, textAlignVertical: 'top' },
   input: {
     minHeight: MIN_TOUCH_SIZE,
     borderWidth: 1,

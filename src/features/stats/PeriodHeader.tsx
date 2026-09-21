@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { parseLocalDate, todayLocal, type LocalDate } from '@/core/dates/localDate';
@@ -48,7 +48,10 @@ export function useStatsPeriod(initialMode: HeatmapMode = 'month'): StatsPeriod 
   const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
   const [mode, setMode] = useState<HeatmapMode>(initialMode);
   const [anchor, setAnchor] = useState<LocalDate>(() => todayLocal());
-  const range = periodRange(anchor, mode, weekStartsOn);
+  const range = useMemo(
+    () => periodRange(anchor, mode, weekStartsOn),
+    [anchor, mode, weekStartsOn],
+  );
   const today = todayLocal();
   return {
     mode,

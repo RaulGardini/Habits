@@ -1,6 +1,7 @@
 import type { Habit, HabitEntry } from '@/core/habits/types';
 
 import type { Repositories } from '../types';
+import { createMemoryPlannerRepositories } from './planner';
 
 /**
  * In-memory implementation of the repositories. Used by tests; keeps the same
@@ -119,5 +120,7 @@ export function createMemoryRepositories(initial: { habits?: Habit[] } = {}): Re
         settings.set(key, JSON.stringify(value));
       },
     },
+
+    ...createMemoryPlannerRepositories(nextId, now),
   };
 }

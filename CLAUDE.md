@@ -37,6 +37,9 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 ```
 
 - UI and stores never import Drizzle or `src/db` — only `@/repositories`.
+- Two store styles: cached state with optimistic updates (`habitsStore`, `entriesStore`) for the
+  hot paths, and "query + version" hooks (`plannerStore`: `useTasks`, `useGoals`…) that refetch
+  after any write made through `plannerActions`. Writes must go through the actions.
 - Business rules (what is due on a day, progress, streaks…) live in `src/core` as pure functions.
 - Platform-specific code uses file extensions (`foo.web.ts` next to `foo.ts`), e.g. `ui/dialogs`, `lib/haptics`.
 - Path alias: `@/` → `src/`.
@@ -67,6 +70,9 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 
 ## UI conventions
 
+- Zustand v5: a selector must not build new objects/arrays (`state.habits.filter(...)` loops
+  forever). Select the raw value and derive with `useMemo`, or use hooks like `useActiveHabits()`.
+
 - Use `useTheme()` colors/tokens; no hard-coded colors outside `src/theme`.
 - Touch targets ≥ 44px (`MIN_TOUCH_SIZE`). Every icon-only button has an `accessibilityLabel`.
 - Checkable rows use `accessibilityRole="checkbox"` + `accessibilityState`.
@@ -90,7 +96,7 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 1. ✅ Setup + habit CRUD + Today screen (yes/no)
 2. ✅ Quantity & timer habits, all frequencies, streaks, tests
 3. ✅ Statistics & heatmaps
-4. Planner (daily / monthly / yearly) + goals
+4. ✅ Planner (daily / monthly / yearly) + goals
 5. Local notifications, JSON backup/import, settings
 6. Widgets (iOS/Android, dev build)
 7. (Optional) Supabase sync, last-write-wins by `updated_at`

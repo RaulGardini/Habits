@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { formatDayLabel, type LocalDate } from '@/core/dates/localDate';
 import { weekdayLong } from '@/core/dates/weekdays';
-import { formatDuration, formatNumber, formatPercent } from '@/core/format';
+import { capitalize, formatDuration, formatNumber, formatPercent } from '@/core/format';
 import { computeStreaks } from '@/core/habits/streaks';
 import type { Habit, HabitEntry } from '@/core/habits/types';
 import { habitDailyScores, habitStats } from '@/core/stats/stats';
@@ -30,7 +30,6 @@ import { Screen } from '@/ui/Screen';
 
 import { Heatmap, HeatmapLegend } from './Heatmap';
 import { PeriodHeader, formatRange, useStatsPeriod } from './PeriodHeader';
-import { capitalize } from './StatsScreen';
 import { StatGrid, StatTile } from './StatTile';
 
 export function HabitStatsScreen({ id }: { id: string }) {

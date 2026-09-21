@@ -1,11 +1,3 @@
-import { ComingSoonScreen } from '@/ui/ComingSoonScreen';
+import { PlannerScreen } from '@/features/planner/PlannerScreen';
 
-export default function PlannerRoute() {
-  return (
-    <ComingSoonScreen
-      title="Planner"
-      icon="calendar-month-outline"
-      description="Tarefas, eventos e metas diárias, mensais e anuais chegam em breve."
-    />
-  );
-}
+export default PlannerScreen;

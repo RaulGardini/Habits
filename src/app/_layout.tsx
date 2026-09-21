@@ -71,6 +71,11 @@ function App() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="habit/new" options={{ title: 'Novo hábito', presentation: 'modal' }} />
         <Stack.Screen name="habit/[id]" options={{ title: 'Editar hábito' }} />
+        <Stack.Screen name="task/[id]" options={{ title: 'Editar tarefa' }} />
+        <Stack.Screen name="event/new" options={{ title: 'Novo evento', presentation: 'modal' }} />
+        <Stack.Screen name="event/[id]" options={{ title: 'Editar evento' }} />
+        <Stack.Screen name="goal/new" options={{ title: 'Nova meta', presentation: 'modal' }} />
+        <Stack.Screen name="goal/[id]" options={{ title: 'Editar meta' }} />
         <Stack.Screen name="stats/[id]" options={{ title: 'Estatísticas do hábito' }} />
         <Stack.Screen name="entry" options={{ title: 'Registro do dia', presentation: 'modal' }} />
       </Stack>
