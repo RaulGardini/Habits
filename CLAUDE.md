@@ -71,6 +71,12 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - Touch targets ≥ 44px (`MIN_TOUCH_SIZE`). Every icon-only button has an `accessibilityLabel`.
 - Checkable rows use `accessibilityRole="checkbox"` + `accessibilityState`.
 - Reanimated shared values: use `.get()` / `.set()` (React Compiler is enabled).
+- Charts use `react-native-svg`. Don't put `onPress` on SVG shapes (leaks responder props to the
+  DOM on web); wrap the SVG in one `Pressable` and hit-test the position (see `stats/Heatmap.tsx`).
+- Heatmap colors: one hue per series (habit color / primary) at 4 opacity levels; days that do
+  not count are outlined only. Rules for what counts live in `src/core/stats/stats.ts`.
+- `typedRoutes` is disabled: on Windows the dev server's incremental typegen registers non-route
+  files and breaks `tsc`. Route strings are therefore not type-checked — double-check paths.
 - Wide screens (≥ 768px): sidebar navigation; content column max 720px (`Screen`).
 
 ## Testing
@@ -83,7 +89,7 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 
 1. ✅ Setup + habit CRUD + Today screen (yes/no)
 2. ✅ Quantity & timer habits, all frequencies, streaks, tests
-3. Statistics & heatmaps
+3. ✅ Statistics & heatmaps
 4. Planner (daily / monthly / yearly) + goals
 5. Local notifications, JSON backup/import, settings
 6. Widgets (iOS/Android, dev build)

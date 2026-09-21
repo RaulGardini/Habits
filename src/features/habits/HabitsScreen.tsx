@@ -1,12 +1,10 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { computeStreaks, type Streaks } from '@/core/habits/streaks';
+import type { Streaks } from '@/core/habits/streaks';
 import type { Habit, WeekStartsOn } from '@/core/habits/types';
 import type { MoveDirection } from '@/core/utils/reorder';
-import { useToday } from '@/hooks/useNow';
-import { useEntriesInRange } from '@/stores/entriesStore';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -22,6 +20,7 @@ import { Screen } from '@/ui/Screen';
 
 import { HabitIcon } from './HabitIcon';
 import { TIME_OF_DAY_LABEL, describeFrequency, describeStreak, describeTarget } from './labels';
+import { useStreaks } from './useStreaks';
 
 export function HabitsScreen() {
   const habits = useHabitsStore((state) => state.habits);
@@ -114,23 +113,6 @@ export function HabitsScreen() {
       ) : null}
     </Screen>
   );
-}
-
-/** Current streak of every habit (full history loaded once, refreshed on changes). */
-function useStreaks(habits: readonly Habit[]): Map<string, Streaks> {
-  const today = useToday();
-  const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
-  const earliest = habits.reduce((min, h) => (h.startDate < min ? h.startDate : min), today);
-  const entries = useEntriesInRange(earliest, today);
-  return useMemo(() => {
-    const map = new Map<string, Streaks>();
-    if (!entries) return map;
-    for (const habit of habits) {
-      const own = entries.filter((e) => e.habitId === habit.id);
-      map.set(habit.id, computeStreaks(habit, own, today, weekStartsOn));
-    }
-    return map;
-  }, [habits, entries, today, weekStartsOn]);
 }
 
 interface HabitListRowProps {

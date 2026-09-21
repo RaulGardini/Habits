@@ -71,6 +71,7 @@ function App() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="habit/new" options={{ title: 'Novo hábito', presentation: 'modal' }} />
         <Stack.Screen name="habit/[id]" options={{ title: 'Editar hábito' }} />
+        <Stack.Screen name="stats/[id]" options={{ title: 'Estatísticas do hábito' }} />
         <Stack.Screen name="entry" options={{ title: 'Registro do dia', presentation: 'modal' }} />
       </Stack>
     </NavigationThemeProvider>

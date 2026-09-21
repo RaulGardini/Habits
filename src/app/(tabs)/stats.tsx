@@ -1,11 +1,3 @@
-import { ComingSoonScreen } from '@/ui/ComingSoonScreen';
+import { StatsScreen } from '@/features/stats/StatsScreen';
 
-export default function StatsRoute() {
-  return (
-    <ComingSoonScreen
-      title="Estatísticas"
-      icon="chart-box-outline"
-      description="Heatmaps, sequências e taxas de conclusão chegam em breve."
-    />
-  );
-}
+export default StatsScreen;
