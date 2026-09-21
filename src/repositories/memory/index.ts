@@ -122,5 +122,18 @@ export function createMemoryRepositories(initial: { habits?: Habit[] } = {}): Re
     },
 
     ...createMemoryPlannerRepositories(nextId, now),
+
+    // Backup works on raw database rows; it is covered by the pure tests in core/backup.
+    backup: {
+      async exportAll() {
+        throw new Error('Backup is not available in memory repositories');
+      },
+      async importMerge() {
+        throw new Error('Backup is not available in memory repositories');
+      },
+      async deleteAll() {
+        throw new Error('Backup is not available in memory repositories');
+      },
+    },
   };
 }

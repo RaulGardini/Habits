@@ -41,7 +41,9 @@
           "imageWidth": 76
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-sharing",
+      "expo-notifications"
     ],
     "experiments": {
       "reactCompiler": true

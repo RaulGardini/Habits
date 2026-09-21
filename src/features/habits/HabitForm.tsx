@@ -24,6 +24,7 @@ import { FrequencyPicker } from './FrequencyPicker';
 import { HabitIcon } from './HabitIcon';
 import { IconPicker } from './IconPicker';
 import { TIME_OF_DAY_ICON, TIME_OF_DAY_LABEL, describeFrequency, describeTarget } from './labels';
+import { RemindersEditor } from './RemindersEditor';
 import { TrackingPicker } from './TrackingPicker';
 
 interface HabitFormProps {
@@ -119,6 +120,12 @@ export function HabitForm({ initial, submitLabel, onSubmit }: HabitFormProps) {
         value={draft.tracking}
         onChange={(tracking) => update('tracking', tracking)}
         errors={errors}
+      />
+
+      <RemindersEditor
+        value={draft.reminders}
+        onChange={(reminders) => update('reminders', reminders)}
+        error={errors.reminders}
       />
 
       <DateStepper

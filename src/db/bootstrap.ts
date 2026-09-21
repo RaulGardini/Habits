@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { configureNotifications, syncReminders } from '@/lib/notifications';
 import { setRepositories } from '@/repositories';
 import { createDrizzleRepositories } from '@/repositories/drizzle';
 import { useHabitsStore } from '@/stores/habitsStore';
@@ -19,6 +20,27 @@ async function bootstrap(): Promise<void> {
     useHabitsStore.getState().load(),
     useTimerStore.getState().load(),
   ]);
+  startReminderSync();
+}
+
+/**
+ * Keeps local notifications in sync with the habits: once at startup (so one-off reminders
+ * roll forward) and after every habit change. Failures are logged, never block the app.
+ */
+function startReminderSync(): void {
+  const sync = (habits: Parameters<typeof syncReminders>[0]) =>
+    syncReminders(habits).catch((error: unknown) => console.error('Reminder sync failed', error));
+
+  configureNotifications()
+    .then(() => sync(useHabitsStore.getState().habits))
+    .catch((error: unknown) => console.error('Notification setup failed', error));
+
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  useHabitsStore.subscribe((state, previous) => {
+    if (state.habits === previous.habits) return;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => sync(useHabitsStore.getState().habits), 500);
+  });
 }
 
 // Module-level so it runs once even if the root layout re-mounts (e.g. fast refresh).

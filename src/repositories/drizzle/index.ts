@@ -1,6 +1,7 @@
 import type { Database } from '@/db/client';
 
 import type { Repositories } from '../types';
+import { createDrizzleBackupRepository } from './backupRepository';
 import { createDrizzleEntryRepository } from './entryRepository';
 import { createDrizzleHabitRepository } from './habitRepository';
 import {
@@ -20,5 +21,6 @@ export function createDrizzleRepositories(db: Database): Repositories {
     events: createDrizzleEventRepository(db),
     dayNotes: createDrizzleDayNoteRepository(db),
     goals: createDrizzleGoalRepository(db),
+    backup: createDrizzleBackupRepository(db),
   };
 }

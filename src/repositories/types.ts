@@ -1,3 +1,4 @@
+import type { BackupRow, BackupTable, ImportSummary } from '@/core/backup/backup';
 import type { LocalDate } from '@/core/dates/localDate';
 import type { EntryInput, Habit, HabitDraft, HabitEntry } from '@/core/habits/types';
 
@@ -87,6 +88,15 @@ export interface GoalRepository {
   remove(id: string): Promise<void>;
 }
 
+export interface BackupRepository {
+  /** Every row of every table, including soft-deleted rows. */
+  exportAll(): Promise<Record<BackupTable, BackupRow[]>>;
+  /** Merges a backup into the database (last write wins by `updatedAt`). */
+  importMerge(tables: Record<BackupTable, BackupRow[]>): Promise<ImportSummary>;
+  /** Permanently deletes all data (user-initiated "delete all data"). */
+  deleteAll(): Promise<void>;
+}
+
 export interface Repositories {
   habits: HabitRepository;
   entries: EntryRepository;
@@ -95,4 +105,5 @@ export interface Repositories {
   events: EventRepository;
   dayNotes: DayNoteRepository;
   goals: GoalRepository;
+  backup: BackupRepository;
 }

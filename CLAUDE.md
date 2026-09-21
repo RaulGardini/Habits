@@ -85,10 +85,23 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   files and breaks `tsc`. Route strings are therefore not type-checked — double-check paths.
 - Wide screens (≥ 768px): sidebar navigation; content column max 720px (`Screen`).
 
+## Notifications & backup
+
+- Reminders are **local notifications only** (`src/lib/notifications.ts`; no-op `.web.ts`).
+  The whole set is re-planned by `planReminders` (pure, `src/core/reminders/plan.ts`) and
+  rescheduled at startup and after any habit change: daily/weekly repeating triggers, one-off
+  date triggers for "every X days" (21-day horizon), capped at 60 (iOS limit is 64).
+- Backup = JSON of every table's raw rows (incl. soft-deleted). Import **merges** with
+  last-write-wins by `updatedAt` (`planMerge`), matching entries by (habit, day) and notes by day.
+  File I/O is platform-specific (`src/lib/backupFile.ts` / `.web.ts`).
+- "Delete all data" hard-deletes every table (user-initiated, double confirmation).
+
 ## Testing
 
 - Jest (`jest-expo`). Tests live next to the code: `foo.test.ts`.
 - Pure logic in `src/core` must have tests. Stores are tested against `createMemoryRepositories()`.
+- Drizzle repositories are integration-tested against real SQLite in memory (`sql.js`) with the
+  app's migrations: `createTestDatabase()` in `src/db/testing.ts` (see `drizzle.test.ts`).
 - Test builders: `src/core/habits/testing.ts` (`makeHabit`, `makeEntry`).
 
 ## Roadmap
@@ -97,7 +110,7 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 2. ✅ Quantity & timer habits, all frequencies, streaks, tests
 3. ✅ Statistics & heatmaps
 4. ✅ Planner (daily / monthly / yearly) + goals
-5. Local notifications, JSON backup/import, settings
+5. ✅ Local notifications, JSON backup/import, settings
 6. Widgets (iOS/Android, dev build)
 7. (Optional) Supabase sync, last-write-wins by `updated_at`
 8. Store release prep

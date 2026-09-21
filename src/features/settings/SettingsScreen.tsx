@@ -1,11 +1,27 @@
-import { StyleSheet } from 'react-native';
+import Constants from 'expo-constants';
+import { useEffect, useState, type ReactNode } from 'react';
+import { StyleSheet, View } from 'react-native';
 
+import { BackupError } from '@/core/backup/backup';
+import type { WeekStartsOn } from '@/core/habits/types';
+import {
+  ensurePermission,
+  getPermission,
+  notificationsSupported,
+  syncReminders,
+  type PermissionState,
+} from '@/lib/notifications';
+import { deleteAllData, exportBackup, importBackup } from '@/stores/dataActions';
+import { useHabitsStore } from '@/stores/habitsStore';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { spacing } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeProvider';
 import type { ThemePreference } from '@/theme/tokens';
+import { spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
+import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
-import { showError } from '@/ui/dialogs';
+import { confirm, showError } from '@/ui/dialogs';
+import { Icon } from '@/ui/Icon';
 import { Screen } from '@/ui/Screen';
 import { SegmentedControl } from '@/ui/SegmentedControl';
 
@@ -15,16 +31,37 @@ const THEME_OPTIONS = [
   { value: 'dark', label: 'Escuro', icon: 'weather-night' },
 ] as const;
 
+const WEEK_START_OPTIONS = [
+  { value: '0', label: 'Domingo' },
+  { value: '1', label: 'Segunda' },
+] as const;
+
+function Section({ title, icon, children }: { title: string; icon: string; children: ReactNode }) {
+  const { colors } = useTheme();
+  return (
+    <Card style={styles.card}>
+      <View style={styles.sectionHeader} accessibilityRole="header">
+        <Icon name={icon} size={20} color={colors.primary} />
+        <AppText variant="heading">{title}</AppText>
+      </View>
+      {children}
+    </Card>
+  );
+}
+
 export function SettingsScreen() {
   const themePreference = useSettingsStore((state) => state.themePreference);
   const setThemePreference = useSettingsStore((state) => state.setThemePreference);
+  const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
+  const setWeekStartsOn = useSettingsStore((state) => state.setWeekStartsOn);
 
   return (
     <Screen>
       <AppText variant="title" accessibilityRole="header">
-        Configurações
+        Ajustes
       </AppText>
-      <Card style={styles.card}>
+
+      <Section title="Aparência" icon="palette-outline">
         <SegmentedControl<ThemePreference>
           label="Tema"
           options={THEME_OPTIONS}
@@ -35,14 +72,198 @@ export function SettingsScreen() {
             )
           }
         />
-      </Card>
-      <AppText tone="muted">
-        Backup, primeiro dia da semana e outras opções chegam em breve.
+      </Section>
+
+      <Section title="Calendário" icon="calendar-week">
+        <SegmentedControl<'0' | '1'>
+          label="Primeiro dia da semana"
+          options={WEEK_START_OPTIONS}
+          value={String(weekStartsOn) as '0' | '1'}
+          onChange={(value) =>
+            setWeekStartsOn(Number(value) as WeekStartsOn).catch((error: unknown) =>
+              showError('Não foi possível salvar a preferência.', error),
+            )
+          }
+        />
+        <AppText variant="caption" tone="muted">
+          Usado nos calendários e nos hábitos &quot;X vezes por semana&quot;.
+        </AppText>
+      </Section>
+
+      <Section title="Lembretes" icon="bell-outline">
+        <NotificationsStatus />
+      </Section>
+
+      <Section title="Backup" icon="database-export-outline">
+        <BackupActions />
+      </Section>
+
+      <Section title="Apagar dados" icon="alert-outline">
+        <DeleteAllData />
+      </Section>
+
+      <AppText variant="caption" tone="muted" style={styles.about}>
+        Habits {Constants.expoConfig?.version ?? ''} · gratuito, sem anúncios, seus dados ficam só
+        neste dispositivo.
       </AppText>
     </Screen>
   );
 }
 
+function NotificationsStatus() {
+  const [permission, setPermission] = useState<PermissionState | null>(null);
+
+  useEffect(() => {
+    getPermission()
+      .then(setPermission)
+      .catch(() => setPermission('undetermined'));
+  }, []);
+
+  if (!notificationsSupported) {
+    return (
+      <AppText tone="muted">
+        Os lembretes são enviados pelo app no Android e no iOS. No navegador você pode
+        configurá-los, mas eles não disparam.
+      </AppText>
+    );
+  }
+
+  const request = async () => {
+    const granted = await ensurePermission();
+    setPermission(granted ? 'granted' : 'denied');
+    if (granted) await syncReminders(useHabitsStore.getState().habits);
+  };
+
+  return (
+    <>
+      <AppText tone="muted">
+        {permission === 'granted'
+          ? 'Notificações permitidas. Configure os horários em cada hábito.'
+          : permission === 'denied'
+            ? 'Notificações bloqueadas. Ative-as nas configurações do sistema para receber lembretes.'
+            : 'Permita notificações para receber os lembretes dos seus hábitos.'}
+      </AppText>
+      {permission === 'undetermined' ? (
+        <Button icon="bell-ring-outline" label="Permitir notificações" onPress={request} />
+      ) : null}
+    </>
+  );
+}
+
+function BackupActions() {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  const doExport = async () => {
+    setBusy(true);
+    setResult(null);
+    try {
+      await exportBackup();
+      setResult('Backup exportado.');
+    } catch (error) {
+      showError('Não foi possível exportar o backup.', error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doImport = async () => {
+    const ok = await confirm({
+      title: 'Importar backup?',
+      message:
+        'Os dados do arquivo serão mesclados com os atuais. Quando o mesmo item existir nos dois, fica a versão alterada por último.',
+      confirmLabel: 'Escolher arquivo',
+    });
+    if (!ok) return;
+    setBusy(true);
+    setResult(null);
+    try {
+      const summary = await importBackup();
+      if (summary) {
+        setResult(
+          `Importação concluída: ${summary.inserted} novos, ${summary.updated} atualizados, ${summary.skipped} ignorados.`,
+        );
+      }
+    } catch (error) {
+      if (error instanceof BackupError) showError(error.message);
+      else showError('Não foi possível importar o backup.', error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <AppText tone="muted">
+        Seus dados ficam apenas neste dispositivo. Exporte um backup em JSON regularmente e guarde-o
+        em um lugar seguro (Drive, e-mail, computador).
+      </AppText>
+      <View style={styles.buttons}>
+        <Button
+          icon="download-outline"
+          label="Exportar backup"
+          onPress={doExport}
+          disabled={busy}
+        />
+        <Button
+          variant="secondary"
+          icon="upload-outline"
+          label="Importar backup"
+          onPress={doImport}
+          disabled={busy}
+        />
+      </View>
+      {result ? (
+        <AppText variant="caption" tone="muted" accessibilityLiveRegion="polite">
+          {result}
+        </AppText>
+      ) : null}
+    </>
+  );
+}
+
+function DeleteAllData() {
+  const run = async () => {
+    const first = await confirm({
+      title: 'Apagar todos os dados?',
+      message:
+        'Hábitos, registros, tarefas, eventos, notas, metas e ajustes serão apagados deste dispositivo. Recomendamos exportar um backup antes.',
+      confirmLabel: 'Continuar',
+      destructive: true,
+    });
+    if (!first) return;
+    const second = await confirm({
+      title: 'Tem certeza?',
+      message: 'Esta ação não pode ser desfeita.',
+      confirmLabel: 'Apagar tudo',
+      destructive: true,
+    });
+    if (!second) return;
+    try {
+      await deleteAllData();
+    } catch (error) {
+      showError('Não foi possível apagar os dados.', error);
+    }
+  };
+
+  return (
+    <>
+      <AppText tone="muted">
+        Remove permanentemente todos os dados do app neste dispositivo.
+      </AppText>
+      <Button
+        variant="danger"
+        icon="delete-forever-outline"
+        label="Apagar todos os dados"
+        onPress={run}
+      />
+    </>
+  );
+}
+
 const styles = StyleSheet.create({
-  card: { gap: spacing.lg },
+  card: { gap: spacing.md },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  buttons: { gap: spacing.sm },
+  about: { textAlign: 'center' },
 });
