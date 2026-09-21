@@ -1,18 +1,88 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import {
+  DarkTheme,
+  DefaultTheme,
+  Stack,
+  ThemeProvider as NavigationThemeProvider,
+} from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useMemo } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { useBootstrap } from '@/db/bootstrap';
+import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
+import { spacing } from '@/theme/tokens';
+import { AppText } from '@/ui/AppText';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
+    <ThemeProvider>
+      <App />
     </ThemeProvider>
   );
 }
+
+function App() {
+  const bootstrap = useBootstrap();
+  const { scheme, colors } = useTheme();
+
+  useEffect(() => {
+    if (bootstrap.status !== 'loading') SplashScreen.hideAsync().catch(() => {});
+  }, [bootstrap.status]);
+
+  const navigationTheme = useMemo(() => {
+    const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        primary: colors.primary,
+        background: colors.background,
+        card: colors.surface,
+        text: colors.text,
+        border: colors.border,
+      },
+    };
+  }, [scheme, colors]);
+
+  if (bootstrap.status !== 'ready') {
+    return (
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        {bootstrap.status === 'loading' ? (
+          <ActivityIndicator color={colors.primary} accessibilityLabel="Carregando" />
+        ) : (
+          <>
+            <AppText variant="heading">Não foi possível abrir seus dados</AppText>
+            <AppText tone="muted" style={styles.errorText}>
+              {bootstrap.error.message}
+            </AppText>
+          </>
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <NavigationThemeProvider value={navigationTheme}>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal' }}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="habit/new" options={{ title: 'Novo hábito', presentation: 'modal' }} />
+        <Stack.Screen name="habit/[id]" options={{ title: 'Editar hábito' }} />
+      </Stack>
+    </NavigationThemeProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    padding: spacing.xl,
+  },
+  errorText: { textAlign: 'center' },
+});
