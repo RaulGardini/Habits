@@ -11,6 +11,7 @@ export function makeHabit(overrides: Partial<Habit> = {}): Habit {
     frequency: { type: 'daily' },
     tracking: { type: 'boolean' },
     startDate: '2026-01-01',
+    reminders: [],
     archivedAt: null,
     sortOrder: 0,
     createdAt: '2026-01-01T00:00:00.000Z',

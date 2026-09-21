@@ -1,0 +1,1 @@
+ALTER TABLE `habits` ADD `quantity_step` real;

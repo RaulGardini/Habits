@@ -1,12 +1,7 @@
 import type { DayPeriod } from '@/core/dates/dayPeriod';
 
-import {
-  TIMES_OF_DAY,
-  type EntryStatus,
-  type Habit,
-  type HabitEntry,
-  type TimeOfDay,
-} from './types';
+import { entryProgress } from './entries';
+import { TIMES_OF_DAY, type Habit, type HabitEntry, type TimeOfDay } from './types';
 
 export interface TimeOfDayGroup {
   timeOfDay: TimeOfDay;
@@ -22,34 +17,35 @@ export function groupByTimeOfDay(habits: readonly Habit[]): TimeOfDayGroup[] {
 }
 
 export interface DayProgress {
+  /** Habits fully done. */
   completed: number;
-  /** Habits that count for the day (skipped ones are excluded). */
+  /** Habits that count for the day (skipped / excluded ones are left out). */
   total: number;
-  /** 0..1; 0 when there is nothing to do. */
+  /** 0..1, partial quantity/timer progress included; 0 when there is nothing to do. */
   ratio: number;
 }
 
+/**
+ * @param excluded habits that do not count today even if listed — e.g. a flexible
+ *   "3x per week" habit whose weekly quota is already met and was not done today.
+ */
 export function computeDayProgress(
   dueHabits: readonly Habit[],
   entriesByHabitId: Readonly<Record<string, HabitEntry | undefined>>,
+  excluded: ReadonlySet<string> = new Set(),
 ): DayProgress {
   let completed = 0;
   let total = 0;
+  let progress = 0;
   for (const habit of dueHabits) {
-    const status = entriesByHabitId[habit.id]?.status;
-    if (status === 'skipped') continue;
+    const entry = entriesByHabitId[habit.id];
+    if (entry?.status === 'skipped') continue;
+    if (excluded.has(habit.id) && entry?.status !== 'done') continue;
     total += 1;
-    if (status === 'done') completed += 1;
+    if (entry?.status === 'done') completed += 1;
+    progress += entryProgress(habit, entry);
   }
-  return { completed, total, ratio: total === 0 ? 0 : completed / total };
-}
-
-/**
- * Status after tapping the check of a yes/no habit.
- * `null` means "no entry" (the entry should be removed).
- */
-export function nextBooleanStatus(current: EntryStatus | undefined): EntryStatus | null {
-  return current === 'done' ? null : 'done';
+  return { completed, total, ratio: total === 0 ? 0 : progress / total };
 }
 
 /** The day period to highlight: only when looking at today. */

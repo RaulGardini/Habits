@@ -1,3 +1,4 @@
+import { toggleEntry } from '@/core/habits/entries';
 import type { HabitDraft } from '@/core/habits/types';
 import { getRepositories, setRepositories } from '@/repositories';
 import { createMemoryRepositories } from '@/repositories/memory';
@@ -5,20 +6,26 @@ import { createMemoryRepositories } from '@/repositories/memory';
 import { useEntriesStore } from './entriesStore';
 import { selectActiveHabits, useHabitsStore } from './habitsStore';
 import { useSettingsStore } from './settingsStore';
+import { elapsedSeconds, useTimerStore } from './timerStore';
 
-const draft = (name: string): HabitDraft => ({
+const draft = (name: string, patch: Partial<HabitDraft> = {}): HabitDraft => ({
   name,
   icon: 'star',
   color: 'blue',
   timeOfDay: 'anytime',
+  frequency: { type: 'daily' },
+  tracking: { type: 'boolean' },
   startDate: '2026-09-01',
+  reminders: [],
+  ...patch,
 });
 
 beforeEach(() => {
   setRepositories(createMemoryRepositories());
   useHabitsStore.setState({ habits: [], status: 'idle' });
-  useEntriesStore.setState({ byDate: {} });
-  useSettingsStore.setState({ themePreference: 'system' });
+  useEntriesStore.setState({ byDate: {}, version: 0 });
+  useSettingsStore.setState({ themePreference: 'system', weekStartsOn: 0 });
+  useTimerStore.setState({ active: null });
 });
 
 describe('habitsStore', () => {
@@ -29,6 +36,19 @@ describe('habitsStore', () => {
       ['A', 0],
       ['B', 1],
     ]);
+  });
+
+  it('keeps frequency, tracking and sorted reminders', async () => {
+    const habit = await useHabitsStore.getState().create(
+      draft('Água', {
+        frequency: { type: 'weekdays', days: 0b10 },
+        tracking: { type: 'quantity', target: 2, unit: 'L', step: 0.25 },
+        reminders: ['20:00', '08:00'],
+      }),
+    );
+    expect(habit.frequency).toEqual({ type: 'weekdays', days: 0b10 });
+    expect(habit.tracking).toEqual({ type: 'quantity', target: 2, unit: 'L', step: 0.25 });
+    expect(habit.reminders).toEqual(['08:00', '20:00']);
   });
 
   it('moves among active habits and persists the order', async () => {
@@ -64,23 +84,32 @@ describe('habitsStore', () => {
   });
 });
 
-describe('entriesStore.toggle', () => {
+describe('entriesStore.save', () => {
   const date = '2026-09-21';
+  const entryOf = () => useEntriesStore.getState().byDate[date]?.h1;
 
   it('marks as done and then clears', async () => {
-    await useEntriesStore.getState().toggle('h1', date);
-    expect(useEntriesStore.getState().byDate[date]?.h1?.status).toBe('done');
+    await useEntriesStore.getState().save('h1', date, toggleEntry(entryOf()));
+    expect(entryOf()?.status).toBe('done');
     expect(await getRepositories().entries.listByDate(date)).toHaveLength(1);
 
-    await useEntriesStore.getState().toggle('h1', date);
-    expect(useEntriesStore.getState().byDate[date]?.h1).toBeUndefined();
+    await useEntriesStore.getState().save('h1', date, toggleEntry(entryOf()));
+    expect(entryOf()).toBeUndefined();
     expect(await getRepositories().entries.listByDate(date)).toHaveLength(0);
+  });
+
+  it('bumps the version after each change', async () => {
+    await useEntriesStore.getState().save('h1', date, { status: 'done' });
+    expect(useEntriesStore.getState().version).toBe(1);
   });
 
   it('rolls back when saving fails', async () => {
     jest.spyOn(getRepositories().entries, 'upsert').mockRejectedValueOnce(new Error('disk full'));
-    await expect(useEntriesStore.getState().toggle('h1', date)).rejects.toThrow('disk full');
-    expect(useEntriesStore.getState().byDate[date]?.h1).toBeUndefined();
+    await expect(useEntriesStore.getState().save('h1', date, { status: 'done' })).rejects.toThrow(
+      'disk full',
+    );
+    expect(entryOf()).toBeUndefined();
+    expect(useEntriesStore.getState().version).toBe(0);
   });
 
   it('loads a day from the repository', async () => {
@@ -90,11 +119,57 @@ describe('entriesStore.toggle', () => {
   });
 });
 
+describe('timerStore', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('accumulates elapsed time into the entry when stopped', async () => {
+    jest.useFakeTimers({ now: new Date(2026, 8, 21, 10, 0, 0) });
+    const habit = await useHabitsStore
+      .getState()
+      .create(draft('Ler', { tracking: { type: 'timer', targetSeconds: 600 } }));
+    const date = '2026-09-21';
+
+    await useTimerStore.getState().start(habit, date);
+    jest.setSystemTime(new Date(2026, 8, 21, 10, 4, 0));
+    await useTimerStore.getState().stop();
+    expect(useEntriesStore.getState().byDate[date]?.[habit.id]).toMatchObject({
+      status: 'partial',
+      value: 240,
+    });
+
+    await useTimerStore.getState().start(habit, date);
+    jest.setSystemTime(new Date(2026, 8, 21, 10, 11, 0));
+    await useTimerStore.getState().stop();
+    expect(useEntriesStore.getState().byDate[date]?.[habit.id]).toMatchObject({
+      status: 'done',
+      value: 660,
+    });
+    expect(useTimerStore.getState().active).toBeNull();
+  });
+
+  it('persists the running timer', async () => {
+    const habit = await useHabitsStore
+      .getState()
+      .create(draft('Ler', { tracking: { type: 'timer', targetSeconds: 600 } }));
+    await useTimerStore.getState().start(habit, '2026-09-21');
+    useTimerStore.setState({ active: null });
+    await useTimerStore.getState().load();
+    expect(useTimerStore.getState().active?.habitId).toBe(habit.id);
+  });
+
+  it('computes elapsed seconds', () => {
+    expect(
+      elapsedSeconds({ habitId: 'h', date: '2026-09-21', startedAt: 0, baseSeconds: 30 }, 90_500),
+    ).toBe(120);
+  });
+});
+
 describe('settingsStore', () => {
-  it('persists the theme preference', async () => {
+  it('persists the theme preference and the first day of the week', async () => {
     await useSettingsStore.getState().setThemePreference('dark');
-    useSettingsStore.setState({ themePreference: 'system' });
+    await useSettingsStore.getState().setWeekStartsOn(1);
+    useSettingsStore.setState({ themePreference: 'system', weekStartsOn: 0 });
     await useSettingsStore.getState().load();
-    expect(useSettingsStore.getState().themePreference).toBe('dark');
+    expect(useSettingsStore.getState()).toMatchObject({ themePreference: 'dark', weekStartsOn: 1 });
   });
 });

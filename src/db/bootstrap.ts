@@ -4,6 +4,7 @@ import { setRepositories } from '@/repositories';
 import { createDrizzleRepositories } from '@/repositories/drizzle';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useTimerStore } from '@/stores/timerStore';
 
 import { openDatabase } from './client';
 
@@ -13,7 +14,11 @@ export type BootstrapState =
 async function bootstrap(): Promise<void> {
   const db = await openDatabase();
   setRepositories(createDrizzleRepositories(db));
-  await Promise.all([useSettingsStore.getState().load(), useHabitsStore.getState().load()]);
+  await Promise.all([
+    useSettingsStore.getState().load(),
+    useHabitsStore.getState().load(),
+    useTimerStore.getState().load(),
+  ]);
 }
 
 // Module-level so it runs once even if the root layout re-mounts (e.g. fast refresh).

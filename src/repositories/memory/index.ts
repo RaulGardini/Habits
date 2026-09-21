@@ -38,8 +38,7 @@ export function createMemoryRepositories(initial: { habits?: Habit[] } = {}): Re
           id: nextId(),
           ...draft,
           name: draft.name.trim(),
-          frequency: { type: 'daily' },
-          tracking: { type: 'boolean' },
+          reminders: [...draft.reminders].sort(),
           archivedAt: null,
           sortOrder: Math.max(-1, ...habits.map((h) => h.sortOrder)) + 1,
           createdAt: timestamp,
@@ -49,7 +48,13 @@ export function createMemoryRepositories(initial: { habits?: Habit[] } = {}): Re
         return habit;
       },
       async update(id, draft) {
-        return replace({ ...find(id), ...draft, name: draft.name.trim(), updatedAt: now() });
+        return replace({
+          ...find(id),
+          ...draft,
+          name: draft.name.trim(),
+          reminders: [...draft.reminders].sort(),
+          updatedAt: now(),
+        });
       },
       async setArchived(id, archived) {
         const timestamp = now();
@@ -77,6 +82,11 @@ export function createMemoryRepositories(initial: { habits?: Habit[] } = {}): Re
       async listByRange(from, to) {
         return entries
           .filter((e) => e.date >= from && e.date <= to)
+          .sort((a, b) => a.date.localeCompare(b.date));
+      },
+      async listByHabit(habitId) {
+        return entries
+          .filter((e) => e.habitId === habitId)
           .sort((a, b) => a.date.localeCompare(b.date));
       },
       async upsert(habitId, date, input) {

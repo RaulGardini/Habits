@@ -82,7 +82,7 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 ## Roadmap
 
 1. ✅ Setup + habit CRUD + Today screen (yes/no)
-2. Quantity & timer habits, all frequencies, streaks, tests
+2. ✅ Quantity & timer habits, all frequencies, streaks, tests
 3. Statistics & heatmaps
 4. Planner (daily / monthly / yearly) + goals
 5. Local notifications, JSON backup/import, settings

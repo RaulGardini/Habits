@@ -1,7 +1,7 @@
-import { goBack } from '@/lib/navigation';
 import { StyleSheet, View } from 'react-native';
 
 import type { HabitDraft } from '@/core/habits/types';
+import { goBack } from '@/lib/navigation';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { spacing } from '@/theme/tokens';
 import { Button } from '@/ui/Button';
@@ -30,7 +30,10 @@ export function EditHabitScreen({ id }: { id: string }) {
     icon: habit.icon,
     color: habit.color,
     timeOfDay: habit.timeOfDay,
+    frequency: habit.frequency,
+    tracking: habit.tracking,
     startDate: habit.startDate,
+    reminders: habit.reminders,
   };
   const isArchived = habit.archivedAt !== null;
 

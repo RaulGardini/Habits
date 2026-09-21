@@ -1,10 +1,14 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import type { Habit } from '@/core/habits/types';
+import { computeStreaks, type Streaks } from '@/core/habits/streaks';
+import type { Habit, WeekStartsOn } from '@/core/habits/types';
 import type { MoveDirection } from '@/core/utils/reorder';
+import { useToday } from '@/hooks/useNow';
+import { useEntriesInRange } from '@/stores/entriesStore';
 import { useHabitsStore } from '@/stores/habitsStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH_SIZE, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
@@ -17,7 +21,7 @@ import { IconButton } from '@/ui/IconButton';
 import { Screen } from '@/ui/Screen';
 
 import { HabitIcon } from './HabitIcon';
-import { TIME_OF_DAY_LABEL } from './labels';
+import { TIME_OF_DAY_LABEL, describeFrequency, describeStreak, describeTarget } from './labels';
 
 export function HabitsScreen() {
   const habits = useHabitsStore((state) => state.habits);
@@ -28,6 +32,9 @@ export function HabitsScreen() {
 
   const active = habits.filter((h) => h.archivedAt === null);
   const archived = habits.filter((h) => h.archivedAt !== null);
+
+  const streaks = useStreaks(habits);
+  const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
 
   const handleMove = (id: string, direction: MoveDirection) =>
     move(id, direction).catch((error: unknown) => showError('Não foi possível reordenar.', error));
@@ -50,7 +57,12 @@ export function HabitsScreen() {
       ) : (
         <Card style={styles.list}>
           {active.map((habit, index) => (
-            <HabitListRow key={habit.id} habit={habit}>
+            <HabitListRow
+              key={habit.id}
+              habit={habit}
+              streak={streaks.get(habit.id)}
+              weekStartsOn={weekStartsOn}
+            >
               <IconButton
                 icon="chevron-up"
                 label={`Mover ${habit.name} para cima`}
@@ -84,7 +96,7 @@ export function HabitsScreen() {
           {showArchived ? (
             <Card style={styles.list}>
               {archived.map((habit) => (
-                <HabitListRow key={habit.id} habit={habit}>
+                <HabitListRow key={habit.id} habit={habit} weekStartsOn={weekStartsOn}>
                   <IconButton
                     icon="archive-arrow-up-outline"
                     label={`Desarquivar ${habit.name}`}
@@ -104,7 +116,37 @@ export function HabitsScreen() {
   );
 }
 
-function HabitListRow({ habit, children }: { habit: Habit; children: React.ReactNode }) {
+/** Current streak of every habit (full history loaded once, refreshed on changes). */
+function useStreaks(habits: readonly Habit[]): Map<string, Streaks> {
+  const today = useToday();
+  const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
+  const earliest = habits.reduce((min, h) => (h.startDate < min ? h.startDate : min), today);
+  const entries = useEntriesInRange(earliest, today);
+  return useMemo(() => {
+    const map = new Map<string, Streaks>();
+    if (!entries) return map;
+    for (const habit of habits) {
+      const own = entries.filter((e) => e.habitId === habit.id);
+      map.set(habit.id, computeStreaks(habit, own, today, weekStartsOn));
+    }
+    return map;
+  }, [habits, entries, today, weekStartsOn]);
+}
+
+interface HabitListRowProps {
+  habit: Habit;
+  streak?: Streaks;
+  weekStartsOn: WeekStartsOn;
+  children: React.ReactNode;
+}
+
+function HabitListRow({ habit, streak, weekStartsOn, children }: HabitListRowProps) {
+  const details = [
+    TIME_OF_DAY_LABEL[habit.timeOfDay],
+    describeFrequency(habit.frequency, weekStartsOn),
+    describeTarget(habit.tracking),
+    streak && streak.current > 0 ? `🔥 ${describeStreak(streak.current, streak.unit)}` : null,
+  ].filter(Boolean);
   return (
     <View style={styles.row}>
       <Pressable
@@ -118,8 +160,8 @@ function HabitListRow({ habit, children }: { habit: Habit; children: React.React
           <AppText variant="bodyStrong" numberOfLines={1}>
             {habit.name}
           </AppText>
-          <AppText variant="caption" tone="muted">
-            {TIME_OF_DAY_LABEL[habit.timeOfDay]} · Todo dia
+          <AppText variant="caption" tone="muted" numberOfLines={2}>
+            {details.join(' · ')}
           </AppText>
         </View>
       </Pressable>

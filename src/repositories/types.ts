@@ -1,5 +1,7 @@
 import type { LocalDate } from '@/core/dates/localDate';
-import type { EntryStatus, Habit, HabitDraft, HabitEntry } from '@/core/habits/types';
+import type { EntryInput, Habit, HabitDraft, HabitEntry } from '@/core/habits/types';
+
+export type { EntryInput };
 
 /**
  * Data-access contracts. UI and stores depend on these interfaces only, never on Drizzle,
@@ -20,16 +22,12 @@ export interface HabitRepository {
   reorder(orderedIds: readonly string[]): Promise<void>;
 }
 
-export interface EntryInput {
-  status: EntryStatus;
-  value?: number | null;
-  note?: string | null;
-}
-
 export interface EntryRepository {
   listByDate(date: LocalDate): Promise<HabitEntry[]>;
-  /** Inclusive range. */
+  /** Inclusive range, ordered by date. */
   listByRange(from: LocalDate, to: LocalDate): Promise<HabitEntry[]>;
+  /** Full history of one habit, ordered by date. */
+  listByHabit(habitId: string): Promise<HabitEntry[]>;
   /** Creates, updates or revives (if soft-deleted) the entry of a habit on a day. */
   upsert(habitId: string, date: LocalDate, input: EntryInput): Promise<HabitEntry>;
   /** Soft delete. No-op when there is no entry. */

@@ -1,4 +1,4 @@
-import { computeDayProgress, groupByTimeOfDay, highlightedPeriod, nextBooleanStatus } from './day';
+import { computeDayProgress, groupByTimeOfDay, highlightedPeriod } from './day';
 import { makeEntry, makeHabit } from './testing';
 
 describe('groupByTimeOfDay', () => {
@@ -38,27 +38,29 @@ describe('computeDayProgress', () => {
     expect(progress).toEqual({ completed: 1, total: 2, ratio: 0.5 });
   });
 
-  it('does not count partial as completed', () => {
-    const progress = computeDayProgress([makeHabit({ id: 'a' })], {
-      a: makeEntry({ habitId: 'a', status: 'partial' }),
+  it('counts partial quantity progress in the ratio but not as completed', () => {
+    const water = makeHabit({
+      id: 'w',
+      tracking: { type: 'quantity', target: 2, unit: 'L', step: 0.5 },
     });
-    expect(progress.completed).toBe(0);
+    const progress = computeDayProgress([water], {
+      w: makeEntry({ habitId: 'w', status: 'partial', value: 1 }),
+    });
+    expect(progress).toEqual({ completed: 0, total: 1, ratio: 0.5 });
+  });
+
+  it('leaves out excluded habits unless they were done', () => {
+    const excluded = new Set(['a', 'b']);
+    const progress = computeDayProgress(
+      habits,
+      { a: makeEntry({ habitId: 'a', status: 'done' }) },
+      excluded,
+    );
+    expect(progress).toEqual({ completed: 1, total: 2, ratio: 0.5 });
   });
 
   it('is 0 when there is nothing to do', () => {
     expect(computeDayProgress([], {})).toEqual({ completed: 0, total: 0, ratio: 0 });
-  });
-});
-
-describe('nextBooleanStatus', () => {
-  it('toggles between done and no entry', () => {
-    expect(nextBooleanStatus(undefined)).toBe('done');
-    expect(nextBooleanStatus('done')).toBeNull();
-  });
-
-  it('marks as done from any other status', () => {
-    expect(nextBooleanStatus('skipped')).toBe('done');
-    expect(nextBooleanStatus('missed')).toBe('done');
   });
 });
 

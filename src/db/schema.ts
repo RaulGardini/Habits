@@ -40,9 +40,12 @@ export const habits = sqliteTable(
     /** Quantity target, or seconds for timer habits. */
     targetValue: real('target_value'),
     unit: text('unit'),
+    /** Increment of the +/− buttons for quantity habits. */
+    quantityStep: real('quantity_step'),
     startDate: text('start_date').notNull(),
     archivedAt: text('archived_at'),
     sortOrder: integer('sort_order').notNull().default(0),
+    /** Unused/reserved: goals link to habits through `goals.habit_id`. */
     goalId: text('goal_id'),
     ...timestamps,
   },

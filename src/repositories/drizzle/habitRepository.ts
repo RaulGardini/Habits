@@ -1,14 +1,15 @@
-import { and, asc, eq, isNull, max } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, max } from 'drizzle-orm';
 
 import type { Habit, HabitDraft } from '@/core/habits/types';
 import type { Database } from '@/db/client';
-import { habits } from '@/db/schema';
+import { habitReminders, habits } from '@/db/schema';
 import { newId, nowIso } from '@/lib/id';
 
 import type { HabitRepository } from '../types';
-import { toHabit } from './mappers';
+import { frequencyColumns, toHabit, trackingColumns } from './mappers';
 
 const notDeleted = isNull(habits.deletedAt);
+const reminderNotDeleted = isNull(habitReminders.deletedAt);
 
 function draftColumns(draft: HabitDraft) {
   return {
@@ -17,25 +18,68 @@ function draftColumns(draft: HabitDraft) {
     color: draft.color,
     timeOfDay: draft.timeOfDay,
     startDate: draft.startDate,
+    ...frequencyColumns(draft.frequency),
+    ...trackingColumns(draft.tracking),
   };
 }
 
 export function createDrizzleHabitRepository(db: Database): HabitRepository {
+  async function remindersByHabit(habitIds?: string[]): Promise<Map<string, string[]>> {
+    const rows = await db
+      .select({ habitId: habitReminders.habitId, time: habitReminders.time })
+      .from(habitReminders)
+      .where(
+        habitIds
+          ? and(reminderNotDeleted, inArray(habitReminders.habitId, habitIds))
+          : reminderNotDeleted,
+      );
+    const map = new Map<string, string[]>();
+    for (const row of rows) map.set(row.habitId, [...(map.get(row.habitId) ?? []), row.time]);
+    return map;
+  }
+
   async function getOrThrow(id: string): Promise<Habit> {
     const row = await db.query.habits.findFirst({ where: and(eq(habits.id, id), notDeleted) });
     if (!row) throw new Error(`Habit ${id} not found`);
-    return toHabit(row);
+    return toHabit(row, (await remindersByHabit([id])).get(id));
+  }
+
+  /** Keeps unchanged times, soft-deletes removed ones and inserts new ones. */
+  async function saveReminders(habitId: string, times: readonly string[]): Promise<void> {
+    const now = nowIso();
+    const existing = await db
+      .select({ id: habitReminders.id, time: habitReminders.time })
+      .from(habitReminders)
+      .where(and(eq(habitReminders.habitId, habitId), reminderNotDeleted));
+    const wanted = new Set(times);
+    const removed = existing.filter((r) => !wanted.has(r.time)).map((r) => r.id);
+    if (removed.length > 0) {
+      await db
+        .update(habitReminders)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(inArray(habitReminders.id, removed));
+    }
+    const existingTimes = new Set(existing.map((r) => r.time));
+    const added = [...wanted].filter((time) => !existingTimes.has(time));
+    if (added.length > 0) {
+      await db
+        .insert(habitReminders)
+        .values(
+          added.map((time) => ({ id: newId(), habitId, time, createdAt: now, updatedAt: now })),
+        );
+    }
   }
 
   return {
     async list() {
       const rows = await db.select().from(habits).where(notDeleted).orderBy(asc(habits.sortOrder));
-      return rows.map(toHabit);
+      const reminders = await remindersByHabit();
+      return rows.map((row) => toHabit(row, reminders.get(row.id)));
     },
 
     async getById(id) {
       const row = await db.query.habits.findFirst({ where: and(eq(habits.id, id), notDeleted) });
-      return row ? toHabit(row) : null;
+      return row ? toHabit(row, (await remindersByHabit([id])).get(id)) : null;
     },
 
     async create(draft) {
@@ -44,20 +88,16 @@ export function createDrizzleHabitRepository(db: Database): HabitRepository {
         .from(habits)
         .where(notDeleted);
       const now = nowIso();
-      const [row] = await db
-        .insert(habits)
-        .values({
-          id: newId(),
-          ...draftColumns(draft),
-          frequencyType: 'daily',
-          trackingType: 'boolean',
-          sortOrder: (last?.value ?? -1) + 1,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .returning();
-      if (!row) throw new Error('Failed to create habit');
-      return toHabit(row);
+      const id = newId();
+      await db.insert(habits).values({
+        id,
+        ...draftColumns(draft),
+        sortOrder: (last?.value ?? -1) + 1,
+        createdAt: now,
+        updatedAt: now,
+      });
+      await saveReminders(id, draft.reminders);
+      return getOrThrow(id);
     },
 
     async update(id, draft) {
@@ -65,6 +105,7 @@ export function createDrizzleHabitRepository(db: Database): HabitRepository {
         .update(habits)
         .set({ ...draftColumns(draft), updatedAt: nowIso() })
         .where(and(eq(habits.id, id), notDeleted));
+      await saveReminders(id, draft.reminders);
       return getOrThrow(id);
     },
 
@@ -80,6 +121,10 @@ export function createDrizzleHabitRepository(db: Database): HabitRepository {
     async remove(id) {
       const now = nowIso();
       await db.update(habits).set({ deletedAt: now, updatedAt: now }).where(eq(habits.id, id));
+      await db
+        .update(habitReminders)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(and(eq(habitReminders.habitId, id), reminderNotDeleted));
     },
 
     async reorder(orderedIds) {

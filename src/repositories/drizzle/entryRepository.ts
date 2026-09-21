@@ -28,6 +28,15 @@ export function createDrizzleEntryRepository(db: Database): EntryRepository {
       return rows.map(toHabitEntry);
     },
 
+    async listByHabit(habitId) {
+      const rows = await db
+        .select()
+        .from(habitEntries)
+        .where(and(eq(habitEntries.habitId, habitId), notDeleted))
+        .orderBy(asc(habitEntries.date));
+      return rows.map(toHabitEntry);
+    },
+
     async upsert(habitId, date, input) {
       const now = nowIso();
       const values = {

@@ -1,8 +1,8 @@
-import { goBack } from '@/lib/navigation';
 import { useState } from 'react';
 
 import { todayLocal } from '@/core/dates/localDate';
 import type { HabitDraft } from '@/core/habits/types';
+import { goBack } from '@/lib/navigation';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { DEFAULT_HABIT_COLOR } from '@/theme/habitColors';
 import { showError } from '@/ui/dialogs';
@@ -18,7 +18,10 @@ export function NewHabitScreen() {
     icon: DEFAULT_HABIT_ICON,
     color: DEFAULT_HABIT_COLOR,
     timeOfDay: 'anytime',
+    frequency: { type: 'daily' },
+    tracking: { type: 'boolean' },
     startDate: todayLocal(),
+    reminders: [],
   }));
 
   const submit = async (draft: HabitDraft) => {
