@@ -102,6 +102,35 @@
     "experiments": {
       "reactCompiler": true
     },
-    "description": "Hábitos e planner gratuitos, sem anúncios e que funcionam offline."
+    "description": "Hábitos e planner gratuitos, sem anúncios e que funcionam offline.",
+    "extra": {
+      "router": {
+        "headers": {
+          "Cross-Origin-Embedder-Policy": "credentialless",
+          "Cross-Origin-Opener-Policy": "same-origin"
+        }
+      },
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "bundleIdentifier": "com.raulgardini.habits.widget",
+                  "targetName": "HabitsWidget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.raulgardini.habits"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "3385e27a-523e-4825-8445-9d29b6930236"
+      }
+    },
+    "owner": "raulgardini"
   }
 }
