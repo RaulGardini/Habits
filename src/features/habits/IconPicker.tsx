@@ -1,12 +1,14 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { resolveHabitColor } from '@/theme/habitColors';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH_SIZE, radius, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
+import { Chip } from '@/ui/Chip';
 import { Icon } from '@/ui/Icon';
 
-import { HABIT_ICONS } from './habitIcons';
+import { HABIT_ICON_GROUPS } from './habitIcons';
 
 interface IconPickerProps {
   value: string;
@@ -14,16 +16,45 @@ interface IconPickerProps {
   onChange: (icon: string) => void;
 }
 
+/** Icons by group: a row of group chips, then the icons of the chosen group. */
 export function IconPicker({ value, color, onChange }: IconPickerProps) {
   const { colors, scheme } = useTheme();
   const habitColor = resolveHabitColor(color, scheme);
+  // Start on the group of the current icon.
+  const [groupIndex, setGroupIndex] = useState(() =>
+    Math.max(
+      0,
+      HABIT_ICON_GROUPS.findIndex((g) => g.icons.some((icon) => icon.name === value)),
+    ),
+  );
+  const group = HABIT_ICON_GROUPS[groupIndex] ?? HABIT_ICON_GROUPS[0];
+
   return (
     <View style={styles.container}>
       <AppText variant="label" tone="muted">
         Ícone
       </AppText>
-      <View accessibilityRole="radiogroup" accessibilityLabel="Ícone" style={styles.grid}>
-        {HABIT_ICONS.map((option) => {
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.groups}
+        accessibilityLabel="Grupos de ícones"
+      >
+        {HABIT_ICON_GROUPS.map((g, index) => (
+          <Chip
+            key={g.title}
+            label={g.title}
+            selected={index === groupIndex}
+            onPress={() => setGroupIndex(index)}
+          />
+        ))}
+      </ScrollView>
+      <View
+        accessibilityRole="radiogroup"
+        accessibilityLabel={`Ícones: ${group?.title ?? ''}`}
+        style={styles.grid}
+      >
+        {group?.icons.map((option) => {
           const selected = option.name === value;
           return (
             <Pressable
@@ -48,7 +79,8 @@ export function IconPicker({ value, color, onChange }: IconPickerProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { gap: spacing.xs },
+  container: { gap: spacing.sm },
+  groups: { gap: spacing.xs, paddingRight: spacing.lg },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   cell: {
     width: MIN_TOUCH_SIZE + 4,
