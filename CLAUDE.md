@@ -176,6 +176,12 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   they live in app.json + `src/widgets/iosPayload.ts` + `targets/widget/Snapshot.swift`). First release ships **without** cloud sync
   (no Supabase env vars; the privacy policy has no account section — restore it if sync is enabled).
 - `public/_redirects` makes SPA routes work on Netlify/Cloudflare Pages.
+- The owner uses the app on iPhone through **Expo Go + EAS Update** (no paid Apple account):
+  `npm run publish:go` publishes the iOS JS bundle to channel `production`; Expo Go opens
+  `exp://u.expo.dev/<projectId>?channel-name=production&runtime-version=exposdk:57.0.0`.
+  That requires `runtimeVersion.policy = "sdkVersion"` (Expo Go only loads `exposdk:*` runtimes)
+  and only Expo Go-compatible native modules. After an SDK upgrade, republish. Switch the policy
+  to `fingerprint`/`appVersion` if real store builds start using EAS Update.
 
 ## Roadmap
 

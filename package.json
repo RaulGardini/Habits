@@ -26,6 +26,7 @@
     "expo-sqlite": "~57.0.3",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
+    "expo-updates": "~57.0.23",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
@@ -72,7 +73,8 @@
     "db:generate": "drizzle-kit generate",
     "test:sql": "node scripts/test-supabase-schema.mjs",
     "assets": "node scripts/generate-assets.mjs",
-    "legal": "node scripts/generate-privacy.mjs"
+    "legal": "node scripts/generate-privacy.mjs",
+    "publish:go": "eas update --channel production --environment production --platform ios --non-interactive --message \"Nova versão\""
   },
   "private": true,
   "jest": {

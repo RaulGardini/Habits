@@ -128,6 +128,12 @@
         "projectId": "3385e27a-523e-4825-8445-9d29b6930236"
       }
     },
-    "owner": "raulgardini"
+    "owner": "raulgardini",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3385e27a-523e-4825-8445-9d29b6930236"
+    }
   }
 }
