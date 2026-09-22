@@ -151,7 +151,7 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - Privacy policy source: `src/features/legal/privacy.json` → in-app `/privacy` screen and
   `public/privacidade.html` (`npm run legal`). Keep the text in sync with what the app collects.
 - `eas.json` profiles: `development` (dev client), `preview` (internal APK), `production`
-  (auto-increment, remote app version). No `projectId` yet: the owner runs `eas init`.
+  (auto-increment, remote app version), `apk` (production-signed APK for direct install, no store).
 - Bundle id / package `com.raulgardini.habits`, App Group `group.com.raulgardini.habits` (final;
   they live in app.json + `src/widgets/iosPayload.ts` + `targets/widget/Snapshot.swift`). First release ships **without** cloud sync
   (no Supabase env vars; the privacy policy has no account section — restore it if sync is enabled).

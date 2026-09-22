@@ -12,16 +12,28 @@
     "preview": {
       "distribution": "internal",
       "environment": "preview",
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
       "environment": "production",
       "autoIncrement": true
+    },
+    "apk": {
+      "extends": "production",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
     "production": {
-      "android": { "track": "internal", "releaseStatus": "draft" },
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
+      },
       "ios": {}
     }
   }
