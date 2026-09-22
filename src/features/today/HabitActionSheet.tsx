@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { LocalDate } from '@/core/dates/localDate';
@@ -60,25 +59,19 @@ export function HabitActionSheet({
     <Modal
       visible={target !== null}
       transparent
-      animationType="none"
+      animationType="slide"
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <View style={styles.backdrop}>
-        <Animated.View
-          entering={FadeIn.duration(180)}
-          style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }]}
-        >
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={onClose}
-            accessibilityRole="button"
-            accessibilityLabel={t('Fechar')}
-          />
-        </Animated.View>
+      <View style={[styles.backdrop, { backgroundColor: colors.overlay }]}>
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel={t('Fechar')}
+        />
         {target ? (
-          <Animated.View
-            entering={SlideInDown.springify().damping(18).stiffness(160)}
+          <View
             style={[
               styles.sheet,
               {
@@ -111,7 +104,7 @@ export function HabitActionSheet({
               onSave={onSave}
               onTimerToggle={onTimerToggle}
             />
-          </Animated.View>
+          </View>
         ) : null}
       </View>
     </Modal>

@@ -35,6 +35,8 @@ export function Screen({ children, scroll = true, edges = ['top', 'left', 'right
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          // iOS: keeps the content below the transparent navigation header.
+          contentInsetAdjustmentBehavior="automatic"
         >
           {content}
         </ScrollView>

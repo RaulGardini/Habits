@@ -14,7 +14,7 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 
 import { useBootstrap } from '@/db/bootstrap';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -88,7 +88,15 @@ function App() {
     // Remounting on a language change re-renders every screen with the new strings.
     <NavigationThemeProvider value={navigationTheme} key={language}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal' }}>
+      <Stack
+        screenOptions={{
+          headerBackButtonDisplayMode: 'minimal',
+          // iOS: the content scrolls under a translucent header (Liquid Glass on iOS 26).
+          headerTransparent: Platform.OS === 'ios',
+          headerBlurEffect: scheme === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterial',
+          headerShadowVisible: false,
+        }}
+      >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="habit/new"

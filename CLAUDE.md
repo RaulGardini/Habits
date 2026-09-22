@@ -91,6 +91,9 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - Look: warm neutrals, Nunito (`fonts`/`typography`, loaded in the root layout), borderless
   cards with `softShadow()`, pill buttons, sentence-case headings, short kind copy. Avoid
   bordered boxes, ALL-CAPS labels and icon-per-heading decoration.
+- Liquid Glass floats above content only (add buttons, nav pills, segmented-control tracks,
+  the habit sheet), never on cards or full screens. On iOS the stack headers are transparent
+  with the system blur, so `Screen`'s ScrollView uses `contentInsetAdjustmentBehavior="automatic"`.
 - Liquid Glass: iOS tabs use `NativeTabs` (`expo-router/unstable-native-tabs`, system glass bar);
   Android/web keep JS `Tabs` (frosted bar on web). Floating controls use `<Glass>` (`src/ui/Glass`):
   native `GlassView` on iOS 26+, frosted CSS on web, translucent surface on Android. Never set
