@@ -35,9 +35,12 @@ export function createSupabaseRemote(client: SupabaseClient, userId: string): Re
     },
 
     async deleteAll() {
-      for (const table of Object.values(REMOTE_TABLES)) {
+      for (const table of [...Object.values(REMOTE_TABLES), 'cloud_backups']) {
         const { error } = await client.from(table).delete().eq('user_id', userId);
-        if (error) throw new Error(error.message);
+        // `cloud_backups` may not exist yet in older setups of supabase/schema.sql.
+        if (error && !(table === 'cloud_backups' && /cloud_backups/.test(error.message))) {
+          throw new Error(error.message);
+        }
       }
     },
   };

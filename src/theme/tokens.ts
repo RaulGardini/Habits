@@ -18,6 +18,8 @@ export interface ThemeColors {
   /** Translucent bar/sheet background where a real glass effect is not available. */
   glass: string;
   shadow: string;
+  /** Dim layer behind modals and sheets. */
+  overlay: string;
   danger: string;
   onDanger: string;
 }
@@ -37,6 +39,7 @@ export const themeColors: Record<ColorScheme, ThemeColors> = {
     primarySoft: '#fdf1cc',
     glass: '#fffdf8cc',
     shadow: '#5a4a2a',
+    overlay: '#2b262066',
     danger: '#b3261e',
     onDanger: '#ffffff',
   },
@@ -53,6 +56,7 @@ export const themeColors: Record<ColorScheme, ThemeColors> = {
     primarySoft: '#3a3120',
     glass: '#201d18cc',
     shadow: '#000000',
+    overlay: '#00000099',
     danger: '#f1a097',
     onDanger: '#15130f',
   },

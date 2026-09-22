@@ -151,6 +151,22 @@ select public.habits_setup_table('settings', '
 
 drop function public.habits_setup_table(text, text, text);
 
+-- Weekly snapshots of all the user's data (not synced row by row; see src/stores/cloudBackupStore.ts).
+-- The free Supabase plan has no restorable backups, so the app keeps its own (latest 8).
+create table if not exists public.cloud_backups (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  row_count integer not null default 0,
+  content jsonb not null
+);
+alter table public.cloud_backups enable row level security;
+drop policy if exists "own rows" on public.cloud_backups;
+create policy "own rows" on public.cloud_backups for all to authenticated
+  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+grant select, insert, delete on public.cloud_backups to authenticated;
+create index if not exists cloud_backups_user_idx on public.cloud_backups (user_id, created_at desc);
+
 -- In-app account deletion (required by the App Store): removes the auth user; every synced
 -- row goes with it through `on delete cascade`.
 create or replace function public.delete_my_account() returns void

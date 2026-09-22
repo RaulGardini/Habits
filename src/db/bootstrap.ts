@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { configureNotifications } from '@/lib/notifications';
+import { useCloudBackupStore } from '@/stores/cloudBackupStore';
 import { useEntriesStore } from '@/stores/entriesStore';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -53,6 +54,11 @@ function startCloudSync(): void {
   AppState.addEventListener(
     'change',
     (status) => status === 'active' && void useSyncStore.getState().syncNow(),
+  );
+  // Weekly cloud snapshot, checked after successful syncs.
+  useSyncStore.subscribe(
+    (state, previous) =>
+      state.lastSyncAt !== previous.lastSyncAt && void useCloudBackupStore.getState().autoBackup(),
   );
 }
 

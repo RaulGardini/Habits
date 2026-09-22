@@ -76,13 +76,23 @@ await as(
              values ('theme', '"dark"', '2026-09-01T00:00:00.000Z')`,
 );
 
+// Cloud backups are private to their owner and go away with the account.
+await as(A, `insert into public.cloud_backups (row_count, content) values (2, '{"tables":{}}')`);
+assert.equal(
+  (await as(B, 'select * from public.cloud_backups')).rows.length,
+  0,
+  'B must not see A backups',
+);
+assert.equal((await as(A, 'select * from public.cloud_backups')).rows.length, 1);
+
 // Account deletion removes the user and cascades to every table.
 await as(A, 'select public.delete_my_account()');
 const left = await db.query(`select
   (select count(*) from public.habits where user_id = '${A}')::int as habits,
   (select count(*) from public.settings where user_id = '${A}')::int as settings,
+  (select count(*) from public.cloud_backups where user_id = '${A}')::int as backups,
   (select count(*) from auth.users where id = '${A}')::int as users,
   (select count(*) from public.habits where user_id = '${B}')::int as other`);
-assert.deepEqual(left.rows[0], { habits: 0, settings: 0, users: 0, other: 1 });
+assert.deepEqual(left.rows[0], { habits: 0, settings: 0, backups: 0, users: 0, other: 1 });
 
-console.log('supabase/schema.sql OK: LWW, RLS isolation and account deletion');
+console.log('supabase/schema.sql OK: LWW, RLS isolation, cloud backups and account deletion');

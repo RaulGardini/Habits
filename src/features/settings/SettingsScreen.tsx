@@ -25,6 +25,7 @@ import { Screen } from '@/ui/Screen';
 import { SegmentedControl } from '@/ui/SegmentedControl';
 
 import { AccountSection } from './AccountSection';
+import { CloudBackupSection } from './CloudBackupSection';
 
 const THEME_OPTIONS = [
   { value: 'system', label: 'Sistema', icon: 'theme-light-dark' },
@@ -55,6 +56,7 @@ export function SettingsScreen() {
   const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
   const setWeekStartsOn = useSettingsStore((state) => state.setWeekStartsOn);
   const syncConfigured = useSyncStore((state) => state.configured);
+  const signedIn = useSyncStore((state) => state.userId !== null);
 
   return (
     <Screen>
@@ -94,6 +96,12 @@ export function SettingsScreen() {
       {syncConfigured ? (
         <Section title="Conta e sincronização">
           <AccountSection />
+        </Section>
+      ) : null}
+
+      {signedIn ? (
+        <Section title="Backups na nuvem">
+          <CloudBackupSection />
         </Section>
       ) : null}
 

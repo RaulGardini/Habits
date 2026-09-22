@@ -1,23 +1,24 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { getDayPeriod } from '@/core/dates/dayPeriod';
 import { isLocalDate, todayLocal, type LocalDate } from '@/core/dates/localDate';
 import { maxDate, minDate, periodRange } from '@/core/dates/periods';
 import { computeDayProgress, groupByTimeOfDay, highlightedPeriod } from '@/core/habits/day';
-import { incrementEntry, toggleEntry } from '@/core/habits/entries';
 import { periodQuota, type PeriodQuota } from '@/core/habits/quota';
 import { habitsDueOn } from '@/core/habits/schedule';
 import type { EntryInput, Habit, HabitEntry } from '@/core/habits/types';
 import { TIME_OF_DAY_ICON, TIME_OF_DAY_LABEL } from '@/features/habits/labels';
+import { useStreaks } from '@/features/habits/useStreaks';
 import { useNow } from '@/hooks/useNow';
+import { hapticSuccess } from '@/lib/haptics';
 import { useDayEntries, useEntriesInRange, useEntriesStore } from '@/stores/entriesStore';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { useTimerStore } from '@/stores/timerStore';
+import { elapsedSeconds, useTimerStore } from '@/stores/timerStore';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, softShadow, spacing } from '@/theme/tokens';
+import { radius, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
@@ -27,10 +28,17 @@ import { Icon } from '@/ui/Icon';
 import { ProgressBar } from '@/ui/ProgressBar';
 import { Screen } from '@/ui/Screen';
 
+import { Celebration } from './Celebration';
 import { DayNavigator } from './DayNavigator';
-import { HabitDayRow } from './HabitDayRow';
+import { HabitActionSheet, type HabitActionTarget } from './HabitActionSheet';
+import { HabitBubble } from './HabitBubble';
+import { TodayAgenda } from './TodayAgenda';
 
 const GREETING = { morning: 'Bom dia', afternoon: 'Boa tarde', evening: 'Boa noite' } as const;
+
+/** Target width of one habit circle + its name. */
+const CELL_TARGET = 96;
+const MAX_CIRCLE = 74;
 
 /** A short, kind line above the day's progress. */
 function encouragement(completed: number, total: number): string {
@@ -43,7 +51,9 @@ function encouragement(completed: number, total: number): string {
 }
 
 export function TodayScreen() {
-  const now = useNow();
+  const activeTimer = useTimerStore((state) => state.active);
+  // A running timer needs to tick every second; otherwise once a minute is enough.
+  const now = useNow(activeTimer ? 1000 : 60_000);
   const today = todayLocal(now);
   const params = useLocalSearchParams<{ date?: string }>();
   // null = follow "today", so the screen rolls over at midnight.
@@ -52,8 +62,8 @@ export function TodayScreen() {
   const setDate = (next: LocalDate) => setSelectedDate(next === today ? null : next);
   const { colors } = useTheme();
 
-  // Deep link from the planner: /?date=YYYY-MM-DD. Adjusted during render when the param
-  // changes (the tab stays mounted, so an initial value alone is not enough).
+  // Deep link: /?date=YYYY-MM-DD. Adjusted during render when the param changes (the tab stays
+  // mounted, so an initial value alone is not enough).
   const [linkedDate, setLinkedDate] = useState<string | undefined>(undefined);
   if (params.date !== linkedDate) {
     setLinkedDate(params.date);
@@ -62,12 +72,12 @@ export function TodayScreen() {
 
   const habits = useHabitsStore((state) => state.habits);
   const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
-  const activeTimer = useTimerStore((state) => state.active);
   const { entries } = useDayEntries(date);
   const save = useEntriesStore((state) => state.save);
 
   const due = useMemo(() => habitsDueOn(habits, date), [habits, date]);
   const quotas = usePeriodQuotas(due, date, entries, weekStartsOn);
+  const streaks = useStreaks(due);
   const excluded = useMemo(
     () => new Set([...quotas].filter(([, quota]) => quota.met).map(([habitId]) => habitId)),
     [quotas],
@@ -77,6 +87,13 @@ export function TodayScreen() {
   const currentPeriod = highlightedPeriod(date, today, getDayPeriod(now));
   const isFuture = date > today;
   const hasHabits = habits.some((h) => h.archivedAt === null);
+
+  const [target, setTarget] = useState<HabitActionTarget | null>(null);
+  const [width, setWidth] = useState(0);
+  const columns = Math.max(3, Math.floor(width / CELL_TARGET) || 4);
+  const cell = width > 0 ? width / columns : CELL_TARGET;
+  const circle = Math.min(MAX_CIRCLE, cell - spacing.md);
+  const celebrating = useDayCompleted(date, progress.completed, progress.total);
 
   const saveEntry = (habit: Habit, next: EntryInput | null) =>
     save(habit.id, date, next).catch((error: unknown) =>
@@ -89,6 +106,15 @@ export function TodayScreen() {
     (running ? timers.stop() : timers.start(habit, date)).catch((error: unknown) =>
       showError('Não foi possível salvar o timer.', error),
     );
+  };
+
+  const timerInfo = (habit: Habit, entry: HabitEntry | undefined) => {
+    if (habit.tracking.type !== 'timer') return { seconds: null, running: false };
+    const running = activeTimer?.habitId === habit.id && activeTimer.date === date;
+    return {
+      seconds: running ? elapsedSeconds(activeTimer, now.getTime()) : (entry?.value ?? 0),
+      running,
+    };
   };
 
   return (
@@ -117,55 +143,67 @@ export function TodayScreen() {
         </Card>
       ) : null}
 
-      {groups.map((group) => {
-        const isCurrent = group.timeOfDay === currentPeriod;
-        return (
-          <View
-            key={group.timeOfDay}
-            style={[
-              styles.group,
-              isCurrent && {
-                backgroundColor: colors.surface,
-                boxShadow: softShadow(colors.shadow),
-              },
-            ]}
-          >
-            <View style={styles.groupHeader} accessibilityRole="header">
-              <Icon
-                name={TIME_OF_DAY_ICON[group.timeOfDay]}
-                size={20}
-                color={isCurrent ? colors.accent : colors.textMuted}
-              />
-              <AppText variant="bodyStrong" tone={isCurrent ? 'default' : 'muted'}>
-                {TIME_OF_DAY_LABEL[group.timeOfDay]}
-              </AppText>
-              {isCurrent ? (
-                <View style={[styles.nowBadge, { backgroundColor: colors.primarySoft }]}>
-                  <AppText variant="caption" tone={colors.accent}>
-                    agora
-                  </AppText>
-                </View>
-              ) : null}
+      <View
+        style={styles.groups}
+        onLayout={(event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width)}
+      >
+        {groups.map((group) => {
+          const isCurrent = group.timeOfDay === currentPeriod;
+          return (
+            <View key={group.timeOfDay} style={styles.group}>
+              <View style={styles.groupHeader} accessibilityRole="header">
+                <Icon
+                  name={TIME_OF_DAY_ICON[group.timeOfDay]}
+                  size={18}
+                  color={isCurrent ? colors.accent : colors.textMuted}
+                />
+                <AppText variant="label" tone={isCurrent ? colors.accent : 'muted'}>
+                  {TIME_OF_DAY_LABEL[group.timeOfDay]}
+                </AppText>
+                {isCurrent ? (
+                  <View style={[styles.nowBadge, { backgroundColor: colors.primarySoft }]}>
+                    <AppText variant="caption" tone={colors.accent}>
+                      agora
+                    </AppText>
+                  </View>
+                ) : null}
+              </View>
+              <View style={styles.grid}>
+                {group.habits.map((habit) => {
+                  const entry = entries[habit.id];
+                  const { seconds, running } = timerInfo(habit, entry);
+                  return (
+                    <HabitBubble
+                      key={habit.id}
+                      habit={habit}
+                      entry={entry}
+                      quota={quotas.get(habit.id) ?? null}
+                      timerSeconds={seconds}
+                      running={running}
+                      disabled={isFuture}
+                      size={circle}
+                      width={cell}
+                      onPress={() =>
+                        setTarget({
+                          habit,
+                          entry,
+                          quota: quotas.get(habit.id) ?? null,
+                          streak: streaks.get(habit.id),
+                          timerSeconds: seconds,
+                          running,
+                        })
+                      }
+                      onLongPress={() =>
+                        router.push({ pathname: '/entry', params: { habitId: habit.id, date } })
+                      }
+                    />
+                  );
+                })}
+              </View>
             </View>
-            {group.habits.map((habit) => (
-              <HabitDayRow
-                key={habit.id}
-                habit={habit}
-                date={date}
-                entry={entries[habit.id]}
-                disabled={isFuture}
-                quota={quotas.get(habit.id) ?? null}
-                activeTimer={activeTimer}
-                onToggle={() => saveEntry(habit, toggleEntry(entries[habit.id]))}
-                onIncrement={(direction) =>
-                  saveEntry(habit, incrementEntry(habit, entries[habit.id], direction))
-                }
-                onTimerToggle={() => toggleTimer(habit)}
-              />
-            ))}
-          </View>
-        );
-      })}
+          );
+        })}
+      </View>
 
       {due.length === 0 ? (
         <EmptyState
@@ -183,8 +221,37 @@ export function TodayScreen() {
           }
         />
       ) : null}
+
+      <TodayAgenda date={date} />
+
+      <HabitActionSheet
+        target={target}
+        date={date}
+        onClose={() => setTarget(null)}
+        onSave={saveEntry}
+        onTimerToggle={toggleTimer}
+      />
+      <Celebration visible={celebrating.visible} onDone={celebrating.dismiss} />
     </Screen>
   );
+}
+
+/** True right after the last habit of the day is completed (not when opening an already-done day). */
+function useDayCompleted(date: LocalDate, completed: number, total: number) {
+  const [visible, setVisible] = useState(false);
+  const previous = useRef<{ date: LocalDate; done: boolean } | null>(null);
+
+  useEffect(() => {
+    const done = total > 0 && completed === total;
+    const before = previous.current;
+    previous.current = { date, done };
+    if (before?.date === date && !before.done && done) {
+      hapticSuccess();
+      setVisible(true);
+    }
+  }, [date, completed, total]);
+
+  return { visible, dismiss: () => setVisible(false) };
 }
 
 /**
@@ -221,21 +288,9 @@ function usePeriodQuotas(
 const styles = StyleSheet.create({
   progressHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   flex: { flex: 1 },
-  group: {
-    gap: spacing.sm,
-    padding: spacing.sm,
-    marginHorizontal: -spacing.sm,
-    borderRadius: radius.lg,
-  },
-  groupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.xs,
-  },
-  nowBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.full,
-  },
+  groups: { gap: spacing.lg },
+  group: { gap: spacing.sm },
+  groupHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.md },
+  nowBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
 });

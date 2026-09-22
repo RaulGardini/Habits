@@ -96,6 +96,17 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   files and breaks `tsc`. Route strings are therefore not type-checked — double-check paths.
 - Wide screens (≥ 768px): sidebar navigation; content column max 720px (`Screen`).
 
+## Today screen (`src/features/today`)
+
+- Habits are circles (`HabitBubble`): habit color + icon, SVG progress ring, name below, check
+  badge when done; grouped by time of day, grid width measured with `onLayout`.
+- A tap opens `HabitActionSheet` (RN `Modal`): confirm/undo for yes/no, a stepper for quantity,
+  start/stop for timers, plus "pular hoje" and "nota e mais" (the `/entry` route). Long press
+  opens `/entry` directly.
+- `Celebration` (confetti, deterministic so the React Compiler stays happy) fires when the last
+  habit of the day is completed — never when merely opening an already-finished day.
+- `TodayAgenda` shows the day's events under the habits (up to 4) with links to the Agenda.
+
 ## Agenda (`src/features/agenda`, logic in `src/core/planner/agenda.ts`)
 
 - The old planner's tasks and day notes are no longer in the UI; their tables/repositories stay
@@ -106,6 +117,14 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   started before the range; `expandOccurrences` turns them into per-day occurrences.
 - Event reminders are one-off notifications in the same plan as habits (`planReminders(..., events)`);
   re-planned by `rescheduleReminders()` (`src/stores/reminders.ts`) after habit/agenda changes.
+
+## Cloud backups (`src/core/backup/cloudBackup.ts`, `src/stores/cloudBackupStore.ts`)
+
+- The free Supabase plan has no restorable backups, so the app keeps its own: a full snapshot in
+  `public.cloud_backups` every 7 days (checked after each successful sync), keeping the latest 8.
+- Device-only settings are stripped (`pushableRows`). A restore stamps every row with the restore
+  time so it wins the LWW merge everywhere, then syncs; the current state is snapshotted first.
+- Settings shows the list with "Fazer backup agora" / "Restaurar" while signed in.
 
 ## Notifications & backup
 
