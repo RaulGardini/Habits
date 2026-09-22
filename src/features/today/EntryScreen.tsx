@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { formatDayLabel, todayLocal, type LocalDate } from '@/core/dates/localDate';
@@ -8,7 +8,7 @@ import type { Habit, HabitEntry } from '@/core/habits/types';
 import { HabitIcon } from '@/features/habits/HabitIcon';
 import { describeTarget } from '@/features/habits/labels';
 import { goBack } from '@/lib/navigation';
-import { useEntriesStore } from '@/stores/entriesStore';
+import { useDayEntries, useEntriesStore } from '@/stores/entriesStore';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
@@ -24,13 +24,8 @@ export const NOTE_MAX_LENGTH = 500;
 
 export function EntryScreen({ habitId, date }: { habitId: string; date: LocalDate }) {
   const habit = useHabitsStore((state) => state.habits.find((h) => h.id === habitId));
-  const entry = useEntriesStore((state) => state.byDate[date]?.[habitId]);
-  const loaded = useEntriesStore((state) => state.byDate[date] !== undefined);
-  const loadDate = useEntriesStore((state) => state.loadDate);
-
-  useEffect(() => {
-    if (!loaded) loadDate(date).catch(() => {});
-  }, [date, loaded, loadDate]);
+  const { entries, loaded } = useDayEntries(date);
+  const entry = entries[habitId];
 
   if (!habit) {
     return (

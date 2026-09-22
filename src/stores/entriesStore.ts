@@ -85,6 +85,22 @@ export function selectDayEntries(date: LocalDate) {
 }
 
 /**
+ * Entries of a day, loaded on demand — and reloaded whenever the cache is cleared (after an
+ * import, or a check made from a home screen widget).
+ */
+export function useDayEntries(date: LocalDate): { entries: DayEntries; loaded: boolean } {
+  const day = useEntriesStore((state) => state.byDate[date]);
+  const loadDate = useEntriesStore((state) => state.loadDate);
+  const loaded = day !== undefined;
+  useEffect(() => {
+    if (!loaded) {
+      loadDate(date).catch((error: unknown) => console.error('Failed to load entries', error));
+    }
+  }, [date, loaded, loadDate]);
+  return { entries: day ?? EMPTY, loaded };
+}
+
+/**
  * Entries in an inclusive date range, refetched whenever entries change.
  * `null` while loading the first time.
  */

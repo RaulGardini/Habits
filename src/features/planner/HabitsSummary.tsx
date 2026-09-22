@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { LocalDate } from '@/core/dates/localDate';
@@ -7,7 +7,7 @@ import { computeDayProgress } from '@/core/habits/day';
 import { entryProgress } from '@/core/habits/entries';
 import { habitsDueOn } from '@/core/habits/schedule';
 import { HabitIcon } from '@/features/habits/HabitIcon';
-import { selectDayEntries, useEntriesStore } from '@/stores/entriesStore';
+import { useDayEntries } from '@/stores/entriesStore';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { resolveHabitColor } from '@/theme/habitColors';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -21,12 +21,7 @@ import { ProgressBar } from '@/ui/ProgressBar';
 export function HabitsSummary({ date }: { date: LocalDate }) {
   const { scheme } = useTheme();
   const habits = useHabitsStore((state) => state.habits);
-  const entries = useEntriesStore(selectDayEntries(date));
-  const loadDate = useEntriesStore((state) => state.loadDate);
-
-  useEffect(() => {
-    loadDate(date).catch((error: unknown) => console.error('Failed to load entries', error));
-  }, [date, loadDate]);
+  const { entries } = useDayEntries(date);
 
   const due = useMemo(() => habitsDueOn(habits, date), [habits, date]);
   const progress = computeDayProgress(due, entries);

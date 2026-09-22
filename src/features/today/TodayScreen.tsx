@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { getDayPeriod } from '@/core/dates/dayPeriod';
@@ -12,7 +12,7 @@ import { habitsDueOn } from '@/core/habits/schedule';
 import type { EntryInput, Habit, HabitEntry } from '@/core/habits/types';
 import { TIME_OF_DAY_ICON, TIME_OF_DAY_LABEL } from '@/features/habits/labels';
 import { useNow } from '@/hooks/useNow';
-import { selectDayEntries, useEntriesInRange, useEntriesStore } from '@/stores/entriesStore';
+import { useDayEntries, useEntriesInRange, useEntriesStore } from '@/stores/entriesStore';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTimerStore } from '@/stores/timerStore';
@@ -51,15 +51,8 @@ export function TodayScreen() {
   const habits = useHabitsStore((state) => state.habits);
   const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
   const activeTimer = useTimerStore((state) => state.active);
-  const entries = useEntriesStore(selectDayEntries(date));
-  const loadDate = useEntriesStore((state) => state.loadDate);
+  const { entries } = useDayEntries(date);
   const save = useEntriesStore((state) => state.save);
-
-  useEffect(() => {
-    loadDate(date).catch((error: unknown) =>
-      showError('Não foi possível carregar os registros do dia.', error),
-    );
-  }, [date, loadDate]);
 
   const due = useMemo(() => habitsDueOn(habits, date), [habits, date]);
   const quotas = usePeriodQuotas(due, date, entries, weekStartsOn);

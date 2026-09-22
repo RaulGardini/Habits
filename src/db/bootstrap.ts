@@ -1,26 +1,51 @@
 import { useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 
 import { configureNotifications, syncReminders } from '@/lib/notifications';
-import { setRepositories } from '@/repositories';
-import { createDrizzleRepositories } from '@/repositories/drizzle';
+import { useEntriesStore } from '@/stores/entriesStore';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTimerStore } from '@/stores/timerStore';
+import { consumePendingWidgetActions, updateWidgets } from '@/widgets/sync';
 
-import { openDatabase } from './client';
+import { initRepositories } from './init';
 
 export type BootstrapState =
   { status: 'loading' } | { status: 'ready' } | { status: 'error'; error: Error };
 
 async function bootstrap(): Promise<void> {
-  const db = await openDatabase();
-  setRepositories(createDrizzleRepositories(db));
+  await initRepositories();
   await Promise.all([
     useSettingsStore.getState().load(),
     useHabitsStore.getState().load(),
     useTimerStore.getState().load(),
   ]);
   startReminderSync();
+  startWidgetSync();
+}
+
+/**
+ * Keeps home screen widgets in sync: applies quick actions queued by the iOS widget, and
+ * redraws widgets whenever habits, entries or settings change or the app returns to foreground.
+ */
+function startWidgetSync(): void {
+  const refresh = async () => {
+    if (await consumePendingWidgetActions()) useEntriesStore.getState().reset();
+    updateWidgets();
+  };
+  const run = () => refresh().catch((error: unknown) => console.error('Widget sync failed', error));
+
+  run();
+  useHabitsStore.subscribe(
+    (state, previous) => state.habits !== previous.habits && updateWidgets(),
+  );
+  useEntriesStore.subscribe(
+    (state, previous) => state.version !== previous.version && updateWidgets(),
+  );
+  useSettingsStore.subscribe(
+    (state, previous) => state.weekStartsOn !== previous.weekStartsOn && updateWidgets(),
+  );
+  AppState.addEventListener('change', (status) => status === 'active' && run());
 }
 
 /**

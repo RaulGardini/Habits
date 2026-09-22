@@ -96,6 +96,22 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   File I/O is platform-specific (`src/lib/backupFile.ts` / `.web.ts`).
 - "Delete all data" hard-deletes every table (user-initiated, double confirmation).
 
+## Widgets (need a development build — not Expo Go)
+
+- Data for widgets is computed in TS: `buildWidgetSnapshot` (`src/core/widgets/snapshot.ts`),
+  loaded by `src/widgets/data.ts`. Quick actions: toggle yes/no, +step quantity, timers open app.
+- **Android** (`react-native-android-widget`): widgets are JSX rendered by a headless JS task
+  (`src/widgets/android/`), registered from the custom entry `index.js`. The task opens the DB
+  itself (`initRepositories()`) and writes taps directly. Widget sizes/labels: `app.json` plugin.
+  That library crashes on import in Expo Go → only `require` it lazily behind `isExpoGo`.
+- **iOS** (`@bacons/apple-targets`, `targets/widget/*.swift`): SwiftUI cannot run JS or open
+  the SQLite DB. The app writes a JSON snapshot to the App Group `group.dev.habits.app`
+  (`src/widgets/sync.ios.ts`); widget taps (AppIntent, iOS 17+) append to a queue that the app
+  applies on start/foreground (`consumePendingWidgetActions`). Keep `Snapshot.swift` in sync
+  with `src/widgets/iosPayload.ts`.
+- The app redraws widgets after any habit/entry/settings change (`updateWidgets`, bootstrap).
+- Native changes: `npx expo prebuild --clean`, then `npm run android` / EAS build.
+
 ## Testing
 
 - Jest (`jest-expo`). Tests live next to the code: `foo.test.ts`.
@@ -111,6 +127,6 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 3. ✅ Statistics & heatmaps
 4. ✅ Planner (daily / monthly / yearly) + goals
 5. ✅ Local notifications, JSON backup/import, settings
-6. Widgets (iOS/Android, dev build)
+6. ✅ Widgets (iOS/Android, dev build)
 7. (Optional) Supabase sync, last-write-wins by `updated_at`
 8. Store release prep
