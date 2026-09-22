@@ -14,6 +14,7 @@ import { AppText } from '@/ui/AppText';
 import { Chip } from '@/ui/Chip';
 import { SegmentedControl } from '@/ui/SegmentedControl';
 import { Stepper } from '@/ui/Stepper';
+import { t } from '@/i18n/i18n';
 
 interface FrequencyPickerProps {
   value: Frequency;
@@ -22,17 +23,21 @@ interface FrequencyPickerProps {
   error?: string;
 }
 
-const TYPE_OPTIONS = [
-  { value: 'daily', label: 'Todo dia' },
-  { value: 'weekdays', label: 'Dias' },
-  { value: 'per_period', label: 'X vezes' },
-  { value: 'interval', label: 'Intervalo' },
-] as const;
+function TYPE_OPTIONS() {
+  return [
+    { value: 'daily', label: t('Todo dia') },
+    { value: 'weekdays', label: t('Dias') },
+    { value: 'per_period', label: t('X vezes') },
+    { value: 'interval', label: t('Intervalo') },
+  ] as const;
+}
 
-const PERIOD_OPTIONS = [
-  { value: 'week', label: 'Por semana' },
-  { value: 'month', label: 'Por mês' },
-] as const;
+function PERIOD_OPTIONS() {
+  return [
+    { value: 'week', label: t('Por semana') },
+    { value: 'month', label: t('Por mês') },
+  ] as const;
+}
 
 /** Default parameters when switching frequency type. */
 function defaultFrequency(type: FrequencyType): Frequency {
@@ -53,8 +58,8 @@ export function FrequencyPicker({ value, onChange, weekStartsOn, error }: Freque
   return (
     <View style={styles.container}>
       <SegmentedControl<FrequencyType>
-        label="Frequência"
-        options={TYPE_OPTIONS}
+        label={t('Frequência')}
+        options={TYPE_OPTIONS()}
         value={value.type}
         onChange={(type) => type !== value.type && onChange(defaultFrequency(type))}
       />
@@ -76,7 +81,7 @@ export function FrequencyPicker({ value, onChange, weekStartsOn, error }: Freque
       {value.type === 'per_period' ? (
         <View style={styles.params}>
           <Stepper
-            label="vezes"
+            label={t('vezes')}
             value={value.count}
             min={1}
             max={value.period === 'week' ? 7 : 31}
@@ -84,8 +89,8 @@ export function FrequencyPicker({ value, onChange, weekStartsOn, error }: Freque
             onChange={(count) => onChange({ ...value, count })}
           />
           <SegmentedControl<PeriodUnit>
-            label="Período"
-            options={PERIOD_OPTIONS}
+            label={t('Período')}
+            options={PERIOD_OPTIONS()}
             value={value.period}
             onChange={(period) =>
               onChange({
@@ -105,15 +110,15 @@ export function FrequencyPicker({ value, onChange, weekStartsOn, error }: Freque
       {value.type === 'interval' ? (
         <View style={styles.params}>
           <Stepper
-            label="intervalo"
+            label={t('intervalo')}
             value={value.every}
             min={2}
             max={365}
-            suffix="dias"
+            suffix={t('dias')}
             onChange={(every) => onChange({ ...value, every })}
           />
           <AppText variant="caption" tone="muted">
-            Contado a partir da data de início.
+            {t('Contado a partir da data de início.')}
           </AppText>
         </View>
       ) : null}

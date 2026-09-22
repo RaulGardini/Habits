@@ -19,6 +19,7 @@ import { resolveHabitColor } from '@/theme/habitColors';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from '@/ui/AppText';
 import { Icon } from '@/ui/Icon';
+import { t } from '@/i18n/i18n';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -100,9 +101,9 @@ export function HabitBubble({
       onLongPress={onLongPress}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={[habit.name, done ? 'feito' : null, detail].filter(Boolean).join(', ')}
+      accessibilityLabel={[habit.name, done ? t('feito') : null, detail].filter(Boolean).join(', ')}
       accessibilityHint={
-        disabled ? 'Não é possível registrar dias futuros' : 'Toque para registrar'
+        disabled ? t('Não é possível registrar dias futuros') : t('Toque para registrar')
       }
       accessibilityState={{ disabled, checked: done }}
       style={({ pressed }) => [
@@ -191,7 +192,8 @@ function bubbleDetail(
   quota: PeriodQuota | null,
   timerSeconds: number | null,
 ): string | null {
-  if (entry?.status === 'skipped' || entry?.status === 'missed') return STATUS_LABEL[entry.status];
+  if (entry?.status === 'skipped' || entry?.status === 'missed')
+    return t(STATUS_LABEL[entry.status]);
   if (habit.tracking.type === 'quantity') {
     return `${formatNumber(entry?.value ?? 0)}/${formatNumber(habit.tracking.target)} ${habit.tracking.unit}`;
   }

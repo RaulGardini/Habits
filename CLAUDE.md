@@ -7,7 +7,17 @@ Built in phases; see "Roadmap". **Do not start a new phase without the owner's a
 
 ## Language
 
-- UI text: **pt-BR**. Code, identifiers, comments and commit messages: **English**.
+- The app ships in **pt-BR and English** (`src/i18n`). Code, identifiers, comments and commit
+  messages: **English**.
+- Translation keys are the pt-BR strings themselves: `t('Concluir')`, `t('{count} eventos', { count })`.
+  Write new UI strings in pt-BR, wrap them in `t()` and add the entry to `src/i18n/en.ts`
+  (a missing entry falls back to Portuguese).
+- `t` is a plain function (no hook), so it works in `src/core` too; the root layout remounts the
+  tree on a language change (`key={language}`), which is why module-level option arrays must be
+  functions (see `THEME_OPTIONS()`), not constants.
+- Dates: `formatWith(date, ptPattern, enPattern)` and `dateLocale()`; never import `ptBR` directly.
+- The language lives in the settings store (synced setting `language`), defaulting to the device
+  locale. Android/iOS home screen widgets are still pt-BR only.
 - Commits: Conventional Commits (`feat:`, `fix:`, `chore:`, `test:`, `docs:`, `refactor:`).
 
 ## Commands

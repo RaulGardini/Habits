@@ -5,6 +5,7 @@ import { todayLocal } from '@/core/dates/localDate';
 import type { Habit } from '@/core/habits/types';
 import type { PlannerEvent } from '@/core/planner/types';
 import { planReminders, type ReminderTrigger } from '@/core/reminders/plan';
+import { t } from '@/i18n/i18n';
 
 /** Local notifications only (no server). Web has a no-op implementation. */
 export const notificationsSupported = true;
@@ -22,7 +23,7 @@ export async function configureNotifications(): Promise<void> {
   });
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-      name: 'Lembretes de hábitos',
+      name: t('Lembretes de hábitos'),
       importance: Notifications.AndroidImportance.HIGH,
     });
   }

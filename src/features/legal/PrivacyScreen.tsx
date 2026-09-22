@@ -4,13 +4,17 @@ import { spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { Screen } from '@/ui/Screen';
 
-import privacy from './privacy.json';
+import { getLanguage, t } from '@/i18n/i18n';
+
+import privacyEn from './privacy.en.json';
+import privacyPt from './privacy.pt.json';
 
 /** Privacy policy, available offline. The same text is published at /privacidade.html. */
 export function PrivacyScreen() {
+  const privacy = getLanguage() === 'en' ? privacyEn : privacyPt;
   return (
     <Screen edges={['bottom', 'left', 'right']}>
-      <AppText tone="muted">Atualizada em {privacy.updatedAt}</AppText>
+      <AppText tone="muted">{t('Atualizada em {date}', { date: privacy.updatedAt })}</AppText>
       {privacy.sections.map((section) => (
         <View key={section.title} style={styles.section}>
           <AppText variant="heading" accessibilityRole="header">

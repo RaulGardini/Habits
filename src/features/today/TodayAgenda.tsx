@@ -10,6 +10,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH_SIZE, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { Icon } from '@/ui/Icon';
+import { t } from '@/i18n/i18n';
 
 const MAX_SHOWN = 4;
 
@@ -25,24 +26,24 @@ export function TodayAgenda({ date }: { date: LocalDate }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <AppText variant="heading" accessibilityRole="header" style={styles.flex}>
-          Agenda
+          {t('Agenda')}
         </AppText>
         <Pressable
           onPress={() => router.push({ pathname: '/event/new', params: { date } })}
           accessibilityRole="button"
-          accessibilityLabel="Novo evento"
+          accessibilityLabel={t('Novo evento')}
           hitSlop={8}
           style={styles.action}
         >
           <Icon name="plus" size={18} color={colors.accent} />
           <AppText variant="label" tone={colors.accent}>
-            Adicionar
+            {t('Adicionar')}
           </AppText>
         </Pressable>
       </View>
 
       {occurrences.length === 0 ? (
-        <AppText tone="muted">Nada marcado para este dia.</AppText>
+        <AppText tone="muted">{t('Nada marcado para este dia.')}</AppText>
       ) : (
         shown.map((occurrence) => (
           <EventCard
@@ -56,11 +57,13 @@ export function TodayAgenda({ date }: { date: LocalDate }) {
       <Pressable
         onPress={() => router.push('/agenda')}
         accessibilityRole="button"
-        accessibilityLabel="Abrir a agenda"
+        accessibilityLabel={t('Abrir a agenda')}
         style={styles.action}
       >
         <AppText variant="label" tone={colors.accent}>
-          {rest > 0 ? `Ver mais ${rest} e a agenda completa` : 'Ver agenda completa'}
+          {rest > 0
+            ? t('Ver mais {count} e a agenda completa', { count: rest })
+            : t('Ver agenda completa')}
         </AppText>
         <Icon name="chevron-right" size={18} color={colors.accent} />
       </Pressable>

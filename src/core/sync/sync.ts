@@ -1,4 +1,5 @@
 import { BACKUP_TABLES, type BackupRow, type BackupTable } from '@/core/backup/backup';
+import { t } from '@/i18n/i18n';
 
 /**
  * Cloud sync (optional). Local rows use camelCase columns; the Postgres mirror uses
@@ -73,20 +74,20 @@ export function chunk<T>(items: readonly T[], size: number): T[][] {
 /** Friendly pt-BR message for Supabase auth errors. */
 export function authErrorMessage(message: string): string {
   const text = message.toLowerCase();
-  if (text.includes('invalid login credentials')) return 'E-mail ou senha incorretos.';
-  if (text.includes('email not confirmed')) return 'Confirme seu e-mail antes de entrar.';
-  if (text.includes('already registered')) return 'Já existe uma conta com este e-mail.';
+  if (text.includes('invalid login credentials')) return t('E-mail ou senha incorretos.');
+  if (text.includes('email not confirmed')) return t('Confirme seu e-mail antes de entrar.');
+  if (text.includes('already registered')) return t('Já existe uma conta com este e-mail.');
   if (text.includes('password should be at least'))
-    return 'A senha precisa ter pelo menos 6 caracteres.';
-  if (text.includes('rate limit')) return 'Muitas tentativas. Aguarde alguns minutos.';
-  if (text.includes('network') || text.includes('fetch')) return 'Sem conexão com o servidor.';
-  return 'Não foi possível concluir. Tente novamente.';
+    return t('A senha precisa ter pelo menos 6 caracteres.');
+  if (text.includes('rate limit')) return t('Muitas tentativas. Aguarde alguns minutos.');
+  if (text.includes('network') || text.includes('fetch')) return t('Sem conexão com o servidor.');
+  return t('Não foi possível concluir. Tente novamente.');
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateCredentials(email: string, password: string): string | null {
-  if (!EMAIL_PATTERN.test(email.trim())) return 'Informe um e-mail válido.';
-  if (password.length < 6) return 'A senha precisa ter pelo menos 6 caracteres.';
+  if (!EMAIL_PATTERN.test(email.trim())) return t('Informe um e-mail válido.');
+  if (password.length < 6) return t('A senha precisa ter pelo menos 6 caracteres.');
   return null;
 }

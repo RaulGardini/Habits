@@ -17,6 +17,7 @@ import { showError } from '@/ui/dialogs';
 import { Icon } from '@/ui/Icon';
 import { IconButton } from '@/ui/IconButton';
 import { ProgressBar } from '@/ui/ProgressBar';
+import { t } from '@/i18n/i18n';
 
 interface GoalsSectionProps {
   scope: GoalScope;
@@ -33,7 +34,7 @@ export function GoalsSection({ scope, period }: GoalsSectionProps) {
     <View style={styles.container}>
       {goals && goals.length === 0 ? (
         <AppText tone="muted">
-          Nenhuma meta {scope === 'month' ? 'para este mês' : 'para este ano'}.
+          Nenhuma meta {scope === 'month' ? t('para este mês') : t('para este ano')}.
         </AppText>
       ) : null}
       {(goals ?? []).map((goal) => (
@@ -42,7 +43,7 @@ export function GoalsSection({ scope, period }: GoalsSectionProps) {
       <Button
         variant="ghost"
         icon="flag-plus-outline"
-        label="Nova meta"
+        label={t('Nova meta')}
         onPress={() => router.push({ pathname: '/goal/new', params: { scope, period } })}
       />
     </View>
@@ -64,7 +65,7 @@ function GoalItem({ goal, entries }: { goal: Goal; entries: Parameters<typeof go
     else hapticLight();
     plannerActions
       .setGoalCurrent(goal.id, next)
-      .catch((error: unknown) => showError('Não foi possível atualizar a meta.', error));
+      .catch((error: unknown) => showError(t('Não foi possível atualizar a meta.'), error));
   };
 
   return (
@@ -77,7 +78,10 @@ function GoalItem({ goal, entries }: { goal: Goal; entries: Parameters<typeof go
       <Pressable
         onPress={() => router.push(`/goal/${goal.id}`)}
         accessibilityRole="button"
-        accessibilityLabel={`Editar meta ${goal.title}: ${valueText}`}
+        accessibilityLabel={t('Editar meta {title}: {value}', {
+          title: goal.title,
+          value: valueText,
+        })}
         style={styles.main}
       >
         <View style={styles.titleRow}>
@@ -96,8 +100,8 @@ function GoalItem({ goal, entries }: { goal: Goal; entries: Parameters<typeof go
         </View>
         <AppText variant="caption" tone="muted">
           {valueText}
-          {linked ? ` · automático pelo hábito` : ''}
-          {progress.achieved ? ' · meta atingida! 🎉' : ''}
+          {linked ? ` · ${t('automático pelo hábito')}` : ''}
+          {progress.achieved ? ` · ${t('meta atingida!')} 🎉` : ''}
         </AppText>
         <ProgressBar value={progress.ratio} label={`${goal.title}: ${valueText}`} height={8} />
       </Pressable>

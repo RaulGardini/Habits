@@ -6,6 +6,7 @@ import { radius, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { Button } from '@/ui/Button';
 import { IconButton } from '@/ui/IconButton';
+import { t } from '@/i18n/i18n';
 
 interface DateStepperProps {
   label: string;
@@ -32,7 +33,7 @@ export function DateStepper({ label, value, today, onChange, error }: DateSteppe
       >
         <IconButton
           icon="chevron-left"
-          label="Dia anterior"
+          label={t('Dia anterior')}
           onPress={() => onChange(addDaysLocal(value, -1))}
         />
         <AppText
@@ -45,12 +46,12 @@ export function DateStepper({ label, value, today, onChange, error }: DateSteppe
         </AppText>
         <IconButton
           icon="chevron-right"
-          label="Próximo dia"
+          label={t('Próximo dia')}
           onPress={() => onChange(addDaysLocal(value, 1))}
         />
       </View>
       {value !== today ? (
-        <Button variant="ghost" label="Usar hoje" onPress={() => onChange(today)} />
+        <Button variant="ghost" label={t('Usar hoje')} onPress={() => onChange(today)} />
       ) : null}
       {error ? (
         <AppText variant="caption" tone={colors.danger}>

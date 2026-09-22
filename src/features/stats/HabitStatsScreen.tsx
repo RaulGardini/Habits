@@ -31,6 +31,7 @@ import { Screen } from '@/ui/Screen';
 import { Heatmap, HeatmapLegend } from './Heatmap';
 import { PeriodHeader, formatRange, useStatsPeriod } from './PeriodHeader';
 import { StatGrid, StatTile } from './StatTile';
+import { t } from '@/i18n/i18n';
 
 export function HabitStatsScreen({ id }: { id: string }) {
   const habit = useHabitsStore((state) => state.habits.find((h) => h.id === id));
@@ -38,7 +39,7 @@ export function HabitStatsScreen({ id }: { id: string }) {
   if (!habit) {
     return (
       <Screen edges={['bottom', 'left', 'right']}>
-        <EmptyState icon="help-circle-outline" title="Hábito não encontrado" />
+        <EmptyState icon="help-circle-outline" title={t('Hábito não encontrado')} />
       </Screen>
     );
   }
@@ -63,12 +64,12 @@ function describeDay(
   score: number | null | undefined,
 ) {
   if (score === null || score === undefined) {
-    return entry?.status === 'skipped' ? STATUS_LABEL.skipped : 'não conta';
+    return entry?.status === 'skipped' ? t(STATUS_LABEL.skipped) : t('não conta');
   }
-  if (!entry) return STATUS_LABEL.missed;
+  if (!entry) return t(STATUS_LABEL.missed);
   const value = entry.value ? ` · ${describeValue(habit.tracking, entry.value)}` : '';
   const note = entry.note ? ` · “${entry.note}”` : '';
-  return `${STATUS_LABEL[entry.status]}${value}${note}`;
+  return `${t(STATUS_LABEL[entry.status])}${value}${note}`;
 }
 
 function HabitStats({ habit, history }: { habit: Habit; history: HabitEntry[] }) {
@@ -107,13 +108,13 @@ function HabitStats({ habit, history }: { habit: Habit; history: HabitEntry[] })
 
       <StatGrid>
         <StatTile
-          label="Sequência atual"
+          label={t('Sequência atual')}
           value={describeStreak(streaks.current, streaks.unit)}
           icon="fire"
           color={color.solid}
         />
         <StatTile
-          label="Maior sequência"
+          label={t('Maior sequência')}
           value={describeStreak(streaks.longest, streaks.unit)}
           icon="trophy-outline"
           color={color.solid}
@@ -133,31 +134,35 @@ function HabitStats({ habit, history }: { habit: Habit; history: HabitEntry[] })
           today={today}
           selected={selected}
           onSelect={setSelected}
-          accessibilityLabel={`Mapa de calor de ${habit.name} em ${rangeLabel}: ${rate} de conclusão.`}
+          accessibilityLabel={t('Mapa de calor de {name} em {range}: {rate} de conclusão.', {
+            name: habit.name,
+            range: rangeLabel,
+            rate,
+          })}
         />
         <HeatmapLegend color={color.solid} />
         <AppText tone="muted" accessibilityLiveRegion="polite">
           {selected
             ? `${capitalize(formatDayLabel(selected, today))}: ${describeDay(habit, selectedEntry, values.get(selected))}`
-            : 'Toque em um dia para ver os detalhes.'}
+            : t('Toque em um dia para ver os detalhes.')}
         </AppText>
       </Card>
 
       <StatGrid>
         <StatTile
-          label="Taxa de conclusão"
+          label={t('Taxa de conclusão')}
           value={rate}
           icon="percent-outline"
           color={color.solid}
         />
         <StatTile
-          label="Total no período"
+          label={t('Total no período')}
           value={describeTotal(habit, stats.doneCount, stats.totalValue)}
           icon="sigma"
           color={color.solid}
         />
         <StatTile
-          label="Melhor dia da semana"
+          label={t('Melhor dia da semana')}
           value={stats.bestWeekday === null ? '—' : capitalize(weekdayLong(stats.bestWeekday))}
           icon="calendar-star"
           color={color.solid}
@@ -167,7 +172,7 @@ function HabitStats({ habit, history }: { habit: Habit; history: HabitEntry[] })
       <Button
         variant="secondary"
         icon="pencil-outline"
-        label="Editar hábito"
+        label={t('Editar hábito')}
         onPress={() => router.push(`/habit/${habit.id}`)}
       />
     </Screen>

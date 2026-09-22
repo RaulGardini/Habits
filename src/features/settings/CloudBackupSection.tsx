@@ -1,5 +1,4 @@
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatWith, t } from '@/i18n/i18n';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -16,7 +15,7 @@ import { Button } from '@/ui/Button';
 import { confirm, showError } from '@/ui/dialogs';
 
 const when = (backup: CloudBackupInfo) =>
-  format(new Date(backup.createdAt), "d 'de' MMM 'às' HH:mm", { locale: ptBR });
+  formatWith(new Date(backup.createdAt), "d 'de' MMM 'às' HH:mm", "MMM d 'at' HH:mm");
 
 /** Weekly automatic snapshots in the cloud, with manual backup and restore. Signed-in only. */
 export function CloudBackupSection() {
@@ -37,15 +36,18 @@ export function CloudBackupSection() {
 
   const restore = async (backup: CloudBackupInfo) => {
     const ok = await confirm({
-      title: 'Restaurar este backup?',
-      message: `Tudo volta a ficar como em ${when(backup)}. O que você criou depois disso é mantido, e o estado atual vira um backup novo (dá para desfazer).`,
-      confirmLabel: 'Restaurar',
+      title: t('Restaurar este backup?'),
+      message: t(
+        'Tudo volta a ficar como em {date}. O que você criou depois disso é mantido, e o estado atual vira um backup novo (dá para desfazer).',
+        { date: when(backup) },
+      ),
+      confirmLabel: t('Restaurar'),
     });
     if (!ok) return;
     try {
       await useCloudBackupStore.getState().restore(backup.id);
     } catch (restoreError) {
-      showError('Não foi possível restaurar o backup.', restoreError);
+      showError(t('Não foi possível restaurar o backup.'), restoreError);
     }
   };
 
@@ -61,8 +63,8 @@ export function CloudBackupSection() {
         {backups === null
           ? 'Carregando…'
           : latest
-            ? `Último backup: ${when(latest)}`
-            : 'Nenhum backup ainda.'}
+            ? t('Último backup: {date}', { date: when(latest) })
+            : t('Nenhum backup ainda.')}
       </AppText>
       {error ? (
         <AppText variant="caption" tone={colors.danger} accessibilityLiveRegion="polite">
@@ -71,7 +73,7 @@ export function CloudBackupSection() {
       ) : null}
       <Button
         icon="cloud-upload-outline"
-        label={busy ? 'Salvando…' : 'Fazer backup agora'}
+        label={busy ? t('Salvando…') : t('Fazer backup agora')}
         onPress={backupNow}
         disabled={busy}
       />
@@ -82,12 +84,12 @@ export function CloudBackupSection() {
               <View style={styles.flex}>
                 <AppText>{when(backup)}</AppText>
                 <AppText variant="caption" tone="muted">
-                  {backup.rowCount} {backup.rowCount === 1 ? 'item' : 'itens'}
+                  {t('{count} itens', { count: backup.rowCount })}
                 </AppText>
               </View>
               <Button
                 variant="ghost"
-                label="Restaurar"
+                label={t('Restaurar')}
                 onPress={() => void restore(backup)}
                 disabled={busy}
               />

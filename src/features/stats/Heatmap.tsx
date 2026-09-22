@@ -17,13 +17,14 @@ import Svg, { Rect, Text as SvgText } from 'react-native-svg';
 import { weeksGrid } from '@/core/dates/calendar';
 import { parseLocalDate, type LocalDate } from '@/core/dates/localDate';
 import type { DateRange } from '@/core/dates/periods';
-import { orderedWeekdays, WEEKDAY_LETTER } from '@/core/dates/weekdays';
+import { orderedWeekdays, weekdayLetter } from '@/core/dates/weekdays';
 import type { WeekStartsOn } from '@/core/habits/types';
 import { intensityLevel } from '@/core/stats/stats';
 import { withAlpha } from '@/theme/contrast';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
+import { t } from '@/i18n/i18n';
 
 export type HeatmapMode = 'week' | 'month' | 'year';
 
@@ -125,7 +126,7 @@ function CalendarGrid({
             textAnchor="middle"
             fontFamily={SVG_FONT}
           >
-            {WEEKDAY_LETTER[weekday]}
+            {weekdayLetter(weekday)}
           </SvgText>
         ))}
         {weeks.map((week, row) =>
@@ -225,7 +226,7 @@ function YearGrid({ range, values, color, weekStartsOn, today, selected, onSelec
               fill={colors.textMuted}
               fontFamily={SVG_FONT}
             >
-              {WEEKDAY_LETTER[weekdays[row] ?? 0]}
+              {weekdayLetter(weekdays[row] ?? 0)}
             </SvgText>
           ))}
           {weeks.map((week, column) =>
@@ -360,17 +361,17 @@ export function HeatmapLegend({ color }: { color: string }) {
       importantForAccessibility="no-hide-descendants"
     >
       <AppText variant="caption" tone="muted">
-        Menos
+        {t('Menos')}
       </AppText>
       {swatches.map((fill) => (
         <View key={fill} style={[styles.swatch, { backgroundColor: fill }]} />
       ))}
       <AppText variant="caption" tone="muted">
-        Mais
+        {t('Mais')}
       </AppText>
       <View style={[styles.swatch, styles.emptySwatch, { borderColor: colors.border }]} />
       <AppText variant="caption" tone="muted">
-        Não conta
+        {t('Não conta')}
       </AppText>
     </View>
   );

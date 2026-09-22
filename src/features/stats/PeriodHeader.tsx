@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatWith, t } from '@/i18n/i18n';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -13,11 +13,13 @@ import { SegmentedControl } from '@/ui/SegmentedControl';
 
 import type { HeatmapMode } from './Heatmap';
 
-const MODE_OPTIONS = [
-  { value: 'week', label: 'Semana' },
-  { value: 'month', label: 'Mês' },
-  { value: 'year', label: 'Ano' },
-] as const;
+function MODE_OPTIONS() {
+  return [
+    { value: 'week', label: t('Semana') },
+    { value: 'month', label: t('Mês') },
+    { value: 'year', label: t('Ano') },
+  ] as const;
+}
 
 /** "15 – 21 de set.", "setembro de 2026", "2026". */
 export function formatRange(range: DateRange, mode: HeatmapMode): string {
@@ -26,10 +28,10 @@ export function formatRange(range: DateRange, mode: HeatmapMode): string {
   switch (mode) {
     case 'week':
       return from.getMonth() === to.getMonth()
-        ? `${format(from, 'd')} – ${format(to, "d 'de' MMM", { locale: ptBR })}`
-        : `${format(from, "d 'de' MMM", { locale: ptBR })} – ${format(to, "d 'de' MMM", { locale: ptBR })}`;
+        ? `${format(from, 'd')} – ${formatWith(to, "d 'de' MMM", 'MMM d')}`
+        : `${formatWith(from, "d 'de' MMM", 'MMM d')} – ${formatWith(to, "d 'de' MMM", 'MMM d')}`;
     case 'month':
-      return format(from, "MMMM 'de' yyyy", { locale: ptBR });
+      return formatWith(from, "MMMM 'de' yyyy", 'MMMM yyyy');
     case 'year':
       return format(from, 'yyyy');
   }
@@ -67,13 +69,17 @@ export function PeriodHeader({ period }: { period: StatsPeriod }) {
   return (
     <View style={styles.container}>
       <SegmentedControl<HeatmapMode>
-        label="Período"
-        options={MODE_OPTIONS}
+        label={t('Período')}
+        options={MODE_OPTIONS()}
         value={period.mode}
         onChange={period.setMode}
       />
       <View style={styles.row}>
-        <IconButton icon="chevron-left" label="Período anterior" onPress={() => period.shift(-1)} />
+        <IconButton
+          icon="chevron-left"
+          label={t('Período anterior')}
+          onPress={() => period.shift(-1)}
+        />
         <AppText
           variant="heading"
           style={styles.label}
@@ -84,7 +90,7 @@ export function PeriodHeader({ period }: { period: StatsPeriod }) {
         </AppText>
         <IconButton
           icon="chevron-right"
-          label="Próximo período"
+          label={t('Próximo período')}
           onPress={() => period.shift(1)}
           disabled={period.isCurrent}
         />

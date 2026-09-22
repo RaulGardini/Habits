@@ -10,7 +10,7 @@ import {
   type LocalDate,
 } from '@/core/dates/localDate';
 import { eachDay, periodRange, shiftPeriod } from '@/core/dates/periods';
-import { WEEKDAY_SHORT } from '@/core/dates/weekdays';
+import { weekdayShort } from '@/core/dates/weekdays';
 import { capitalize } from '@/core/format';
 import { conflictingIds, endMinutes, expandOccurrences, groupByDate } from '@/core/planner/agenda';
 import { minutesOf } from '@/core/planner/planner';
@@ -33,15 +33,18 @@ import { DayTimeline } from './DayTimeline';
 import { EventCard } from './EventCard';
 import { monthLabel, weekLabel } from './format';
 import { MonthGrid } from './MonthGrid';
+import { t } from '@/i18n/i18n';
 
 type AgendaMode = 'day' | 'week' | 'month' | 'list';
 
-const MODE_OPTIONS = [
-  { value: 'day', label: 'Dia' },
-  { value: 'week', label: 'Semana' },
-  { value: 'month', label: 'Mês' },
-  { value: 'list', label: 'Próximos' },
-] as const;
+function MODE_OPTIONS() {
+  return [
+    { value: 'day', label: t('Dia') },
+    { value: 'week', label: t('Semana') },
+    { value: 'month', label: t('Mês') },
+    { value: 'list', label: t('Próximos') },
+  ] as const;
+}
 
 /** Days loaded by the "Próximos" list (grows with "Mostrar mais"). */
 const LIST_PAGE_DAYS = 60;
@@ -96,7 +99,7 @@ export function AgendaScreen() {
         ? weekLabel(range.from, range.to)
         : mode === 'month'
           ? capitalize(monthLabel(date))
-          : 'Próximos dias';
+          : t('Próximos dias');
 
   const isLive = (occurrence: EventOccurrence) =>
     occurrence.date === today &&
@@ -109,7 +112,7 @@ export function AgendaScreen() {
       <View style={styles.header}>
         <View style={styles.flex}>
           <AppText variant="title" accessibilityRole="header">
-            Agenda
+            {t('Agenda')}
           </AppText>
           <AppText tone="muted">
             {summaryLine(
@@ -122,7 +125,7 @@ export function AgendaScreen() {
           <Pressable
             onPress={() => newEvent(mode === 'list' ? today : date)}
             accessibilityRole="button"
-            accessibilityLabel="Novo evento"
+            accessibilityLabel={t('Novo evento')}
             style={styles.addPressable}
           >
             <PlusIcon />
@@ -131,8 +134,8 @@ export function AgendaScreen() {
       </View>
 
       <SegmentedControl<AgendaMode>
-        label="Visualização"
-        options={MODE_OPTIONS}
+        label={t('Visualização')}
+        options={MODE_OPTIONS()}
         value={mode}
         onChange={setMode}
         hideLabel
@@ -144,16 +147,16 @@ export function AgendaScreen() {
             {title}
           </AppText>
           <Glass interactive style={styles.navPill}>
-            <NavButton icon="chevron-left" label="Anterior" onPress={() => step(-1)} />
+            <NavButton icon="chevron-left" label={t('Anterior')} onPress={() => step(-1)} />
             <Pressable
               onPress={() => setPicked(null)}
               accessibilityRole="button"
-              accessibilityLabel="Ir para hoje"
+              accessibilityLabel={t('Ir para hoje')}
               style={styles.todayButton}
             >
-              <AppText variant="label">Hoje</AppText>
+              <AppText variant="label">{t('Hoje')}</AppText>
             </Pressable>
-            <NavButton icon="chevron-right" label="Próximo" onPress={() => step(1)} />
+            <NavButton icon="chevron-right" label={t('Próximo')} onPress={() => step(1)} />
           </Glass>
         </View>
       ) : null}
@@ -236,10 +239,12 @@ function MonthView(props: {
 }
 
 function summaryLine(todayCount: number | null, mode: AgendaMode): string {
-  if (mode === 'list') return 'O que vem por aí.';
-  if (todayCount === null) return 'Seus compromissos, com calma.';
-  if (todayCount === 0) return 'Nada marcado para hoje.';
-  return todayCount === 1 ? '1 compromisso hoje.' : `${todayCount} compromissos hoje.`;
+  if (mode === 'list') return t('O que vem por aí.');
+  if (todayCount === null) return t('Seus compromissos, com calma.');
+  if (todayCount === 0) return t('Nada marcado para hoje.');
+  return todayCount === 1
+    ? t('1 compromisso hoje.')
+    : t('{count} compromissos hoje.', { count: todayCount });
 }
 
 function PlusIcon() {
@@ -288,20 +293,20 @@ function DaySection({
           <Pressable
             onPress={() => newEvent(date)}
             accessibilityRole="button"
-            accessibilityLabel="Adicionar evento neste dia"
+            accessibilityLabel={t('Adicionar evento neste dia')}
             hitSlop={8}
             style={styles.inlineAdd}
           >
             <Icon name="plus" size={18} color={colors.accent} />
             <AppText variant="label" tone={colors.accent}>
-              Adicionar
+              {t('Adicionar')}
             </AppText>
           </Pressable>
         )}
       </View>
       {occurrences.length === 0 ? (
         <AppText tone="muted" variant={compact ? 'caption' : 'body'}>
-          {compact ? 'Livre' : 'Dia livre. Que tal reservar um tempo para você?'}
+          {compact ? t('Livre') : t('Dia livre. Que tal reservar um tempo para você?')}
         </AppText>
       ) : (
         occurrences.map((o) => (
@@ -347,7 +352,7 @@ function WeekView({
               onPress={() => onSelect(day)}
               accessibilityRole="button"
               accessibilityState={{ selected }}
-              accessibilityLabel={`${formatDayLabel(day, today)}, ${count} eventos`}
+              accessibilityLabel={`${formatDayLabel(day, today)}, ${t('{count} eventos', { count })}`}
               style={[
                 styles.weekDay,
                 day === today && { backgroundColor: colors.primarySoft },
@@ -355,7 +360,7 @@ function WeekView({
               ]}
             >
               <AppText variant="caption" tone={selected ? colors.onPrimary : 'muted'}>
-                {WEEKDAY_SHORT[weekdayOf(day)]}
+                {weekdayShort(weekdayOf(day))}
               </AppText>
               <AppText variant="bodyStrong" tone={selected ? colors.onPrimary : 'default'}>
                 {Number(day.slice(8))}
@@ -372,8 +377,10 @@ function WeekView({
       </View>
       <AppText tone="muted">
         {total === 0
-          ? 'Semana tranquila, sem compromissos.'
-          : `${total} ${total === 1 ? 'compromisso' : 'compromissos'} nesta semana.`}
+          ? t('Semana tranquila, sem compromissos.')
+          : total === 1
+            ? t('1 compromisso nesta semana.')
+            : t('{count} compromissos nesta semana.', { count: total })}
       </AppText>
       {days.map((day) => (
         <DaySection
@@ -405,7 +412,7 @@ function DayView({
       {allDay.length > 0 ? (
         <View style={styles.allDay}>
           <AppText variant="label" tone="muted">
-            Dia inteiro
+            {t('Dia inteiro')}
           </AppText>
           {allDay.map((o) => (
             <EventCard key={o.event.id} event={o.event} date={o.date} />
@@ -413,7 +420,9 @@ function DayView({
         </View>
       ) : null}
       {occurrences.length === 0 ? (
-        <AppText tone="muted">Nenhum compromisso. Toque em um horário para adicionar.</AppText>
+        <AppText tone="muted">
+          {t('Nenhum compromisso. Toque em um horário para adicionar.')}
+        </AppText>
       ) : null}
       <View style={[styles.timelineCard, { backgroundColor: colors.surface }]}>
         <DayTimeline date={date} occurrences={occurrences} nowMinutes={nowMinutes} />
@@ -453,20 +462,20 @@ function ListView({
   return (
     <>
       <TextField
-        label="Buscar"
+        label={t('Buscar')}
         value={query}
         onChangeText={onQuery}
-        placeholder="Título, local ou observação"
+        placeholder={t('Título, local ou observação')}
         autoCorrect={false}
       />
       {groups.length === 0 ? (
         <EmptyState
           icon={needle ? 'magnify' : 'calendar-heart'}
-          title={needle ? 'Nada encontrado' : 'Agenda livre'}
+          title={needle ? t('Nada encontrado') : t('Agenda livre')}
           description={
             needle
-              ? 'Tente outra palavra ou mostre mais dias.'
-              : 'Nenhum compromisso nos próximos dias. Aproveite!'
+              ? t('Tente outra palavra ou mostre mais dias.')
+              : t('Nenhum compromisso nos próximos dias. Aproveite!')
           }
         />
       ) : (
@@ -487,7 +496,7 @@ function ListView({
         style={[styles.more, { borderColor: colors.border }]}
       >
         <AppText variant="label" tone={colors.accent}>
-          Mostrar mais (até {formatDayLabel(until, today).toLowerCase()})
+          {t('Mostrar mais (até {date})', { date: formatDayLabel(until, today).toLowerCase() })}
         </AppText>
       </Pressable>
     </>

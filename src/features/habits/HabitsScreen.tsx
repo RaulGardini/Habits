@@ -24,6 +24,7 @@ import { Screen } from '@/ui/Screen';
 import { HabitIcon } from './HabitIcon';
 import { TIME_OF_DAY_LABEL, describeFrequency, describeStreak, describeTarget } from './labels';
 import { useStreaks } from './useStreaks';
+import { t } from '@/i18n/i18n';
 
 export function HabitsScreen() {
   const habits = useHabitsStore((state) => state.habits);
@@ -40,22 +41,24 @@ export function HabitsScreen() {
   const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
 
   const handleMove = (id: string, direction: MoveDirection) =>
-    move(id, direction).catch((error: unknown) => showError('Não foi possível reordenar.', error));
+    move(id, direction).catch((error: unknown) =>
+      showError(t('Não foi possível reordenar.'), error),
+    );
 
   return (
     <Screen>
       <View style={styles.header}>
         <AppText variant="title" accessibilityRole="header">
-          Hábitos
+          {t('Hábitos')}
         </AppText>
-        <Button label="Novo" icon="plus" onPress={() => router.push('/habit/new')} />
+        <Button label={t('Novo')} icon="plus" onPress={() => router.push('/habit/new')} />
       </View>
 
       {active.length === 0 ? (
         <EmptyState
           icon="sprout-outline"
-          title="Nenhum hábito ainda"
-          description="Crie seu primeiro hábito para começar a acompanhar."
+          title={t('Nenhum hábito ainda')}
+          description={t('Crie seu primeiro hábito para começar a acompanhar.')}
         />
       ) : (
         <Card style={styles.list}>
@@ -68,13 +71,13 @@ export function HabitsScreen() {
             >
               <IconButton
                 icon="chevron-up"
-                label={`Mover ${habit.name} para cima`}
+                label={t('Mover {name} para cima', { name: habit.name })}
                 onPress={() => handleMove(habit.id, 'up')}
                 disabled={index === 0}
               />
               <IconButton
                 icon="chevron-down"
-                label={`Mover ${habit.name} para baixo`}
+                label={t('Mover {name} para baixo', { name: habit.name })}
                 onPress={() => handleMove(habit.id, 'down')}
                 disabled={index === active.length - 1}
               />
@@ -85,11 +88,11 @@ export function HabitsScreen() {
 
       <View style={styles.goals}>
         <AppText variant="heading" accessibilityRole="header">
-          Metas do mês
+          {t('Metas do mês')}
         </AppText>
         <GoalsSection scope="month" period={goalPeriodOf(today, 'month')} />
         <AppText variant="heading" accessibilityRole="header">
-          Metas do ano
+          {t('Metas do ano')}
         </AppText>
         <GoalsSection scope="year" period={goalPeriodOf(today, 'year')} />
       </View>
@@ -103,7 +106,7 @@ export function HabitsScreen() {
             style={styles.archivedToggle}
           >
             <AppText variant="bodyStrong" tone="muted">
-              Arquivados ({archived.length})
+              {t('Arquivados ({count})', { count: archived.length })}
             </AppText>
             <Icon name={showArchived ? 'chevron-up' : 'chevron-down'} color={colors.textMuted} />
           </Pressable>
@@ -113,10 +116,10 @@ export function HabitsScreen() {
                 <HabitListRow key={habit.id} habit={habit} weekStartsOn={weekStartsOn}>
                   <IconButton
                     icon="archive-arrow-up-outline"
-                    label={`Desarquivar ${habit.name}`}
+                    label={t('Desarquivar {name}', { name: habit.name })}
                     onPress={() =>
                       setArchived(habit.id, false).catch((error: unknown) =>
-                        showError('Não foi possível desarquivar.', error),
+                        showError(t('Não foi possível desarquivar.'), error),
                       )
                     }
                   />
@@ -139,7 +142,7 @@ interface HabitListRowProps {
 
 function HabitListRow({ habit, streak, weekStartsOn, children }: HabitListRowProps) {
   const details = [
-    TIME_OF_DAY_LABEL[habit.timeOfDay],
+    t(TIME_OF_DAY_LABEL[habit.timeOfDay]),
     describeFrequency(habit.frequency, weekStartsOn),
     describeTarget(habit.tracking),
     streak && streak.current > 0 ? `🔥 ${describeStreak(streak.current, streak.unit)}` : null,
@@ -149,7 +152,7 @@ function HabitListRow({ habit, streak, weekStartsOn, children }: HabitListRowPro
       <Pressable
         onPress={() => router.push(`/habit/${habit.id}`)}
         accessibilityRole="button"
-        accessibilityLabel={`Editar ${habit.name}`}
+        accessibilityLabel={t('Editar {name}', { name: habit.name })}
         style={({ pressed }) => [styles.rowMain, pressed && { opacity: 0.7 }]}
       >
         <HabitIcon icon={habit.icon} color={habit.color} />

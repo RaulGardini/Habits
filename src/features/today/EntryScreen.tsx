@@ -19,6 +19,7 @@ import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { SegmentedControl, type SegmentOption } from '@/ui/SegmentedControl';
 import { TextField } from '@/ui/TextField';
+import { t } from '@/i18n/i18n';
 
 export const NOTE_MAX_LENGTH = 500;
 
@@ -30,7 +31,7 @@ export function EntryScreen({ habitId, date }: { habitId: string; date: LocalDat
   if (!habit) {
     return (
       <Screen edges={['bottom', 'left', 'right']}>
-        <EmptyState icon="help-circle-outline" title="Hábito não encontrado" />
+        <EmptyState icon="help-circle-outline" title={t('Hábito não encontrado')} />
       </Screen>
     );
   }
@@ -58,20 +59,20 @@ function EntryForm({ habit, date, entry }: { habit: Habit; date: LocalDate; entr
 
   const options: SegmentOption<EntrySheetChoice>[] = measurable
     ? [
-        { value: 'byValue', label: 'Pelo valor', icon: 'counter' },
-        { value: 'done', label: 'Concluído', icon: 'check-circle-outline' },
-        { value: 'skipped', label: 'Pular', icon: 'skip-next-circle-outline' },
-        { value: 'missed', label: 'Não feito', icon: 'close-circle-outline' },
+        { value: 'byValue', label: t('Pelo valor'), icon: 'counter' },
+        { value: 'done', label: t('Concluído'), icon: 'check-circle-outline' },
+        { value: 'skipped', label: t('Pular'), icon: 'skip-next-circle-outline' },
+        { value: 'missed', label: t('Não feito'), icon: 'close-circle-outline' },
       ]
     : [
-        { value: 'done', label: 'Concluído', icon: 'check-circle-outline' },
-        { value: 'skipped', label: 'Pular', icon: 'skip-next-circle-outline' },
-        { value: 'missed', label: 'Não feito', icon: 'close-circle-outline' },
-        { value: 'clear', label: 'Sem registro', icon: 'circle-outline' },
+        { value: 'done', label: t('Concluído'), icon: 'check-circle-outline' },
+        { value: 'skipped', label: t('Pular'), icon: 'skip-next-circle-outline' },
+        { value: 'missed', label: t('Não feito'), icon: 'close-circle-outline' },
+        { value: 'clear', label: t('Sem registro'), icon: 'circle-outline' },
       ];
 
   const parsed = parseDecimal(valueText || '0');
-  const valueError = measurable && !Number.isFinite(parsed) ? 'Número inválido.' : undefined;
+  const valueError = measurable && !Number.isFinite(parsed) ? t('Número inválido.') : undefined;
 
   const submit = async (overrideChoice?: EntrySheetChoice) => {
     if (valueError) return;
@@ -85,7 +86,7 @@ function EntryForm({ habit, date, entry }: { habit: Habit; date: LocalDate; entr
       await save(habit.id, date, next);
       goBack();
     } catch (error) {
-      showError('Não foi possível salvar o registro.', error);
+      showError(t('Não foi possível salvar o registro.'), error);
     } finally {
       setSaving(false);
     }
@@ -103,20 +104,20 @@ function EntryForm({ habit, date, entry }: { habit: Habit; date: LocalDate; entr
           </AppText>
           <AppText tone="muted">
             {formatDayLabel(date, todayLocal())}
-            {target ? ` · meta ${target}` : ''}
+            {target ? ` · ${t('meta {target}', { target })}` : ''}
           </AppText>
         </View>
       </Card>
 
       <SegmentedControl<EntrySheetChoice>
-        label="Status"
+        label={t('Status')}
         options={options}
         value={choice}
         onChange={setChoice}
       />
       {choice === 'skipped' ? (
         <AppText variant="caption" tone="muted">
-          Dias pulados não quebram a sequência e não contam contra a taxa de conclusão.
+          {t('Dias pulados não quebram a sequência e não contam contra a taxa de conclusão.')}
         </AppText>
       ) : null}
 
@@ -124,8 +125,10 @@ function EntryForm({ habit, date, entry }: { habit: Habit; date: LocalDate; entr
         <TextField
           label={
             isTimer
-              ? 'Tempo (minutos)'
-              : `Quantidade (${habit.tracking.type === 'quantity' ? habit.tracking.unit : ''})`
+              ? t('Tempo (minutos)')
+              : t('Quantidade ({unit})', {
+                  unit: habit.tracking.type === 'quantity' ? habit.tracking.unit : '',
+                })
           }
           value={valueText}
           onChangeText={setValueText}
@@ -135,24 +138,24 @@ function EntryForm({ habit, date, entry }: { habit: Habit; date: LocalDate; entr
       ) : null}
 
       <TextField
-        label="Nota (opcional)"
+        label={t('Nota (opcional)')}
         value={note}
         onChangeText={setNote}
-        placeholder="Como foi?"
+        placeholder={t('Como foi?')}
         multiline
         maxLength={NOTE_MAX_LENGTH}
       />
 
       <View style={styles.actions}>
         <Button
-          label={saving ? 'Salvando…' : 'Salvar'}
+          label={saving ? t('Salvando…') : t('Salvar')}
           onPress={() => submit()}
           disabled={saving}
         />
         {entry && measurable ? (
           <Button
             variant="ghost"
-            label="Apagar registro do dia"
+            label={t('Apagar registro do dia')}
             onPress={() => submit('clear')}
             disabled={saving}
           />

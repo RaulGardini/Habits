@@ -1,5 +1,4 @@
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatWith, t } from '@/i18n/i18n';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
@@ -28,7 +27,9 @@ export function DayNavigator({ date, today, onChange, greeting }: DayNavigatorPr
   const { colors } = useTheme();
   const isToday = date === today;
   const title = isToday && greeting ? greeting : capitalize(formatDayLabel(date, today));
-  const subtitle = capitalize(format(parseLocalDate(date), "EEEE, d 'de' MMMM", { locale: ptBR }));
+  const subtitle = capitalize(
+    formatWith(parseLocalDate(date), "EEEE, d 'de' MMMM", 'EEEE, MMMM d'),
+  );
 
   return (
     <View style={styles.row}>
@@ -48,7 +49,7 @@ export function DayNavigator({ date, today, onChange, greeting }: DayNavigatorPr
         <Pressable
           onPress={() => onChange(addDaysLocal(date, -1))}
           accessibilityRole="button"
-          accessibilityLabel="Dia anterior"
+          accessibilityLabel={t('Dia anterior')}
           style={styles.button}
         >
           <Icon name="chevron-left" size={22} color={colors.text} />
@@ -57,16 +58,16 @@ export function DayNavigator({ date, today, onChange, greeting }: DayNavigatorPr
           <Pressable
             onPress={() => onChange(today)}
             accessibilityRole="button"
-            accessibilityLabel="Voltar para hoje"
+            accessibilityLabel={t('Voltar para hoje')}
             style={styles.today}
           >
-            <AppText variant="label">Hoje</AppText>
+            <AppText variant="label">{t('Hoje')}</AppText>
           </Pressable>
         )}
         <Pressable
           onPress={() => onChange(addDaysLocal(date, 1))}
           accessibilityRole="button"
-          accessibilityLabel="Próximo dia"
+          accessibilityLabel={t('Próximo dia')}
           style={styles.button}
         >
           <Icon name="chevron-right" size={22} color={colors.text} />

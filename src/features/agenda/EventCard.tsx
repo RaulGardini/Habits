@@ -15,6 +15,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { radius, softShadow, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { Icon } from '@/ui/Icon';
+import { t } from '@/i18n/i18n';
 
 /** Opens the editor of an occurrence (`date` lets "delete only this day" work for series). */
 export function openEvent(event: PlannerEvent, date: LocalDate): void {
@@ -44,8 +45,8 @@ export function EventCard({ event, date, conflict = false, live = false }: Event
         event.title,
         eventTimeLabel(event),
         event.location,
-        live ? 'agora' : null,
-        conflict ? 'conflita com outro evento' : null,
+        live ? t('agora') : null,
+        conflict ? t('conflita com outro evento') : null,
       ]
         .filter(Boolean)
         .join(', ')}
@@ -57,9 +58,9 @@ export function EventCard({ event, date, conflict = false, live = false }: Event
     >
       <View style={[styles.bar, { backgroundColor: color.solid }]} />
       <View style={styles.time}>
-        <AppText variant="label">{event.allDay ? 'Dia' : event.startTime}</AppText>
+        <AppText variant="label">{event.allDay ? t('Dia') : event.startTime}</AppText>
         <AppText variant="caption" tone="muted">
-          {event.allDay ? 'inteiro' : (event.endTime ?? '')}
+          {event.allDay ? t('inteiro') : (event.endTime ?? '')}
         </AppText>
       </View>
       <View style={styles.body}>
@@ -70,7 +71,7 @@ export function EventCard({ event, date, conflict = false, live = false }: Event
           {live ? (
             <View style={[styles.badge, { backgroundColor: colors.primary }]}>
               <AppText variant="caption" tone={colors.onPrimary}>
-                Agora
+                {t('Agora')}
               </AppText>
             </View>
           ) : null}
@@ -83,7 +84,7 @@ export function EventCard({ event, date, conflict = false, live = false }: Event
           ) : null}
           {event.reminderMinutes !== null ? <Meta icon="bell-outline" /> : null}
           {conflict ? (
-            <Meta icon="alert-circle-outline" text="Conflito" color={colors.danger} />
+            <Meta icon="alert-circle-outline" text={t('Conflito')} color={colors.danger} />
           ) : null}
         </View>
         {event.note ? (

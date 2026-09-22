@@ -25,6 +25,7 @@ import { AppText } from '@/ui/AppText';
 import { Button } from '@/ui/Button';
 import { Glass, nativeGlass } from '@/ui/Glass';
 import { IconButton } from '@/ui/IconButton';
+import { t } from '@/i18n/i18n';
 
 export interface HabitActionTarget {
   habit: Habit;
@@ -72,7 +73,7 @@ export function HabitActionSheet({
             style={StyleSheet.absoluteFill}
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel="Fechar"
+            accessibilityLabel={t('Fechar')}
           />
         </Animated.View>
         {target ? (
@@ -128,9 +129,13 @@ function SheetContent({
   const { habit, entry, quota, streak } = target;
   const done = entry?.status === 'done';
   const subtitle = [
-    describeTarget(habit.tracking) ? `Meta: ${describeTarget(habit.tracking)}` : null,
+    describeTarget(habit.tracking)
+      ? t('Meta: {target}', { target: describeTarget(habit.tracking) ?? '' })
+      : null,
     quota
-      ? `${quota.done} de ${quota.target} ${quota.unit === 'week' ? 'nesta semana' : 'neste mês'}`
+      ? quota.unit === 'week'
+        ? t('{done} de {target} nesta semana', { done: quota.done, target: quota.target })
+        : t('{done} de {target} neste mês', { done: quota.done, target: quota.target })
       : null,
     streak && streak.current > 0 ? `🔥 ${describeStreak(streak.current, streak.unit)}` : null,
   ]
@@ -169,19 +174,19 @@ function SheetContent({
       {habit.tracking.type === 'boolean' ? (
         <View style={styles.actions}>
           <AppText tone="muted">
-            {done ? 'Você já marcou este hábito. Quer desmarcar?' : 'Marcar como feito?'}
+            {done ? t('Você já marcou este hábito. Quer desmarcar?') : t('Marcar como feito?')}
           </AppText>
           {done ? (
             <Button
               variant="secondary"
               icon="undo"
-              label="Desmarcar"
+              label={t('Desmarcar')}
               onPress={() => save(toggleEntry(entry), false)}
             />
           ) : (
             <Button
               icon="check-bold"
-              label="Concluir"
+              label={t('Concluir')}
               onPress={() => save(entryWithStatus(habit, entry, 'done'), true)}
             />
           )}
@@ -214,7 +219,7 @@ function SheetContent({
             <Button
               variant="secondary"
               icon="check-bold"
-              label="Marcar como feito"
+              label={t('Marcar como feito')}
               onPress={() => save(entryWithStatus(habit, entry, 'done'), true)}
             />
           ) : null}
@@ -226,20 +231,20 @@ function SheetContent({
           <Button
             variant="ghost"
             icon="skip-next-circle-outline"
-            label="Pular hoje"
+            label={t('Pular hoje')}
             onPress={() => save(entryWithStatus(habit, entry, 'skipped'), false)}
           />
         ) : (
           <Button
             variant="ghost"
             icon="restore"
-            label="Voltar a contar"
+            label={t('Voltar a contar')}
             onPress={() => save(null, false)}
           />
         )}
-        <Button variant="ghost" icon="note-edit-outline" label="Nota e mais" onPress={more} />
+        <Button variant="ghost" icon="note-edit-outline" label={t('Nota e mais')} onPress={more} />
       </View>
-      <Button variant="ghost" label="Cancelar" onPress={onClose} />
+      <Button variant="ghost" label={t('Cancelar')} onPress={onClose} />
     </>
   );
 }
@@ -289,11 +294,15 @@ function QuantityEditor({
         />
       </View>
       {value < target ? (
-        <Button variant="secondary" label="Completar a meta" onPress={() => setValue(target)} />
+        <Button
+          variant="secondary"
+          label={t('Completar a meta')}
+          onPress={() => setValue(target)}
+        />
       ) : null}
       <Button
         icon="check-bold"
-        label="Salvar"
+        label={t('Salvar')}
         onPress={() =>
           onSave(entryWithValue(habit, entry, value), reaches && entry?.status !== 'done')
         }

@@ -8,6 +8,7 @@ import type {
   Tracking,
   WeekStartsOn,
 } from '@/core/habits/types';
+import { t } from '@/i18n/i18n';
 
 export const TIME_OF_DAY_LABEL: Record<TimeOfDay, string> = {
   morning: 'Manhã',
@@ -41,16 +42,18 @@ export const STATUS_ICON: Record<EntryStatus, string> = {
 export function describeFrequency(frequency: Frequency, weekStartsOn: WeekStartsOn = 0): string {
   switch (frequency.type) {
     case 'daily':
-      return 'Todo dia';
+      return t('Todo dia');
     case 'weekdays': {
       const days = orderedWeekdays(weekStartsOn).filter((d) => hasWeekday(frequency.days, d));
-      if (days.length === 7) return 'Todo dia';
+      if (days.length === 7) return t('Todo dia');
       return days.map(weekdayShort).join(', ');
     }
     case 'per_period':
-      return `${frequency.count}x por ${frequency.period === 'week' ? 'semana' : 'mês'}`;
+      return frequency.period === 'week'
+        ? t('{count}x por semana', { count: frequency.count })
+        : t('{count}x por mês', { count: frequency.count });
     case 'interval':
-      return `A cada ${frequency.every} dias`;
+      return t('A cada {days} dias', { days: frequency.every });
   }
 }
 
@@ -82,5 +85,5 @@ export function describeValue(tracking: Tracking, value: number): string {
 export function describeStreak(count: number, unit: Streaks['unit']): string {
   const words = { day: ['dia', 'dias'], week: ['semana', 'semanas'], month: ['mês', 'meses'] };
   const [singular, plural] = words[unit];
-  return `${count} ${count === 1 ? singular : plural}`;
+  return `${count} ${t((count === 1 ? singular : plural) ?? '')}`;
 }

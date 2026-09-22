@@ -26,6 +26,7 @@ import { IconPicker } from './IconPicker';
 import { TIME_OF_DAY_ICON, TIME_OF_DAY_LABEL, describeFrequency, describeTarget } from './labels';
 import { RemindersEditor } from './RemindersEditor';
 import { TrackingPicker } from './TrackingPicker';
+import { t } from '@/i18n/i18n';
 
 interface HabitFormProps {
   initial: HabitDraft;
@@ -35,7 +36,7 @@ interface HabitFormProps {
 
 const TIME_OPTIONS = TIMES_OF_DAY.map((value) => ({
   value,
-  label: TIME_OF_DAY_LABEL[value],
+  label: t(TIME_OF_DAY_LABEL[value]),
   icon: TIME_OF_DAY_ICON[value],
 }));
 
@@ -74,7 +75,7 @@ export function HabitForm({ initial, submitLabel, onSubmit }: HabitFormProps) {
         <HabitIcon icon={draft.icon} color={draft.color} size={48} />
         <View style={styles.previewText}>
           <AppText variant="heading" numberOfLines={1}>
-            {draft.name.trim() || 'Novo hábito'}
+            {draft.name.trim() || t('Novo hábito')}
           </AppText>
           <AppText variant="caption" tone="muted" numberOfLines={1}>
             {[describeFrequency(draft.frequency, weekStartsOn), describeTarget(draft.tracking)]
@@ -85,10 +86,10 @@ export function HabitForm({ initial, submitLabel, onSubmit }: HabitFormProps) {
       </Card>
 
       <TextField
-        label="Nome"
+        label={t('Nome')}
         value={draft.name}
         onChangeText={(name) => update('name', name)}
-        placeholder="Ex: Beber água"
+        placeholder={t('Ex: Beber água')}
         maxLength={HABIT_NAME_MAX_LENGTH + 10}
         error={errors.name}
         autoFocus={initial.name === ''}
@@ -103,7 +104,7 @@ export function HabitForm({ initial, submitLabel, onSubmit }: HabitFormProps) {
       />
 
       <SegmentedControl<TimeOfDay>
-        label="Momento do dia"
+        label={t('Momento do dia')}
         options={TIME_OPTIONS}
         value={draft.timeOfDay}
         onChange={(timeOfDay) => update('timeOfDay', timeOfDay)}
@@ -129,7 +130,7 @@ export function HabitForm({ initial, submitLabel, onSubmit }: HabitFormProps) {
       />
 
       <DateStepper
-        label="Data de início"
+        label={t('Data de início')}
         value={draft.startDate}
         today={today}
         onChange={(startDate) => update('startDate', startDate)}
@@ -138,7 +139,7 @@ export function HabitForm({ initial, submitLabel, onSubmit }: HabitFormProps) {
 
       {hasErrors(errors) ? (
         <AppText tone={colors.danger} accessibilityLiveRegion="polite">
-          Corrija os campos destacados acima.
+          {t('Corrija os campos destacados acima.')}
         </AppText>
       ) : null}
       <Button label={saving ? 'Salvando…' : submitLabel} onPress={submit} disabled={saving} />

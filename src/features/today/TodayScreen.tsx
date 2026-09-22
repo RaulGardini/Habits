@@ -34,17 +34,20 @@ import { DayNavigator } from './DayNavigator';
 import { HabitActionSheet, type HabitActionTarget } from './HabitActionSheet';
 import { HabitBubble } from './HabitBubble';
 import { TodayAgenda } from './TodayAgenda';
+import { t } from '@/i18n/i18n';
 
-const GREETING = { morning: 'Bom dia', afternoon: 'Boa tarde', evening: 'Boa noite' } as const;
+function greeting(period: 'morning' | 'afternoon' | 'evening'): string {
+  return t({ morning: 'Bom dia', afternoon: 'Boa tarde', evening: 'Boa noite' }[period]);
+}
 
 /** Streak lengths worth a small celebration. */
 const MILESTONES = [7, 30, 100, 365];
 
 function milestoneMessage(count: number, unit: Streaks['unit']): string {
-  if (unit === 'day' && count === 7) return '1 semana seguida! 🔥';
-  if (unit === 'day' && count === 30) return '30 dias seguidos! 🔥';
-  if (unit === 'day' && count === 365) return '1 ano seguido! 🏆';
-  return `${describeStreak(count, unit)} seguidos! 🔥`;
+  if (unit === 'day' && count === 7) return `${t('1 semana seguida!')} 🔥`;
+  if (unit === 'day' && count === 30) return `${t('30 dias seguidos!')} 🔥`;
+  if (unit === 'day' && count === 365) return `${t('1 ano seguido!')} 🏆`;
+  return `${t('{streak} seguidos!', { streak: describeStreak(count, unit) })} 🔥`;
 }
 
 /** Habits per row (more only on wide screens), and the circle size cap. */
@@ -54,12 +57,12 @@ const MAX_CIRCLE = 56;
 
 /** A short, kind line above the day's progress. */
 function encouragement(completed: number, total: number): string {
-  if (total === 0) return 'Dia livre.';
-  if (completed === total) return 'Tudo feito. Que dia bom!';
-  if (completed === 0) return 'Um passo de cada vez.';
-  if (completed * 2 === total) return 'Metade feita. Continue assim!';
-  if (completed * 2 > total) return 'Mais da metade. Falta pouco!';
-  return 'Bom começo!';
+  if (total === 0) return t('Dia livre.');
+  if (completed === total) return t('Tudo feito. Que dia bom!');
+  if (completed === 0) return t('Um passo de cada vez.');
+  if (completed * 2 === total) return t('Metade feita. Continue assim!');
+  if (completed * 2 > total) return t('Mais da metade. Falta pouco!');
+  return t('Bom começo!');
 }
 
 export function TodayScreen() {
@@ -112,14 +115,14 @@ export function TodayScreen() {
 
   const saveEntry = (habit: Habit, next: EntryInput | null) =>
     save(habit.id, date, next).catch((error: unknown) =>
-      showError('Não foi possível salvar o registro.', error),
+      showError(t('Não foi possível salvar o registro.'), error),
     );
 
   const toggleTimer = (habit: Habit) => {
     const timers = useTimerStore.getState();
     const running = activeTimer?.habitId === habit.id && activeTimer.date === date;
     (running ? timers.stop() : timers.start(habit, date)).catch((error: unknown) =>
-      showError('Não foi possível salvar o timer.', error),
+      showError(t('Não foi possível salvar o timer.'), error),
     );
   };
 
@@ -140,8 +143,8 @@ export function TodayScreen() {
         onChange={setDate}
         greeting={
           displayName
-            ? `${GREETING[getDayPeriod(now)]}, ${displayName}`
-            : GREETING[getDayPeriod(now)]
+            ? t('{greeting}, {name}', { greeting: greeting(getDayPeriod(now)), name: displayName })
+            : greeting(getDayPeriod(now))
         }
       />
 
@@ -157,7 +160,10 @@ export function TodayScreen() {
           </View>
           <ProgressBar
             value={progress.ratio}
-            label={`${progress.completed} de ${progress.total} hábitos concluídos`}
+            label={t('{completed} de {total} hábitos concluídos', {
+              completed: progress.completed,
+              total: progress.total,
+            })}
           />
         </Card>
       ) : null}
@@ -177,12 +183,12 @@ export function TodayScreen() {
                   color={isCurrent ? colors.accent : colors.textMuted}
                 />
                 <AppText variant="label" tone={isCurrent ? colors.accent : 'muted'}>
-                  {TIME_OF_DAY_LABEL[group.timeOfDay]}
+                  {t(TIME_OF_DAY_LABEL[group.timeOfDay])}
                 </AppText>
                 {isCurrent ? (
                   <View style={[styles.nowBadge, { backgroundColor: colors.primarySoft }]}>
                     <AppText variant="caption" tone={colors.accent}>
-                      agora
+                      {t('agora')}
                     </AppText>
                   </View>
                 ) : null}
@@ -227,15 +233,19 @@ export function TodayScreen() {
       {due.length === 0 ? (
         <EmptyState
           icon={hasHabits ? 'calendar-blank-outline' : 'sprout-outline'}
-          title={hasHabits ? 'Nada para este dia' : 'Comece seu primeiro hábito'}
+          title={hasHabits ? t('Nada para este dia') : t('Comece seu primeiro hábito')}
           description={
             hasHabits
-              ? 'Nenhum hábito está programado para esta data.'
-              : 'Crie um hábito e marque aqui todos os dias.'
+              ? t('Nenhum hábito está programado para esta data.')
+              : t('Crie um hábito e marque aqui todos os dias.')
           }
           action={
             hasHabits ? null : (
-              <Button label="Criar hábito" icon="plus" onPress={() => router.push('/habit/new')} />
+              <Button
+                label={t('Criar hábito')}
+                icon="plus"
+                onPress={() => router.push('/habit/new')}
+              />
             )
           }
         />
@@ -270,7 +280,7 @@ function useDayCompleted(
     previous.current = { date, done };
     if (before?.date === date && !before.done && done) {
       hapticSuccess();
-      celebrate({ message: 'Tudo feito hoje! 🎉', pieces: 28 });
+      celebrate({ message: `${t('Tudo feito hoje!')} 🎉`, pieces: 28 });
     }
   }, [date, completed, total, celebrate]);
 }

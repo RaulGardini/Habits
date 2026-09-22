@@ -1,6 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { t } from '@/i18n/i18n';
 
 /** Writes the backup to the cache and opens the share sheet (save to Files, Drive, email…). */
 export async function saveBackupFile(fileName: string, content: string): Promise<void> {
@@ -14,7 +15,7 @@ export async function saveBackupFile(fileName: string, content: string): Promise
   await Sharing.shareAsync(file.uri, {
     mimeType: 'application/json',
     UTI: 'public.json',
-    dialogTitle: 'Salvar backup',
+    dialogTitle: t('Salvar backup'),
   });
 }
 

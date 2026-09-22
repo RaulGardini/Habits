@@ -22,6 +22,7 @@ import { Screen } from '@/ui/Screen';
 
 import { Heatmap, HeatmapLegend } from './Heatmap';
 import { PeriodHeader, formatRange, useStatsPeriod } from './PeriodHeader';
+import { t } from '@/i18n/i18n';
 
 export function StatsScreen() {
   const { colors } = useTheme();
@@ -50,12 +51,12 @@ export function StatsScreen() {
     return (
       <Screen>
         <AppText variant="title" accessibilityRole="header">
-          Estatísticas
+          {t('Estatísticas')}
         </AppText>
         <EmptyState
           icon="chart-box-outline"
-          title="Sem dados ainda"
-          description="Crie hábitos e registre seus dias para ver o progresso aqui."
+          title={t('Sem dados ainda')}
+          description={t('Crie hábitos e registre seus dias para ver o progresso aqui.')}
         />
       </Screen>
     );
@@ -64,12 +65,12 @@ export function StatsScreen() {
   return (
     <Screen>
       <AppText variant="title" accessibilityRole="header">
-        Estatísticas
+        {t('Estatísticas')}
       </AppText>
       <PeriodHeader period={period} />
 
       <Card>
-        <AppText variant="bodyStrong">Todos os hábitos</AppText>
+        <AppText variant="bodyStrong">{t('Todos os hábitos')}</AppText>
         <Heatmap
           mode={period.mode}
           range={period.range}
@@ -89,23 +90,27 @@ export function StatsScreen() {
           {selected
             ? `${capitalize(formatDayLabel(selected, today))}: ${
                 selectedScore
-                  ? `${selectedScore.completed} de ${selectedScore.total} concluídos (${formatPercent(selectedScore.ratio)})`
+                  ? t('{completed} de {total} concluídos ({percent})', {
+                      completed: selectedScore.completed,
+                      total: selectedScore.total,
+                      percent: formatPercent(selectedScore.ratio),
+                    })
                   : 'nada para contar'
               }`
-            : 'Toque em um dia para ver os detalhes.'}
+            : t('Toque em um dia para ver os detalhes.')}
         </AppText>
         <View style={styles.summary}>
           <SummaryItem
-            label="Média de conclusão"
+            label={t('Média de conclusão')}
             value={summary.averageRatio === null ? '—' : formatPercent(summary.averageRatio)}
           />
-          <SummaryItem label="Dias perfeitos" value={String(summary.perfectDays)} />
-          <SummaryItem label="Dias ativos" value={String(summary.activeDays)} />
+          <SummaryItem label={t('Dias perfeitos')} value={String(summary.perfectDays)} />
+          <SummaryItem label={t('Dias ativos')} value={String(summary.activeDays)} />
         </View>
       </Card>
 
       <AppText variant="heading" accessibilityRole="header">
-        Por hábito
+        {t('Por hábito')}
       </AppText>
       <Card style={styles.list}>
         {active.map((habit) => {
@@ -118,7 +123,11 @@ export function StatsScreen() {
               key={habit.id}
               onPress={() => router.push(`/stats/${habit.id}`)}
               accessibilityRole="button"
-              accessibilityLabel={`${habit.name}: ${rate} de conclusão, sequência de ${streakText}`}
+              accessibilityLabel={t('{name}: {rate} de conclusão, sequência de {streak}', {
+                name: habit.name,
+                rate,
+                streak: streakText,
+              })}
               style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
             >
               <HabitIcon icon={habit.icon} color={habit.color} />

@@ -5,6 +5,7 @@ import { isScheduledOn } from '@/core/habits/schedule';
 import type { Habit } from '@/core/habits/types';
 import { eventTimeLabel, expandOccurrences, reminderMoment } from '@/core/planner/agenda';
 import type { PlannerEvent } from '@/core/planner/types';
+import { t } from '@/i18n/i18n';
 
 /** iOS keeps at most 64 pending local notifications; stay below it. */
 export const MAX_SCHEDULED = 60;
@@ -126,7 +127,7 @@ export function eventReminders(
     const moment = reminderMoment(event, date);
     if (!moment || moment.date < today || moment.date > horizon) continue;
     if (moment.date === today && moment.hour * 60 + moment.minute <= nowMinutes) continue;
-    const when = date === today ? 'Hoje' : date === addDaysLocal(today, 1) ? 'Amanhã' : date;
+    const when = date === today ? t('Hoje') : date === addDaysLocal(today, 1) ? t('Amanhã') : date;
     planned.push({
       eventId: event.id,
       title: event.title,
@@ -140,11 +141,16 @@ export function eventReminders(
 export function reminderBody(habit: Habit): string {
   switch (habit.tracking.type) {
     case 'boolean':
-      return 'Hora do seu hábito. Toque para marcar como feito.';
+      return t('Hora do seu hábito. Toque para marcar como feito.');
     case 'quantity':
-      return `Meta de hoje: ${formatNumber(habit.tracking.target)} ${habit.tracking.unit}.`;
+      return t('Meta de hoje: {value} {unit}.', {
+        value: formatNumber(habit.tracking.target),
+        unit: habit.tracking.unit,
+      });
     case 'timer':
-      return `Meta de hoje: ${Math.round(habit.tracking.targetSeconds / 60)} min.`;
+      return t('Meta de hoje: {minutes} min.', {
+        minutes: Math.round(habit.tracking.targetSeconds / 60),
+      });
   }
 }
 

@@ -9,6 +9,7 @@ import { Chip } from '@/ui/Chip';
 import { Icon } from '@/ui/Icon';
 
 import { HABIT_ICON_GROUPS } from './habitIcons';
+import { t } from '@/i18n/i18n';
 
 interface IconPickerProps {
   value: string;
@@ -32,18 +33,18 @@ export function IconPicker({ value, color, onChange }: IconPickerProps) {
   return (
     <View style={styles.container}>
       <AppText variant="label" tone="muted">
-        Ícone
+        {t('Ícone')}
       </AppText>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.groups}
-        accessibilityLabel="Grupos de ícones"
+        accessibilityLabel={t('Grupos de ícones')}
       >
         {HABIT_ICON_GROUPS.map((g, index) => (
           <Chip
             key={g.title}
-            label={g.title}
+            label={t(g.title)}
             selected={index === groupIndex}
             onPress={() => setGroupIndex(index)}
           />
@@ -61,7 +62,7 @@ export function IconPicker({ value, color, onChange }: IconPickerProps) {
               key={option.name}
               onPress={() => onChange(option.name)}
               accessibilityRole="radio"
-              accessibilityLabel={option.label}
+              accessibilityLabel={t(option.label)}
               accessibilityState={{ checked: selected }}
               style={[
                 styles.cell,

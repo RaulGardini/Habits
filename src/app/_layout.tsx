@@ -17,9 +17,11 @@ import { useEffect, useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { useBootstrap } from '@/db/bootstrap';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
+import { t } from '@/i18n/i18n';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -33,6 +35,7 @@ export default function RootLayout() {
 
 function App() {
   const bootstrap = useBootstrap();
+  const language = useSettingsStore((state) => state.language);
   const { scheme, colors } = useTheme();
   // A font that fails to load falls back to the system font: never block the app on it.
   const [fontsLoaded, fontError] = useFonts({
@@ -68,10 +71,10 @@ function App() {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
         {bootstrap.status === 'loading' ? (
-          <ActivityIndicator color={colors.accent} accessibilityLabel="Carregando" />
+          <ActivityIndicator color={colors.accent} accessibilityLabel={t('Carregando')} />
         ) : (
           <>
-            <AppText variant="heading">Não foi possível abrir seus dados</AppText>
+            <AppText variant="heading">{t('Não foi possível abrir seus dados')}</AppText>
             <AppText tone="muted" style={styles.errorText}>
               {bootstrap.error.message}
             </AppText>
@@ -82,19 +85,29 @@ function App() {
   }
 
   return (
-    <NavigationThemeProvider value={navigationTheme}>
+    // Remounting on a language change re-renders every screen with the new strings.
+    <NavigationThemeProvider value={navigationTheme} key={language}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal' }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="habit/new" options={{ title: 'Novo hábito', presentation: 'modal' }} />
-        <Stack.Screen name="habit/[id]" options={{ title: 'Editar hábito' }} />
-        <Stack.Screen name="event/new" options={{ title: 'Novo evento', presentation: 'modal' }} />
-        <Stack.Screen name="event/[id]" options={{ title: 'Editar evento' }} />
-        <Stack.Screen name="goal/new" options={{ title: 'Nova meta', presentation: 'modal' }} />
-        <Stack.Screen name="goal/[id]" options={{ title: 'Editar meta' }} />
-        <Stack.Screen name="stats/[id]" options={{ title: 'Estatísticas do hábito' }} />
-        <Stack.Screen name="privacy" options={{ title: 'Política de privacidade' }} />
-        <Stack.Screen name="entry" options={{ title: 'Registro do dia', presentation: 'modal' }} />
+        <Stack.Screen
+          name="habit/new"
+          options={{ title: t('Novo hábito'), presentation: 'modal' }}
+        />
+        <Stack.Screen name="habit/[id]" options={{ title: t('Editar hábito') }} />
+        <Stack.Screen
+          name="event/new"
+          options={{ title: t('Novo evento'), presentation: 'modal' }}
+        />
+        <Stack.Screen name="event/[id]" options={{ title: t('Editar evento') }} />
+        <Stack.Screen name="goal/new" options={{ title: t('Nova meta'), presentation: 'modal' }} />
+        <Stack.Screen name="goal/[id]" options={{ title: t('Editar meta') }} />
+        <Stack.Screen name="stats/[id]" options={{ title: t('Estatísticas do hábito') }} />
+        <Stack.Screen name="privacy" options={{ title: t('Política de privacidade') }} />
+        <Stack.Screen
+          name="entry"
+          options={{ title: t('Registro do dia'), presentation: 'modal' }}
+        />
       </Stack>
     </NavigationThemeProvider>
   );

@@ -1,5 +1,5 @@
-import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { parseISO } from 'date-fns';
+import { formatWith, t } from '@/i18n/i18n';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -20,8 +20,9 @@ export function AccountSection() {
   if (!configured) {
     return (
       <AppText tone="muted">
-        A sincronização na nuvem não está disponível nesta versão. Seus dados ficam só neste
-        aparelho — use o backup para levá-los a outro.
+        {t(
+          'A sincronização na nuvem não está disponível nesta versão. Seus dados ficam só neste aparelho — use o backup para levá-los a outro.',
+        )}
       </AppText>
     );
   }
@@ -60,11 +61,12 @@ function SignInForm() {
   return (
     <View style={styles.container}>
       <AppText tone="muted">
-        Opcional: entre para sincronizar hábitos, registros, agenda e metas entre seus aparelhos.
-        Sem conta, tudo continua funcionando offline.
+        {t(
+          'Opcional: entre para sincronizar hábitos, registros, agenda e metas entre seus aparelhos. Sem conta, tudo continua funcionando offline.',
+        )}
       </AppText>
       <TextField
-        label="E-mail"
+        label={t('E-mail')}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -73,7 +75,7 @@ function SignInForm() {
         textContentType="emailAddress"
       />
       <TextField
-        label="Senha"
+        label={t('Senha')}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -90,11 +92,11 @@ function SignInForm() {
         </AppText>
       ) : null}
       <View style={styles.buttons}>
-        <Button label="Entrar" icon="login" onPress={() => run('signIn')} disabled={busy} />
+        <Button label={t('Entrar')} icon="login" onPress={() => run('signIn')} disabled={busy} />
         <Button
           variant="secondary"
           icon="account-plus-outline"
-          label="Criar conta"
+          label={t('Criar conta')}
           onPress={() => run('signUp')}
           disabled={busy}
         />
@@ -118,31 +120,33 @@ function SignedIn({ email }: { email: string }) {
       : status === 'error'
         ? (error ?? 'Falha na sincronização.')
         : lastSyncAt
-          ? `Última sincronização: ${format(parseISO(lastSyncAt), "d 'de' MMM, HH:mm", { locale: ptBR })}`
-          : 'Ainda não sincronizado.';
+          ? t('Última sincronização: {date}', {
+              date: formatWith(parseISO(lastSyncAt), "d 'de' MMM, HH:mm", 'MMM d, HH:mm'),
+            })
+          : t('Ainda não sincronizado.');
 
   const handleSignOut = async () => {
     const ok = await confirm({
-      title: 'Sair da conta?',
-      message: 'Seus dados continuam neste aparelho, mas deixam de sincronizar.',
-      confirmLabel: 'Sair',
+      title: t('Sair da conta?'),
+      message: t('Seus dados continuam neste aparelho, mas deixam de sincronizar.'),
+      confirmLabel: t('Sair'),
     });
     if (ok) await signOut();
   };
 
   const handleDelete = async () => {
     const ok = await confirm({
-      title: 'Excluir conta?',
+      title: t('Excluir conta?'),
       message:
         'Sua conta e todos os dados guardados na nuvem serão apagados permanentemente. Os dados deste aparelho continuam aqui.',
-      confirmLabel: 'Excluir conta',
+      confirmLabel: t('Excluir conta'),
       destructive: true,
     });
     if (!ok) return;
     try {
       await deleteAccount();
     } catch (err) {
-      showError('Não foi possível excluir a conta.', err);
+      showError(t('Não foi possível excluir a conta.'), err);
     }
   };
 
@@ -161,15 +165,15 @@ function SignedIn({ email }: { email: string }) {
       <View style={styles.buttons}>
         <Button
           icon="sync"
-          label="Sincronizar agora"
+          label={t('Sincronizar agora')}
           onPress={() => void syncNow()}
           disabled={status === 'syncing'}
         />
-        <Button variant="secondary" icon="logout" label="Sair" onPress={handleSignOut} />
+        <Button variant="secondary" icon="logout" label={t('Sair')} onPress={handleSignOut} />
         <Button
           variant="danger"
           icon="account-remove-outline"
-          label="Excluir conta"
+          label={t('Excluir conta')}
           onPress={handleDelete}
         />
       </View>

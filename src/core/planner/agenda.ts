@@ -3,6 +3,7 @@ import { eachDay, maxDate, minDate } from '@/core/dates/periods';
 
 import { minutesOf } from './planner';
 import type { EventDraft, EventOccurrence, EventRepeat, PlannerEvent } from './types';
+import { t } from '@/i18n/i18n';
 
 /** Base time of reminders for all-day events. */
 export const ALL_DAY_REMINDER_TIME = '09:00';
@@ -164,17 +165,19 @@ export function layoutColumns(
 }
 
 export function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60) return t('{minutes} min', { minutes });
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+  return rest === 0
+    ? t('{hours} h', { hours })
+    : t('{hours} h {minutes} min', { hours, minutes: rest });
 }
 
 /** "Dia inteiro", "09:00", or "09:00 – 10:30". */
 export function eventTimeLabel(
   event: Pick<EventDraft, 'allDay' | 'startTime' | 'endTime'>,
 ): string {
-  if (event.allDay) return 'Dia inteiro';
+  if (event.allDay) return t('Dia inteiro');
   return event.endTime ? `${event.startTime} – ${event.endTime}` : event.startTime;
 }
 
@@ -191,37 +194,40 @@ export function repeatLabel(repeat: EventRepeat, date: LocalDate): string {
   const parsed = parseLocalDate(date);
   switch (repeat) {
     case 'none':
-      return 'Não se repete';
+      return t('Não se repete');
     case 'daily':
-      return 'Todo dia';
+      return t('Todo dia');
     case 'weekly':
-      return `Toda semana (${WEEKDAYS[weekdayOf(date)]})`;
+      return t('Toda semana ({weekday})', { weekday: t(WEEKDAYS[weekdayOf(date)] ?? '') });
     case 'monthly':
-      return `Todo mês (dia ${parsed.getDate()})`;
+      return t('Todo mês (dia {day})', { day: parsed.getDate() });
     case 'yearly':
-      return `Todo ano (${parsed.getDate()} de ${MONTHS[parsed.getMonth()]})`;
+      return t('Todo ano ({day} de {month})', {
+        day: parsed.getDate(),
+        month: t(MONTHS[parsed.getMonth()] ?? ''),
+      });
   }
 }
 
 /** Short label for chips. */
 export function repeatShortLabel(repeat: EventRepeat): string {
-  return { none: 'Não', daily: 'Diário', weekly: 'Semanal', monthly: 'Mensal', yearly: 'Anual' }[
-    repeat
-  ];
+  return t(
+    { none: 'Não', daily: 'Diário', weekly: 'Semanal', monthly: 'Mensal', yearly: 'Anual' }[repeat],
+  );
 }
 
 export const REMINDER_OPTIONS: readonly (number | null)[] = [null, 0, 10, 30, 60, 1440];
 
 export function reminderLabel(minutes: number | null, allDay: boolean): string {
-  if (minutes === null) return 'Sem lembrete';
+  if (minutes === null) return t('Sem lembrete');
   if (allDay) {
-    if (minutes === 0) return 'No dia, às 9h';
-    if (minutes === 1440) return 'Na véspera, às 9h';
+    if (minutes === 0) return t('No dia, às 9h');
+    if (minutes === 1440) return t('Na véspera, às 9h');
   }
-  if (minutes === 0) return 'Na hora';
-  if (minutes === 1440) return '1 dia antes';
-  if (minutes % 60 === 0) return `${minutes / 60} h antes`;
-  return `${minutes} min antes`;
+  if (minutes === 0) return t('Na hora');
+  if (minutes === 1440) return t('1 dia antes');
+  if (minutes % 60 === 0) return t('{hours} h antes', { hours: minutes / 60 });
+  return t('{minutes} min antes', { minutes });
 }
 
 /** Local day and `HH:mm` at which the reminder of an occurrence fires. */

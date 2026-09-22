@@ -10,6 +10,7 @@ import { Button } from '@/ui/Button';
 import { Icon } from '@/ui/Icon';
 import { IconButton } from '@/ui/IconButton';
 import { TimeField } from '@/ui/TimeField';
+import { t } from '@/i18n/i18n';
 
 interface RemindersEditorProps {
   value: string[];
@@ -25,11 +26,11 @@ export function RemindersEditor({ value, onChange, error }: RemindersEditorProps
   const add = async () => {
     const normalized = /^\d:\d{2}$/.test(time) ? `0${time}` : time;
     if (!isValidTime(normalized)) {
-      setMessage('Informe um horário válido, como 08:30.');
+      setMessage(t('Informe um horário válido, como 08:30.'));
       return;
     }
     if (value.includes(normalized)) {
-      setMessage('Esse horário já foi adicionado.');
+      setMessage(t('Esse horário já foi adicionado.'));
       return;
     }
     onChange([...value, normalized].sort());
@@ -37,7 +38,9 @@ export function RemindersEditor({ value, onChange, error }: RemindersEditorProps
     setMessage(null);
     if (notificationsSupported && !(await ensurePermission())) {
       setMessage(
-        'As notificações estão desativadas. Ative-as nas configurações do sistema para receber os lembretes.',
+        t(
+          'As notificações estão desativadas. Ative-as nas configurações do sistema para receber os lembretes.',
+        ),
       );
     }
   };
@@ -45,7 +48,7 @@ export function RemindersEditor({ value, onChange, error }: RemindersEditorProps
   return (
     <View style={styles.container}>
       <AppText variant="label" tone="muted">
-        Lembretes
+        {t('Lembretes')}
       </AppText>
       {value.length > 0 ? (
         <View style={styles.chips}>
@@ -62,7 +65,7 @@ export function RemindersEditor({ value, onChange, error }: RemindersEditorProps
               <IconButton
                 icon="close"
                 size={18}
-                label={`Remover lembrete das ${reminder}`}
+                label={t('Remover lembrete das {time}', { time: reminder })}
                 onPress={() => onChange(value.filter((t) => t !== reminder))}
               />
             </View>
@@ -71,13 +74,13 @@ export function RemindersEditor({ value, onChange, error }: RemindersEditorProps
       ) : null}
       <View style={styles.addRow}>
         <View style={styles.flex}>
-          <TimeField label="Novo horário" value={time} onChange={setTime} />
+          <TimeField label={t('Novo horário')} value={time} onChange={setTime} />
         </View>
-        <Button variant="secondary" icon="bell-plus-outline" label="Adicionar" onPress={add} />
+        <Button variant="secondary" icon="bell-plus-outline" label={t('Adicionar')} onPress={add} />
       </View>
       {!notificationsSupported ? (
         <AppText variant="caption" tone="muted">
-          Os lembretes são enviados pelo app no Android e no iOS (não no navegador).
+          {t('Os lembretes são enviados pelo app no Android e no iOS (não no navegador).')}
         </AppText>
       ) : null}
       {message || error ? (

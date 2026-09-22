@@ -12,6 +12,7 @@ import { radius, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 
 import { openEvent } from './EventCard';
+import { t } from '@/i18n/i18n';
 
 const HOUR_HEIGHT = 56;
 const GUTTER = 48;
@@ -52,7 +53,7 @@ export function DayTimeline({ date, occurrences, nowMinutes }: DayTimelineProps)
             router.push({ pathname: '/event/new', params: { date, hour: String(hour) } })
           }
           accessibilityRole="button"
-          accessibilityLabel={`Novo evento às ${hour} horas`}
+          accessibilityLabel={t('Novo evento às {hour} horas', { hour })}
           style={({ pressed }) => [
             styles.hour,
             { top: top(hour * 60), borderColor: colors.border },
@@ -76,7 +77,7 @@ export function DayTimeline({ date, occurrences, nowMinutes }: DayTimelineProps)
             key={event.id}
             onPress={() => openEvent(event, date)}
             accessibilityRole="button"
-            accessibilityLabel={`${event.title}, ${event.startTime}${event.endTime ? ` até ${event.endTime}` : ''}`}
+            accessibilityLabel={`${event.title}, ${event.startTime}${event.endTime ? ` ${t('até')} ${event.endTime}` : ''}`}
             style={({ pressed }) => [
               styles.block,
               {

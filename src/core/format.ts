@@ -1,7 +1,10 @@
-/** pt-BR number: up to 2 decimals, comma separator, no trailing zeros ("2,5", "10"). */
+import { getLanguage, t } from '@/i18n/i18n';
+
+/** Up to 2 decimals, no trailing zeros; the separator follows the language ("2,5" / "2.5"). */
 export function formatNumber(value: number): string {
   const rounded = Math.round(value * 100) / 100;
-  return String(rounded).replace('.', ',');
+  const text = String(rounded);
+  return getLanguage() === 'en' ? text : text.replace('.', ',');
 }
 
 /** Parses "2,5" or "2.5". Returns NaN when invalid or empty. */
@@ -14,11 +17,13 @@ export function parseDecimal(text: string): number {
 /** Human duration: "45 s", "30 min", "1 h", "1 h 5 min". */
 export function formatDuration(totalSeconds: number): string {
   const seconds = Math.max(0, Math.round(totalSeconds));
-  if (seconds < 60) return `${seconds} s`;
+  if (seconds < 60) return t('{seconds} s', { seconds });
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  if (hours === 0) return `${minutes} min`;
-  return minutes === 0 ? `${hours} h` : `${hours} h ${minutes} min`;
+  if (hours === 0) return t('{minutes} min', { minutes });
+  return minutes === 0
+    ? t('{hours} h', { hours })
+    : t('{hours} h {minutes} min', { hours, minutes });
 }
 
 /** Stopwatch display: "05:09" or "1:02:03". */

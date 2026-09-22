@@ -12,6 +12,7 @@ import {
   type PermissionState,
 } from '@/lib/notifications';
 import { deleteAllData, exportBackup, importBackup } from '@/stores/dataActions';
+import type { Language } from '@/i18n/i18n';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { rescheduleReminders } from '@/stores/reminders';
 import { useSyncStore } from '@/stores/syncStore';
@@ -27,17 +28,22 @@ import { TextField } from '@/ui/TextField';
 
 import { AccountSection } from './AccountSection';
 import { CloudBackupSection } from './CloudBackupSection';
+import { t } from '@/i18n/i18n';
 
-const THEME_OPTIONS = [
-  { value: 'system', label: 'Sistema', icon: 'theme-light-dark' },
-  { value: 'light', label: 'Claro', icon: 'white-balance-sunny' },
-  { value: 'dark', label: 'Escuro', icon: 'weather-night' },
-] as const;
+function THEME_OPTIONS() {
+  return [
+    { value: 'system', label: t('Sistema'), icon: 'theme-light-dark' },
+    { value: 'light', label: t('Claro'), icon: 'white-balance-sunny' },
+    { value: 'dark', label: t('Escuro'), icon: 'weather-night' },
+  ] as const;
+}
 
-const WEEK_START_OPTIONS = [
-  { value: '0', label: 'Domingo' },
-  { value: '1', label: 'Segunda' },
-] as const;
+function WEEK_START_OPTIONS() {
+  return [
+    { value: '0', label: t('Domingo') },
+    { value: '1', label: t('Segunda') },
+  ] as const;
+}
 
 /** Settings group: a quiet title above a soft card. */
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -51,81 +57,101 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+const LANGUAGE_OPTIONS = [
+  { value: 'pt', label: 'Português' },
+  { value: 'en', label: 'English' },
+] as const;
+
 export function SettingsScreen() {
   const themePreference = useSettingsStore((state) => state.themePreference);
   const setThemePreference = useSettingsStore((state) => state.setThemePreference);
   const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
   const setWeekStartsOn = useSettingsStore((state) => state.setWeekStartsOn);
+  const language = useSettingsStore((state) => state.language);
+  const setLanguage = useSettingsStore((state) => state.setLanguage);
   const syncConfigured = useSyncStore((state) => state.configured);
   const signedIn = useSyncStore((state) => state.userId !== null);
 
   return (
     <Screen>
       <AppText variant="title" accessibilityRole="header">
-        Ajustes
+        {t('Ajustes')}
       </AppText>
 
-      <Section title="Aparência">
+      <Section title={t('Aparência')}>
         <SegmentedControl<ThemePreference>
-          label="Tema"
-          options={THEME_OPTIONS}
+          label={t('Tema')}
+          options={THEME_OPTIONS()}
           value={themePreference}
           onChange={(preference) =>
             setThemePreference(preference).catch((error: unknown) =>
-              showError('Não foi possível salvar o tema.', error),
+              showError(t('Não foi possível salvar o tema.'), error),
             )
           }
         />
       </Section>
 
-      <Section title="Seu nome">
+      <Section title={t('Idioma')}>
+        <SegmentedControl<Language>
+          label={t('Idioma do app')}
+          options={LANGUAGE_OPTIONS}
+          value={language}
+          onChange={(next) =>
+            setLanguage(next).catch((error: unknown) =>
+              showError(t('Não foi possível salvar o idioma.'), error),
+            )
+          }
+        />
+      </Section>
+
+      <Section title={t('Seu nome')}>
         <NameField />
       </Section>
 
-      <Section title="Calendário">
+      <Section title={t('Calendário')}>
         <SegmentedControl<'0' | '1'>
-          label="Primeiro dia da semana"
-          options={WEEK_START_OPTIONS}
+          label={t('Primeiro dia da semana')}
+          options={WEEK_START_OPTIONS()}
           value={String(weekStartsOn) as '0' | '1'}
           onChange={(value) =>
             setWeekStartsOn(Number(value) as WeekStartsOn).catch((error: unknown) =>
-              showError('Não foi possível salvar a preferência.', error),
+              showError(t('Não foi possível salvar a preferência.'), error),
             )
           }
         />
         <AppText variant="caption" tone="muted">
-          Usado nos calendários e nos hábitos &quot;X vezes por semana&quot;.
+          {t('Usado nos calendários e nos hábitos “X vezes por semana”.')}
         </AppText>
       </Section>
 
       {syncConfigured ? (
-        <Section title="Conta e sincronização">
+        <Section title={t('Conta e sincronização')}>
           <AccountSection />
         </Section>
       ) : null}
 
       {signedIn ? (
-        <Section title="Backups na nuvem">
+        <Section title={t('Backups na nuvem')}>
           <CloudBackupSection />
         </Section>
       ) : null}
 
-      <Section title="Lembretes">
+      <Section title={t('Lembretes')}>
         <NotificationsStatus />
       </Section>
 
-      <Section title="Backup">
+      <Section title={t('Backup')}>
         <BackupActions />
       </Section>
 
-      <Section title="Apagar dados">
+      <Section title={t('Apagar dados')}>
         <DeleteAllData />
       </Section>
 
       <Button
         variant="ghost"
         icon="shield-lock-outline"
-        label="Política de privacidade"
+        label={t('Política de privacidade')}
         onPress={() => router.push('/privacy')}
       />
       <AppText variant="caption" tone="muted" style={styles.about}>
@@ -151,23 +177,23 @@ function NameField() {
     useSettingsStore
       .getState()
       .setDisplayName(name)
-      .catch((error: unknown) => showError('Não foi possível salvar o nome.', error));
+      .catch((error: unknown) => showError(t('Não foi possível salvar o nome.'), error));
   };
 
   return (
     <>
       <TextField
-        label="Como quer ser chamado?"
+        label={t('Como quer ser chamado?')}
         value={name}
         onChangeText={setName}
         onBlur={commit}
         onSubmitEditing={commit}
-        placeholder="Ex: Raul"
+        placeholder={t('Ex: Raul')}
         maxLength={40}
         returnKeyType="done"
       />
       <AppText variant="caption" tone="muted">
-        Usado na saudação da tela Hoje. Deixe em branco para não usar nome.
+        {t('Usado na saudação da tela Hoje. Deixe em branco para não usar nome.')}
       </AppText>
     </>
   );
@@ -185,8 +211,9 @@ function NotificationsStatus() {
   if (!notificationsSupported) {
     return (
       <AppText tone="muted">
-        Os lembretes são enviados pelo app no Android e no iOS. No navegador você pode
-        configurá-los, mas eles não disparam.
+        {t(
+          'Os lembretes são enviados pelo app no Android e no iOS. No navegador você pode configurá-los, mas eles não disparam.',
+        )}
       </AppText>
     );
   }
@@ -201,13 +228,15 @@ function NotificationsStatus() {
     <>
       <AppText tone="muted">
         {permission === 'granted'
-          ? 'Notificações permitidas. Configure os horários em cada hábito.'
+          ? t('Notificações permitidas. Configure os horários em cada hábito.')
           : permission === 'denied'
-            ? 'Notificações bloqueadas. Ative-as nas configurações do sistema para receber lembretes.'
-            : 'Permita notificações para receber os lembretes dos seus hábitos.'}
+            ? t(
+                'Notificações bloqueadas. Ative-as nas configurações do sistema para receber lembretes.',
+              )
+            : t('Permita notificações para receber os lembretes dos seus hábitos.')}
       </AppText>
       {permission === 'undetermined' ? (
-        <Button icon="bell-ring-outline" label="Permitir notificações" onPress={request} />
+        <Button icon="bell-ring-outline" label={t('Permitir notificações')} onPress={request} />
       ) : null}
     </>
   );
@@ -224,7 +253,7 @@ function BackupActions() {
       await exportBackup();
       setResult('Backup exportado.');
     } catch (error) {
-      showError('Não foi possível exportar o backup.', error);
+      showError(t('Não foi possível exportar o backup.'), error);
     } finally {
       setBusy(false);
     }
@@ -232,10 +261,11 @@ function BackupActions() {
 
   const doImport = async () => {
     const ok = await confirm({
-      title: 'Importar backup?',
-      message:
+      title: t('Importar backup?'),
+      message: t(
         'Os dados do arquivo serão mesclados com os atuais. Quando o mesmo item existir nos dois, fica a versão alterada por último.',
-      confirmLabel: 'Escolher arquivo',
+      ),
+      confirmLabel: t('Escolher arquivo'),
     });
     if (!ok) return;
     setBusy(true);
@@ -250,12 +280,16 @@ function BackupActions() {
           void sync.syncNow();
         }
         setResult(
-          `Importação concluída: ${summary.inserted} novos, ${summary.updated} atualizados, ${summary.skipped} ignorados.`,
+          t('Importação concluída: {inserted} novos, {updated} atualizados, {skipped} ignorados.', {
+            inserted: summary.inserted,
+            updated: summary.updated,
+            skipped: summary.skipped,
+          }),
         );
       }
     } catch (error) {
       if (error instanceof BackupError) showError(error.message);
-      else showError('Não foi possível importar o backup.', error);
+      else showError(t('Não foi possível importar o backup.'), error);
     } finally {
       setBusy(false);
     }
@@ -264,20 +298,21 @@ function BackupActions() {
   return (
     <>
       <AppText tone="muted">
-        Sem conta, seus dados ficam só neste aparelho. Exporte um backup em JSON regularmente e
-        guarde-o em um lugar seguro (Drive, e-mail, computador).
+        {t(
+          'Sem conta, seus dados ficam só neste aparelho. Exporte um backup em JSON regularmente e guarde-o em um lugar seguro (Drive, e-mail, computador).',
+        )}
       </AppText>
       <View style={styles.buttons}>
         <Button
           icon="download-outline"
-          label="Exportar backup"
+          label={t('Exportar backup')}
           onPress={doExport}
           disabled={busy}
         />
         <Button
           variant="secondary"
           icon="upload-outline"
-          label="Importar backup"
+          label={t('Importar backup')}
           onPress={doImport}
           disabled={busy}
         />
@@ -296,18 +331,22 @@ function DeleteAllData() {
 
   const run = async () => {
     const first = await confirm({
-      title: 'Apagar todos os dados?',
+      title: t('Apagar todos os dados?'),
       message: signedIn
-        ? 'Hábitos, registros, tarefas, eventos, notas, metas e ajustes serão apagados deste aparelho E da nuvem (sua conta continua existindo). Recomendamos exportar um backup antes.'
-        : 'Hábitos, registros, tarefas, eventos, notas, metas e ajustes serão apagados deste dispositivo. Recomendamos exportar um backup antes.',
-      confirmLabel: 'Continuar',
+        ? t(
+            'Hábitos, registros, agenda, metas e ajustes serão apagados deste aparelho E da nuvem (sua conta continua existindo). Recomendamos exportar um backup antes.',
+          )
+        : t(
+            'Hábitos, registros, agenda, metas e ajustes serão apagados deste dispositivo. Recomendamos exportar um backup antes.',
+          ),
+      confirmLabel: t('Continuar'),
       destructive: true,
     });
     if (!first) return;
     const second = await confirm({
-      title: 'Tem certeza?',
-      message: 'Esta ação não pode ser desfeita.',
-      confirmLabel: 'Apagar tudo',
+      title: t('Tem certeza?'),
+      message: t('Esta ação não pode ser desfeita.'),
+      confirmLabel: t('Apagar tudo'),
       destructive: true,
     });
     if (!second) return;
@@ -316,19 +355,19 @@ function DeleteAllData() {
       if (signedIn) await useSyncStore.getState().deleteCloudData();
       await deleteAllData();
     } catch (error) {
-      showError('Não foi possível apagar os dados.', error);
+      showError(t('Não foi possível apagar os dados.'), error);
     }
   };
 
   return (
     <>
       <AppText tone="muted">
-        Remove permanentemente todos os dados do app neste dispositivo.
+        {t('Remove permanentemente todos os dados do app neste dispositivo.')}
       </AppText>
       <Button
         variant="danger"
         icon="delete-forever-outline"
-        label="Apagar todos os dados"
+        label={t('Apagar todos os dados')}
         onPress={run}
       />
     </>

@@ -18,16 +18,17 @@ import { confirm, showError } from '@/ui/dialogs';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { TextField } from '@/ui/TextField';
+import { t } from '@/i18n/i18n';
 
 /** "Conta automaticamente as vezes que você concluir “Academia” no período." */
 function describeLinkedProgress(habit: Habit): string {
   const what =
     habit.tracking.type === 'boolean'
-      ? 'as vezes que você concluir'
+      ? t('as vezes que você concluir')
       : habit.tracking.type === 'quantity'
         ? `a quantidade (${linkedGoalUnit(habit)}) registrada em`
         : 'as horas registradas em';
-  return `Conta automaticamente ${what} “${habit.name}” no período.`;
+  return t('Conta automaticamente {what} “{habit}” no período.', { what, habit: habit.name });
 }
 
 export function NewGoalScreen({ scope, period }: { scope: GoalScope; period: string }) {
@@ -44,7 +45,7 @@ export function EditGoalScreen({ id }: { id: string }) {
   if (goal === null) {
     return (
       <Screen edges={['bottom', 'left', 'right']}>
-        <EmptyState icon="help-circle-outline" title="Carregando…" />
+        <EmptyState icon="help-circle-outline" title={t('Carregando…')} />
       </Screen>
     );
   }
@@ -85,16 +86,16 @@ function GoalForm({
       else await plannerActions.createGoal(next);
       goBack();
     } catch (error) {
-      showError('Não foi possível salvar a meta.', error);
+      showError(t('Não foi possível salvar a meta.'), error);
     }
   };
 
   const remove = async () => {
     if (!goal) return;
     const ok = await confirm({
-      title: 'Excluir meta?',
-      message: `"${goal.title}" será removida.`,
-      confirmLabel: 'Excluir',
+      title: t('Excluir meta?'),
+      message: t('"{title}" será removida.', { title: goal.title }),
+      confirmLabel: t('Excluir'),
       destructive: true,
     });
     if (!ok) return;
@@ -102,20 +103,23 @@ function GoalForm({
       await plannerActions.removeGoal(goal.id);
       goBack();
     } catch (error) {
-      showError('Não foi possível excluir a meta.', error);
+      showError(t('Não foi possível excluir a meta.'), error);
     }
   };
 
   return (
     <Screen edges={['bottom', 'left', 'right']}>
       <AppText tone="muted">
-        Meta {draft.scope === 'month' ? `do mês ${draft.period}` : `do ano ${draft.period}`}
+        Meta{' '}
+        {draft.scope === 'month'
+          ? t('do mês {period}', { period: draft.period })
+          : t('do ano {period}', { period: draft.period })}
       </AppText>
       <TextField
-        label="Título"
+        label={t('Título')}
         value={draft.title}
         onChangeText={(title) => setDraft({ ...draft, title })}
-        placeholder="Ex: Ler 12 livros"
+        placeholder={t('Ex: Ler 12 livros')}
         maxLength={TITLE_MAX_LENGTH}
         error={errors.title}
         autoFocus={!goal}
@@ -123,11 +127,11 @@ function GoalForm({
 
       <View style={styles.section}>
         <AppText variant="label" tone="muted">
-          Vincular a um hábito (progresso automático)
+          {t('Vincular a um hábito (progresso automático)')}
         </AppText>
         <View style={styles.chips}>
           <Chip
-            label="Nenhum"
+            label={t('Nenhum')}
             selected={draft.habitId === null}
             onPress={() => setDraft({ ...draft, habitId: null })}
           />
@@ -153,7 +157,7 @@ function GoalForm({
       <View style={styles.row}>
         <View style={styles.flex}>
           <TextField
-            label="Meta"
+            label={t('Meta')}
             value={targetText}
             onChangeText={setTargetText}
             keyboardType="decimal-pad"
@@ -164,10 +168,10 @@ function GoalForm({
         {linkedHabit ? null : (
           <View style={styles.flex}>
             <TextField
-              label="Unidade (opcional)"
+              label={t('Unidade (opcional)')}
               value={draft.unit ?? ''}
               onChangeText={(unit) => setDraft({ ...draft, unit })}
-              placeholder="livros, km…"
+              placeholder={t('livros, km…')}
               maxLength={UNIT_MAX_LENGTH}
             />
           </View>
@@ -175,9 +179,9 @@ function GoalForm({
       </View>
 
       <View style={styles.actions}>
-        <Button label={goal ? 'Salvar' : 'Criar meta'} onPress={save} />
+        <Button label={goal ? t('Salvar') : t('Criar meta')} onPress={save} />
         {goal ? (
-          <Button variant="danger" icon="trash-can-outline" label="Excluir" onPress={remove} />
+          <Button variant="danger" icon="trash-can-outline" label={t('Excluir')} onPress={remove} />
         ) : null}
       </View>
     </Screen>

@@ -28,6 +28,7 @@ import { TimeField } from '@/ui/TimeField';
 import { ToggleRow } from '@/ui/ToggleRow';
 
 import { DatePickerField } from './DatePickerField';
+import { t } from '@/i18n/i18n';
 
 const DURATIONS = [30, 60, 90, 120] as const;
 
@@ -49,7 +50,7 @@ export function EditEventScreen({ id, date }: { id: string; date?: LocalDate }) 
   if (event === null) {
     return (
       <Screen edges={['bottom', 'left', 'right']}>
-        <EmptyState icon="calendar-search" title="Carregando…" />
+        <EmptyState icon="calendar-search" title={t('Carregando…')} />
       </Screen>
     );
   }
@@ -94,18 +95,18 @@ function EventForm({
       else await plannerActions.createEvent(next);
       goBack();
     } catch (error) {
-      showError('Não foi possível salvar o evento.', error);
+      showError(t('Não foi possível salvar o evento.'), error);
     }
   };
 
   const removeAll = async () => {
     if (!event) return;
     const ok = await confirm({
-      title: isSeries ? 'Excluir toda a série?' : 'Excluir evento?',
+      title: isSeries ? t('Excluir toda a série?') : t('Excluir evento?'),
       message: isSeries
-        ? `Todas as repetições de "${event.title}" serão removidas.`
-        : `"${event.title}" será removido.`,
-      confirmLabel: 'Excluir',
+        ? t('Todas as repetições de "{title}" serão removidas.', { title: event.title })
+        : t('"{title}" será removido.', { title: event.title }),
+      confirmLabel: t('Excluir'),
       destructive: true,
     });
     if (!ok) return;
@@ -113,16 +114,16 @@ function EventForm({
       await plannerActions.removeEvent(event.id);
       goBack();
     } catch (error) {
-      showError('Não foi possível excluir o evento.', error);
+      showError(t('Não foi possível excluir o evento.'), error);
     }
   };
 
   const removeOne = async () => {
     if (!event || !occurrence) return;
     const ok = await confirm({
-      title: 'Excluir só este dia?',
-      message: `"${event.title}" continua nos outros dias.`,
-      confirmLabel: 'Excluir este dia',
+      title: t('Excluir só este dia?'),
+      message: t('"{title}" continua nos outros dias.', { title: event.title }),
+      confirmLabel: t('Excluir este dia'),
       destructive: true,
     });
     if (!ok) return;
@@ -134,17 +135,17 @@ function EventForm({
       });
       goBack();
     } catch (error) {
-      showError('Não foi possível excluir o evento.', error);
+      showError(t('Não foi possível excluir o evento.'), error);
     }
   };
 
   return (
     <Screen edges={['bottom', 'left', 'right']}>
       <TextField
-        label="Título"
+        label={t('Título')}
         value={draft.title}
         onChangeText={(title) => patch({ title })}
-        placeholder="Ex: Consulta médica"
+        placeholder={t('Ex: Consulta médica')}
         maxLength={TITLE_MAX_LENGTH}
         error={errors.title}
         autoFocus={!event}
@@ -152,12 +153,12 @@ function EventForm({
 
       <Card>
         <DatePickerField
-          label={draft.repeat === 'none' ? 'Dia' : 'Começa em'}
+          label={draft.repeat === 'none' ? t('Dia') : t('Começa em')}
           value={draft.date}
           onChange={(date) => patch({ date })}
         />
         <ToggleRow
-          label="Dia inteiro"
+          label={t('Dia inteiro')}
           icon="weather-sunny"
           value={draft.allDay}
           onChange={(allDay) => patch({ allDay })}
@@ -167,7 +168,7 @@ function EventForm({
             <View style={styles.row}>
               <View style={styles.flex}>
                 <TimeField
-                  label="Início"
+                  label={t('Início')}
                   value={draft.startTime}
                   onChange={(startTime) => patch({ startTime })}
                   error={errors.startTime}
@@ -175,7 +176,7 @@ function EventForm({
               </View>
               <View style={styles.flex}>
                 <TimeField
-                  label="Fim (opcional)"
+                  label={t('Fim (opcional)')}
                   value={endText}
                   onChange={setEndText}
                   placeholder="—"
@@ -193,7 +194,7 @@ function EventForm({
                     label={
                       minutes < 60 ? `${minutes} min` : `${minutes / 60} h`.replace('.5', ',5')
                     }
-                    accessibilityLabel={`Duração de ${minutes} minutos`}
+                    accessibilityLabel={t('Duração de {minutes} minutos', { minutes })}
                     selected={endText === end}
                     onPress={() => setEndText(end)}
                   />
@@ -205,16 +206,16 @@ function EventForm({
       </Card>
 
       <TextField
-        label="Local (opcional)"
+        label={t('Local (opcional)')}
         value={draft.location ?? ''}
         onChangeText={(location) => patch({ location })}
-        placeholder="Ex: Clínica, Google Meet…"
+        placeholder={t('Ex: Clínica, Google Meet…')}
         maxLength={200}
       />
 
       <Card>
         <AppText variant="label" tone="muted">
-          Repetir
+          {t('Repetir')}
         </AppText>
         <View style={styles.chips}>
           {REPEAT_OPTIONS.map((repeat) => (
@@ -231,14 +232,14 @@ function EventForm({
           <>
             <AppText tone="muted">{repeatLabel(draft.repeat, draft.date)}</AppText>
             <ToggleRow
-              label="Termina em uma data"
+              label={t('Termina em uma data')}
               icon="calendar-end"
               value={draft.repeatUntil !== null}
               onChange={(on) => patch({ repeatUntil: on ? addDaysLocal(draft.date, 30) : null })}
             />
             {draft.repeatUntil !== null ? (
               <DatePickerField
-                label="Último dia"
+                label={t('Último dia')}
                 value={draft.repeatUntil}
                 minDate={draft.date}
                 onChange={(repeatUntil) => patch({ repeatUntil })}
@@ -249,12 +250,16 @@ function EventForm({
               <View style={styles.excluded}>
                 <AppText variant="caption" tone="muted" style={styles.flex}>
                   {draft.excludedDates.length === 1
-                    ? `Sem o dia ${formatShortDate(draft.excludedDates[0] ?? draft.date)}`
-                    : `${draft.excludedDates.length} dias removidos da série`}
+                    ? t('Sem o dia {date}', {
+                        date: formatShortDate(draft.excludedDates[0] ?? draft.date),
+                      })
+                    : t('{count} dias removidos da série', {
+                        count: draft.excludedDates.length,
+                      })}
                 </AppText>
                 <Button
                   variant="ghost"
-                  label="Restaurar"
+                  label={t('Restaurar')}
                   onPress={() => patch({ excludedDates: [] })}
                 />
               </View>
@@ -265,7 +270,7 @@ function EventForm({
 
       <Card>
         <AppText variant="label" tone="muted">
-          Lembrete
+          {t('Lembrete')}
         </AppText>
         <View style={styles.chips}>
           {REMINDER_OPTIONS.map((minutes) => (
@@ -278,14 +283,14 @@ function EventForm({
           ))}
         </View>
         <AppText variant="caption" tone="muted">
-          Notificação no celular (no navegador os lembretes não disparam).
+          {t('Notificação no celular (no navegador os lembretes não disparam).')}
         </AppText>
       </Card>
 
       <ColorPicker value={draft.color} onChange={(color) => patch({ color })} />
 
       <TextField
-        label="Observações (opcional)"
+        label={t('Observações (opcional)')}
         value={draft.note ?? ''}
         onChangeText={(note) => patch({ note })}
         multiline
@@ -293,12 +298,12 @@ function EventForm({
       />
 
       <View style={styles.actions}>
-        <Button icon="check" label={event ? 'Salvar' : 'Criar evento'} onPress={save} />
+        <Button icon="check" label={event ? t('Salvar') : t('Criar evento')} onPress={save} />
         {isSeries && occurrence ? (
           <Button
             variant="secondary"
             icon="calendar-remove-outline"
-            label="Excluir só este dia"
+            label={t('Excluir só este dia')}
             onPress={removeOne}
           />
         ) : null}
@@ -306,7 +311,7 @@ function EventForm({
           <Button
             variant="danger"
             icon="trash-can-outline"
-            label={isSeries ? 'Excluir toda a série' : 'Excluir'}
+            label={isSeries ? t('Excluir toda a série') : t('Excluir')}
             onPress={removeAll}
           />
         ) : null}

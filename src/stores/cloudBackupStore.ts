@@ -16,6 +16,7 @@ import { createCloudBackups } from '@/sync/cloudBackups';
 import { reloadAll } from './dataActions';
 import { rescheduleReminders } from './reminders';
 import { useSyncStore } from './syncStore';
+import { t } from '@/i18n/i18n';
 
 /** Automatic checks run at most this often per app session (the backup itself is weekly). */
 const AUTO_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
@@ -37,10 +38,10 @@ interface CloudBackupState {
 function friendlyError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   if (/cloud_backups/.test(message) && /(does not exist|schema cache|not find)/i.test(message)) {
-    return 'Falta criar a tabela de backups no Supabase (veja docs/SUPABASE.md).';
+    return t('Falta criar a tabela de backups no Supabase (veja docs/SUPABASE.md).');
   }
-  if (/network|fetch/i.test(message)) return 'Sem conexão com o servidor.';
-  return 'Não foi possível concluir. Tente novamente.';
+  if (/network|fetch/i.test(message)) return t('Sem conexão com o servidor.');
+  return t('Não foi possível concluir. Tente novamente.');
 }
 
 let lastAutoCheck = 0;

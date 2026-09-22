@@ -1,0 +1,70 @@
+{
+  "title": "Privacy policy",
+  "updatedAt": "September 22, 2026",
+  "sections": [
+    {
+      "title": "Summary",
+      "paragraphs": [
+        "Habits is free, with no ads and no tracking. Your habits, entries, agenda events and goals are stored on your own device. We do not sell, share or analyse your data.",
+        "The account is optional. Without an account, none of your data leaves the device."
+      ]
+    },
+    {
+      "title": "Who is responsible",
+      "paragraphs": [
+        "This app is developed by Raul Passos Gardini. Contact for any privacy matter: rap.gardini@gmail.com."
+      ]
+    },
+    {
+      "title": "Data stored on your device",
+      "paragraphs": [
+        "Everything you enter in the app (habits, daily entries, agenda events, goals and preferences such as the theme) is stored locally, in a database on the device or browser itself.",
+        "This data is used only to run the app: showing your habits, computing streaks and statistics, drawing the widgets and scheduling reminders."
+      ]
+    },
+    {
+      "title": "Account and sync (optional)",
+      "paragraphs": [
+        "If you create an account, we collect your e-mail and a password (stored encrypted by the authentication provider) and send a copy of your app data to the cloud, only to sync it between your devices and protect it against loss.",
+        "The cloud service used is Supabase (supabase.com), acting as data processor. The connection is encrypted and each account can only access its own data.",
+        "You can sign out at any time (the data stays on the device) or delete the account in Settings > Account and sync > Delete account, which permanently erases the account and all data stored in the cloud."
+      ]
+    },
+    {
+      "title": "Notifications",
+      "paragraphs": [
+        "Reminders are local notifications, scheduled by the device itself. We use no notification server and no push identifiers."
+      ]
+    },
+    {
+      "title": "Backup",
+      "paragraphs": [
+        "The backup feature creates a file with your data, which you save or share wherever you want. We have no access to that file."
+      ]
+    },
+    {
+      "title": "What we do not do",
+      "paragraphs": [
+        "We show no ads, use no analytics or tracking tools, collect no location, contacts, photos or advertising identifiers, and never sell data."
+      ]
+    },
+    {
+      "title": "Your rights",
+      "paragraphs": [
+        "You can access, export (Settings > Backup), correct and delete your data at any time in the app itself (Settings > Delete data). For cloud data, use Delete account or get in touch at the e-mail above."
+      ]
+    },
+    {
+      "title": "Children",
+      "paragraphs": [
+        "The app is not directed to children under 13 and does not knowingly collect their data."
+      ]
+    },
+    {
+      "title": "Changes",
+      "paragraphs": [
+        "If this policy changes, the new version will be published on this page and inside the app, with the update date."
+      ]
+    }
+  ]
+}

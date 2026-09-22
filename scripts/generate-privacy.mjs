@@ -2,14 +2,19 @@
 // in-app screen:  npm run legal
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const policy = JSON.parse(
-  readFileSync(new URL('../src/features/legal/privacy.json', import.meta.url), 'utf8'),
-);
+const policies = [
+  { file: 'privacidade.html', source: 'privacy.pt.json', lang: 'pt-BR', updated: 'Atualizada em' },
+  { file: 'privacy.html', source: 'privacy.en.json', lang: 'en', updated: 'Last updated' },
+];
 const escape = (text) =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-const html = `<!doctype html>
-<html lang="pt-BR">
+for (const { file, source, lang, updated } of policies) {
+  const policy = JSON.parse(
+    readFileSync(new URL(`../src/features/legal/${source}`, import.meta.url), 'utf8'),
+  );
+  const html = `<!doctype html>
+<html lang="${lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -28,7 +33,7 @@ const html = `<!doctype html>
 <body>
 <main><article>
 <h1>${escape(policy.title)}</h1>
-<p class="muted">Atualizada em ${escape(policy.updatedAt)}</p>
+<p class="muted">${updated} ${escape(policy.updatedAt)}</p>
 ${policy.sections
   .map(
     (s) => `<h2>${escape(s.title)}</h2>\n${s.paragraphs.map((p) => `<p>${escape(p)}</p>`).join('\n')}`,
@@ -38,5 +43,6 @@ ${policy.sections
 </body>
 </html>
 `;
-writeFileSync(new URL('../public/privacidade.html', import.meta.url), html);
-console.log('public/privacidade.html written');
+  writeFileSync(new URL(`../public/${file}`, import.meta.url), html);
+  console.log(`public/${file} written`);
+}

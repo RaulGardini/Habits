@@ -1,3 +1,4 @@
+import { t } from '@/i18n/i18n';
 /**
  * JSON backup format. Rows are exported exactly as stored (camelCase columns), including
  * soft-deleted rows, so a restore is faithful and merging stays sync-friendly.
@@ -61,23 +62,26 @@ export function parseBackup(json: string): BackupFile {
   try {
     data = JSON.parse(json);
   } catch {
-    throw new BackupError('O arquivo não é um JSON válido.');
+    throw new BackupError(t('O arquivo não é um JSON válido.'));
   }
   if (typeof data !== 'object' || data === null)
-    throw new BackupError('Arquivo de backup inválido.');
+    throw new BackupError(t('Arquivo de backup inválido.'));
   const file = data as Partial<BackupFile>;
-  if (file.app !== BACKUP_APP) throw new BackupError('Este arquivo não é um backup deste app.');
+  if (file.app !== BACKUP_APP) throw new BackupError(t('Este arquivo não é um backup deste app.'));
   if (typeof file.version !== 'number' || file.version > BACKUP_VERSION) {
-    throw new BackupError('Este backup foi feito por uma versão mais nova do app. Atualize o app.');
+    throw new BackupError(
+      t('Este backup foi feito por uma versão mais nova do app. Atualize o app.'),
+    );
   }
   if (typeof file.tables !== 'object' || file.tables === null) {
-    throw new BackupError('Arquivo de backup inválido: dados ausentes.');
+    throw new BackupError(t('Arquivo de backup inválido: dados ausentes.'));
   }
 
   const tables = {} as Record<BackupTable, BackupRow[]>;
   for (const table of BACKUP_TABLES) {
     const rows = (file.tables as Record<string, unknown>)[table] ?? [];
-    if (!Array.isArray(rows)) throw new BackupError(`Arquivo de backup inválido: "${table}".`);
+    if (!Array.isArray(rows))
+      throw new BackupError(t('Arquivo de backup inválido: "{table}".', { table }));
     rows.forEach((row: unknown, index) => {
       const record = row as Record<string, unknown>;
       const missing = [...REQUIRED_STRINGS[table], 'updatedAt'].find(
@@ -85,7 +89,11 @@ export function parseBackup(json: string): BackupFile {
       );
       if (missing) {
         throw new BackupError(
-          `Arquivo de backup inválido: "${table}" #${index + 1} sem "${missing}".`,
+          t('Arquivo de backup inválido: "{table}" #{index} sem "{missing}".', {
+            table,
+            index: index + 1,
+            missing,
+          }),
         );
       }
     });

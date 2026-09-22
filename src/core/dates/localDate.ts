@@ -1,5 +1,5 @@
 import { addDays, format, isValid, parse } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatWith, t } from '@/i18n/i18n';
 
 /**
  * A calendar day in the user's local time zone, formatted as `YYYY-MM-DD`.
@@ -40,18 +40,18 @@ export function weekdayOf(value: LocalDate): number {
 
 /** "Hoje", "Ontem", "Amanhã" or e.g. "segunda-feira, 15 de setembro". */
 export function formatDayLabel(value: LocalDate, today: LocalDate): string {
-  if (value === today) return 'Hoje';
-  if (value === addDaysLocal(today, -1)) return 'Ontem';
-  if (value === addDaysLocal(today, 1)) return 'Amanhã';
+  if (value === today) return t('Hoje');
+  if (value === addDaysLocal(today, -1)) return t('Ontem');
+  if (value === addDaysLocal(today, 1)) return t('Amanhã');
   const sameYear = value.slice(0, 4) === today.slice(0, 4);
-  return format(
+  return formatWith(
     parseLocalDate(value),
     sameYear ? "EEEE, d 'de' MMMM" : "EEEE, d 'de' MMMM 'de' yyyy",
-    { locale: ptBR },
+    sameYear ? 'EEEE, MMMM d' : 'EEEE, MMMM d, yyyy',
   );
 }
 
 /** e.g. "15 de set. de 2026". */
 export function formatShortDate(value: LocalDate): string {
-  return format(parseLocalDate(value), "d 'de' MMM 'de' yyyy", { locale: ptBR });
+  return formatWith(parseLocalDate(value), "d 'de' MMM 'de' yyyy", 'MMM d, yyyy');
 }

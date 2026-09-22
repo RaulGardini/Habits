@@ -10,6 +10,7 @@ import { Screen } from '@/ui/Screen';
 
 import { DEFAULT_HABIT_ICON } from './habitIcons';
 import { HabitForm } from './HabitForm';
+import { t } from '@/i18n/i18n';
 
 export function NewHabitScreen() {
   const create = useHabitsStore((state) => state.create);
@@ -29,13 +30,13 @@ export function NewHabitScreen() {
       await create(draft);
       goBack();
     } catch (error) {
-      showError('Não foi possível criar o hábito.', error);
+      showError(t('Não foi possível criar o hábito.'), error);
     }
   };
 
   return (
     <Screen edges={['bottom', 'left', 'right']}>
-      <HabitForm initial={initial} submitLabel="Criar hábito" onSubmit={submit} />
+      <HabitForm initial={initial} submitLabel={t('Criar hábito')} onSubmit={submit} />
     </Screen>
   );
 }

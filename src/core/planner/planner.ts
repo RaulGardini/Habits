@@ -4,6 +4,7 @@ import type { Habit, HabitEntry } from '@/core/habits/types';
 import { isValidTime } from '@/core/habits/validation';
 
 import type { EventDraft, Goal, GoalDraft, GoalScope } from './types';
+import { t } from '@/i18n/i18n';
 
 export const TITLE_MAX_LENGTH = 120;
 
@@ -17,8 +18,9 @@ export function minutesOf(time: string): number {
 
 export function validateTitle(title: string): string | undefined {
   const trimmed = title.trim();
-  if (trimmed.length === 0) return 'Informe um título.';
-  if (trimmed.length > TITLE_MAX_LENGTH) return `Use no máximo ${TITLE_MAX_LENGTH} caracteres.`;
+  if (trimmed.length === 0) return t('Informe um título.');
+  if (trimmed.length > TITLE_MAX_LENGTH)
+    return t('Use no máximo {max} caracteres.', { max: TITLE_MAX_LENGTH });
   return undefined;
 }
 
@@ -27,14 +29,14 @@ export function validateEventDraft(draft: EventDraft): Partial<Record<keyof Even
   const title = validateTitle(draft.title);
   if (title) errors.title = title;
   if (draft.repeat !== 'none' && draft.repeatUntil !== null && draft.repeatUntil < draft.date) {
-    errors.repeatUntil = 'O fim da repetição deve ser depois do início.';
+    errors.repeatUntil = t('O fim da repetição deve ser depois do início.');
   }
   if (draft.allDay) return errors;
-  if (!isValidTime(draft.startTime)) errors.startTime = 'Horário inválido (use HH:mm).';
+  if (!isValidTime(draft.startTime)) errors.startTime = t('Horário inválido (use HH:mm).');
   if (draft.endTime !== null) {
-    if (!isValidTime(draft.endTime)) errors.endTime = 'Horário inválido (use HH:mm).';
+    if (!isValidTime(draft.endTime)) errors.endTime = t('Horário inválido (use HH:mm).');
     else if (!errors.startTime && minutesOf(draft.endTime) <= minutesOf(draft.startTime)) {
-      errors.endTime = 'O fim deve ser depois do início.';
+      errors.endTime = t('O fim deve ser depois do início.');
     }
   }
   return errors;
@@ -45,9 +47,9 @@ export function validateGoalDraft(draft: GoalDraft): Partial<Record<keyof GoalDr
   const title = validateTitle(draft.title);
   if (title) errors.title = title;
   if (!Number.isFinite(draft.target) || draft.target <= 0)
-    errors.target = 'Informe uma meta maior que zero.';
+    errors.target = t('Informe uma meta maior que zero.');
   const pattern = draft.scope === 'month' ? /^\d{4}-\d{2}$/ : /^\d{4}$/;
-  if (!pattern.test(draft.period)) errors.period = 'Período inválido.';
+  if (!pattern.test(draft.period)) errors.period = t('Período inválido.');
   return errors;
 }
 

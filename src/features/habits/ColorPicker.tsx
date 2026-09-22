@@ -5,6 +5,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH_SIZE, radius, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { Icon } from '@/ui/Icon';
+import { t } from '@/i18n/i18n';
 
 interface ColorPickerProps {
   value: string;
@@ -16,9 +17,9 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
   return (
     <View style={styles.container}>
       <AppText variant="label" tone="muted">
-        Cor
+        {t('Cor')}
       </AppText>
-      <View accessibilityRole="radiogroup" accessibilityLabel="Cor" style={styles.row}>
+      <View accessibilityRole="radiogroup" accessibilityLabel={t('Cor')} style={styles.row}>
         {HABIT_COLORS.map((color) => {
           const selected = color.key === value;
           const { solid, onSolid } = color[scheme];
@@ -27,7 +28,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
               key={color.key}
               onPress={() => onChange(color.key)}
               accessibilityRole="radio"
-              accessibilityLabel={color.label}
+              accessibilityLabel={t(color.label)}
               accessibilityState={{ checked: selected }}
               style={[styles.ring, { borderColor: selected ? colors.text : 'transparent' }]}
             >

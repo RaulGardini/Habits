@@ -5,6 +5,7 @@ import { Platform, useWindowDimensions } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, WIDE_BREAKPOINT } from '@/theme/tokens';
 import { Icon } from '@/ui/Icon';
+import { t } from '@/i18n/i18n';
 
 const TABS = [
   { name: 'index', title: 'Hoje', icon: 'white-balance-sunny', sf: ['sun.max', 'sun.max.fill'] },
@@ -40,7 +41,7 @@ function IosTabs() {
     <NativeTabs tintColor={colors.accent} minimizeBehavior="onScrollDown">
       {TABS.map((tab) => (
         <NativeTabs.Trigger key={tab.name} name={tab.name}>
-          <NativeTabs.Trigger.Label>{tab.title}</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Label>{t(tab.title)}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon sf={{ default: tab.sf[0], selected: tab.sf[1] }} />
         </NativeTabs.Trigger>
       ))}
@@ -87,7 +88,7 @@ function JsTabs() {
           key={tab.name}
           name={tab.name}
           options={{
-            title: tab.title,
+            title: t(tab.title),
             tabBarIcon: ({ color, size }) => (
               <Icon name={tab.icon} size={size} color={String(color)} />
             ),

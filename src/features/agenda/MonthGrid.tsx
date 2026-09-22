@@ -4,12 +4,13 @@ import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-nativ
 import { weeksGrid } from '@/core/dates/calendar';
 import { formatDayLabel, parseLocalDate, type LocalDate } from '@/core/dates/localDate';
 import type { DateRange } from '@/core/dates/periods';
-import { orderedWeekdays, WEEKDAY_LETTER } from '@/core/dates/weekdays';
+import { orderedWeekdays, weekdayLetter } from '@/core/dates/weekdays';
 import type { WeekStartsOn } from '@/core/habits/types';
 import { resolveHabitColor } from '@/theme/habitColors';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
+import { t } from '@/i18n/i18n';
 
 interface MonthGridProps {
   range: DateRange;
@@ -53,7 +54,7 @@ export function MonthGrid({
             tone="muted"
             style={[styles.weekday, { width: cell }]}
           >
-            {WEEKDAY_LETTER[weekday]}
+            {weekdayLetter(weekday)}
           </AppText>
         ))}
       </View>
@@ -76,7 +77,7 @@ export function MonthGrid({
                     accessibilityState={{ selected: isSelected, disabled }}
                     accessibilityLabel={[
                       formatDayLabel(date, today),
-                      count > 0 ? `${count} ${count === 1 ? 'evento' : 'eventos'}` : null,
+                      count > 0 ? t('{count} eventos', { count }) : null,
                     ]
                       .filter(Boolean)
                       .join(', ')}

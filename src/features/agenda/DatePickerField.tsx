@@ -14,6 +14,7 @@ import { IconButton } from '@/ui/IconButton';
 
 import { monthLabel } from './format';
 import { MonthGrid } from './MonthGrid';
+import { t } from '@/i18n/i18n';
 
 interface DatePickerFieldProps {
   label: string;
@@ -56,7 +57,7 @@ export function DatePickerField({ label, value, onChange, minDate, error }: Date
           <View style={styles.monthRow}>
             <IconButton
               icon="chevron-left"
-              label="Mês anterior"
+              label={t('Mês anterior')}
               onPress={() => setMonth(shiftPeriod(month, 'month', -1))}
             />
             <AppText variant="bodyStrong" style={styles.monthLabel}>
@@ -64,7 +65,7 @@ export function DatePickerField({ label, value, onChange, minDate, error }: Date
             </AppText>
             <IconButton
               icon="chevron-right"
-              label="Próximo mês"
+              label={t('Próximo mês')}
               onPress={() => setMonth(shiftPeriod(month, 'month', 1))}
             />
           </View>

@@ -2,7 +2,7 @@ import type { IconName } from '@/ui/Icon';
 
 export interface HabitIconOption {
   name: IconName;
-  /** pt-BR label for screen readers. */
+  /** pt-BR label; translated by the picker (see `t`). */
   label: string;
 }
 

@@ -11,7 +11,9 @@
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.raulgardini.habits",
       "entitlements": {
-        "com.apple.security.application-groups": ["group.com.raulgardini.habits"]
+        "com.apple.security.application-groups": [
+          "group.com.raulgardini.habits"
+        ]
       },
       "supportsTablet": false,
       "infoPlist": {
@@ -96,7 +98,8 @@
           ]
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-localization"
     ],
     "experiments": {
       "reactCompiler": true
@@ -118,7 +121,9 @@
                   "bundleIdentifier": "com.raulgardini.habits.widget",
                   "targetName": "HabitsWidget",
                   "entitlements": {
-                    "com.apple.security.application-groups": ["group.com.raulgardini.habits"]
+                    "com.apple.security.application-groups": [
+                      "group.com.raulgardini.habits"
+                    ]
                   }
                 }
               ]

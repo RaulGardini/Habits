@@ -7,6 +7,7 @@ import { UNIT_MAX_LENGTH } from '@/core/habits/validation';
 import { spacing } from '@/theme/tokens';
 import { SegmentedControl } from '@/ui/SegmentedControl';
 import { TextField } from '@/ui/TextField';
+import { t } from '@/i18n/i18n';
 
 interface TrackingPickerProps {
   value: Tracking;
@@ -14,11 +15,13 @@ interface TrackingPickerProps {
   errors: { tracking?: string; unit?: string; step?: string };
 }
 
-const TYPE_OPTIONS = [
-  { value: 'boolean', label: 'Sim/Não', icon: 'check' },
-  { value: 'quantity', label: 'Quantidade', icon: 'counter' },
-  { value: 'timer', label: 'Timer', icon: 'timer-outline' },
-] as const;
+function TYPE_OPTIONS() {
+  return [
+    { value: 'boolean', label: t('Sim/Não'), icon: 'check' },
+    { value: 'quantity', label: t('Quantidade'), icon: 'counter' },
+    { value: 'timer', label: t('Timer'), icon: 'timer-outline' },
+  ] as const;
+}
 
 interface Texts {
   target: string;
@@ -65,8 +68,8 @@ export function TrackingPicker({ value, onChange, errors }: TrackingPickerProps)
   return (
     <View style={styles.container}>
       <SegmentedControl<TrackingType>
-        label="Acompanhamento"
-        options={TYPE_OPTIONS}
+        label={t('Acompanhamento')}
+        options={TYPE_OPTIONS()}
         value={value.type}
         onChange={(type) => onChange(trackingFrom(type, texts))}
       />
@@ -76,7 +79,7 @@ export function TrackingPicker({ value, onChange, errors }: TrackingPickerProps)
           <View style={styles.row}>
             <View style={styles.flex}>
               <TextField
-                label="Meta diária"
+                label={t('Meta diária')}
                 value={texts.target}
                 onChangeText={(text) => updateText('target', text)}
                 keyboardType="decimal-pad"
@@ -86,17 +89,17 @@ export function TrackingPicker({ value, onChange, errors }: TrackingPickerProps)
             </View>
             <View style={styles.flex}>
               <TextField
-                label="Unidade"
+                label={t('Unidade')}
                 value={texts.unit}
                 onChangeText={(text) => updateText('unit', text)}
-                placeholder="L, páginas…"
+                placeholder={t('L, páginas…')}
                 maxLength={UNIT_MAX_LENGTH}
                 error={errors.unit}
               />
             </View>
           </View>
           <TextField
-            label="Incremento dos botões + / −"
+            label={t('Incremento dos botões + / −')}
             value={texts.step}
             onChangeText={(text) => updateText('step', text)}
             keyboardType="decimal-pad"
@@ -108,7 +111,7 @@ export function TrackingPicker({ value, onChange, errors }: TrackingPickerProps)
 
       {value.type === 'timer' ? (
         <TextField
-          label="Meta diária (minutos)"
+          label={t('Meta diária (minutos)')}
           value={texts.minutes}
           onChangeText={(text) => updateText('minutes', text)}
           keyboardType="decimal-pad"
