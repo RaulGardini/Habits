@@ -109,7 +109,7 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   Every widget component must start with `'use no memo'` (the library calls components as plain
   functions; React Compiler hooks crash them — a module-level directive is NOT enough).
 - **iOS** (`@bacons/apple-targets`, `targets/widget/*.swift`): SwiftUI cannot run JS or open
-  the SQLite DB. The app writes a JSON snapshot to the App Group `group.dev.habits.app`
+  the SQLite DB. The app writes a JSON snapshot to the App Group `group.com.raulgardini.habits`
   (`src/widgets/sync.ios.ts`); widget taps (AppIntent, iOS 17+) append to a queue that the app
   applies on start/foreground (`consumePendingWidgetActions`). Keep `Snapshot.swift` in sync
   with `src/widgets/iosPayload.ts`.
@@ -152,8 +152,9 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   `public/privacidade.html` (`npm run legal`). Keep the text in sync with what the app collects.
 - `eas.json` profiles: `development` (dev client), `preview` (internal APK), `production`
   (auto-increment, remote app version). No `projectId` yet: the owner runs `eas init`.
-- Bundle id / package `dev.habits.app` and App Group `group.dev.habits.app` are **provisional**;
-  changing them means app.json + `src/widgets/iosPayload.ts` + `targets/widget/Snapshot.swift`.
+- Bundle id / package `com.raulgardini.habits`, App Group `group.com.raulgardini.habits` (final;
+  they live in app.json + `src/widgets/iosPayload.ts` + `targets/widget/Snapshot.swift`). First release ships **without** cloud sync
+  (no Supabase env vars; the privacy policy has no account section — restore it if sync is enabled).
 - `public/_redirects` makes SPA routes work on Netlify/Cloudflare Pages.
 
 ## Roadmap

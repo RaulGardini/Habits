@@ -15,7 +15,7 @@ gratuita para isso:
 
 ## 1. Decisões que só você pode tomar (antes do primeiro build de produção)
 
-- [ ] **Identificador definitivo** (não muda depois de publicado). Hoje é `dev.habits.app`.
+- [ ] **Identificador definitivo** (não muda depois de publicado). Definido: `com.raulgardini.habits` ✅
       Sugestão: `com.<seunome>.habits`. Troque em **todos** os lugares:
   - `app.json` → `ios.bundleIdentifier`, `android.package` e
     `ios.entitlements["com.apple.security.application-groups"]` (`group.<id>`)

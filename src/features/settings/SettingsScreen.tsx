@@ -58,6 +58,7 @@ export function SettingsScreen() {
   const setThemePreference = useSettingsStore((state) => state.setThemePreference);
   const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
   const setWeekStartsOn = useSettingsStore((state) => state.setWeekStartsOn);
+  const syncConfigured = useSyncStore((state) => state.configured);
 
   return (
     <Screen>
@@ -94,9 +95,11 @@ export function SettingsScreen() {
         </AppText>
       </Section>
 
-      <Section title="Conta e sincronização" icon="cloud-sync-outline">
-        <AccountSection />
-      </Section>
+      {syncConfigured ? (
+        <Section title="Conta e sincronização" icon="cloud-sync-outline">
+          <AccountSection />
+        </Section>
+      ) : null}
 
       <Section title="Lembretes" icon="bell-outline">
         <NotificationsStatus />

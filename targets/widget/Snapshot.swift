@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Shared with the app (src/widgets/iosPayload.ts). Keep both sides in sync.
 enum SharedStore {
-  static let appGroup = "group.dev.habits.app"
+  static let appGroup = "group.com.raulgardini.habits"
   static let snapshotKey = "widgetSnapshot"
   static let pendingActionsKey = "pendingWidgetActions"
 

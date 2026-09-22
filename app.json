@@ -9,10 +9,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "dev.habits.app",
+      "bundleIdentifier": "com.raulgardini.habits",
       "entitlements": {
         "com.apple.security.application-groups": [
-          "group.dev.habits.app"
+          "group.com.raulgardini.habits"
         ]
       },
       "supportsTablet": false,
@@ -28,7 +28,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "dev.habits.app",
+      "package": "com.raulgardini.habits",
       "blockedPermissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",

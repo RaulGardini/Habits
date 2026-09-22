@@ -3,7 +3,7 @@ import { resolveHabitColor } from '@/theme/habitColors';
 import { themeColors } from '@/theme/tokens';
 
 /** App Group shared by the app and the iOS widget extension (see targets/widget). */
-export const APP_GROUP = 'group.dev.habits.app';
+export const APP_GROUP = 'group.com.raulgardini.habits';
 /** UserDefaults keys in the App Group. */
 export const SNAPSHOT_KEY = 'widgetSnapshot';
 export const PENDING_ACTIONS_KEY = 'pendingWidgetActions';
