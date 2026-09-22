@@ -8,8 +8,9 @@ import { maxDate, minDate, periodRange } from '@/core/dates/periods';
 import { computeDayProgress, groupByTimeOfDay, highlightedPeriod } from '@/core/habits/day';
 import { periodQuota, type PeriodQuota } from '@/core/habits/quota';
 import { habitsDueOn } from '@/core/habits/schedule';
+import type { Streaks } from '@/core/habits/streaks';
 import type { EntryInput, Habit, HabitEntry } from '@/core/habits/types';
-import { TIME_OF_DAY_ICON, TIME_OF_DAY_LABEL } from '@/features/habits/labels';
+import { describeStreak, TIME_OF_DAY_ICON, TIME_OF_DAY_LABEL } from '@/features/habits/labels';
 import { useStreaks } from '@/features/habits/useStreaks';
 import { useNow } from '@/hooks/useNow';
 import { hapticSuccess } from '@/lib/haptics';
@@ -28,13 +29,23 @@ import { Icon } from '@/ui/Icon';
 import { ProgressBar } from '@/ui/ProgressBar';
 import { Screen } from '@/ui/Screen';
 
-import { Celebration } from './Celebration';
+import { Celebration, type CelebrationContent } from './Celebration';
 import { DayNavigator } from './DayNavigator';
 import { HabitActionSheet, type HabitActionTarget } from './HabitActionSheet';
 import { HabitBubble } from './HabitBubble';
 import { TodayAgenda } from './TodayAgenda';
 
 const GREETING = { morning: 'Bom dia', afternoon: 'Boa tarde', evening: 'Boa noite' } as const;
+
+/** Streak lengths worth a small celebration. */
+const MILESTONES = [7, 30, 100, 365];
+
+function milestoneMessage(count: number, unit: Streaks['unit']): string {
+  if (unit === 'day' && count === 7) return '1 semana seguida! 🔥';
+  if (unit === 'day' && count === 30) return '30 dias seguidos! 🔥';
+  if (unit === 'day' && count === 365) return '1 ano seguido! 🏆';
+  return `${describeStreak(count, unit)} seguidos! 🔥`;
+}
 
 /** Habits per row (more only on wide screens), and the circle size cap. */
 const COLUMNS = 5;
@@ -73,6 +84,7 @@ export function TodayScreen() {
 
   const habits = useHabitsStore((state) => state.habits);
   const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
+  const displayName = useSettingsStore((state) => state.displayName);
   const { entries } = useDayEntries(date);
   const save = useEntriesStore((state) => state.save);
 
@@ -94,7 +106,9 @@ export function TodayScreen() {
   const columns = Math.max(COLUMNS, Math.floor(width / WIDE_CELL));
   const cell = width > 0 ? width / columns : WIDE_CELL;
   const circle = Math.min(MAX_CIRCLE, cell - spacing.sm);
-  const celebrating = useDayCompleted(date, progress.completed, progress.total);
+  const [celebration, setCelebration] = useState<CelebrationContent | null>(null);
+  useDayCompleted(date, progress.completed, progress.total, setCelebration);
+  useStreakMilestones(date, today, streaks, setCelebration);
 
   const saveEntry = (habit: Habit, next: EntryInput | null) =>
     save(habit.id, date, next).catch((error: unknown) =>
@@ -124,7 +138,11 @@ export function TodayScreen() {
         date={date}
         today={today}
         onChange={setDate}
-        greeting={GREETING[getDayPeriod(now)]}
+        greeting={
+          displayName
+            ? `${GREETING[getDayPeriod(now)]}, ${displayName}`
+            : GREETING[getDayPeriod(now)]
+        }
       />
 
       {due.length > 0 ? (
@@ -232,14 +250,18 @@ export function TodayScreen() {
         onSave={saveEntry}
         onTimerToggle={toggleTimer}
       />
-      <Celebration visible={celebrating.visible} onDone={celebrating.dismiss} />
+      <Celebration content={celebration} onDone={() => setCelebration(null)} />
     </Screen>
   );
 }
 
-/** True right after the last habit of the day is completed (not when opening an already-done day). */
-function useDayCompleted(date: LocalDate, completed: number, total: number) {
-  const [visible, setVisible] = useState(false);
+/** Celebrates right after the last habit of the day is completed (not on opening a done day). */
+function useDayCompleted(
+  date: LocalDate,
+  completed: number,
+  total: number,
+  celebrate: (content: CelebrationContent) => void,
+) {
   const previous = useRef<{ date: LocalDate; done: boolean } | null>(null);
 
   useEffect(() => {
@@ -248,11 +270,33 @@ function useDayCompleted(date: LocalDate, completed: number, total: number) {
     previous.current = { date, done };
     if (before?.date === date && !before.done && done) {
       hapticSuccess();
-      setVisible(true);
+      celebrate({ message: 'Tudo feito hoje! 🎉', pieces: 28 });
     }
-  }, [date, completed, total]);
+  }, [date, completed, total, celebrate]);
+}
 
-  return { visible, dismiss: () => setVisible(false) };
+/** Celebrates when a streak reaches 7, 30, 100 or 365 while the user is on today. */
+function useStreakMilestones(
+  date: LocalDate,
+  today: LocalDate,
+  streaks: ReadonlyMap<string, Streaks>,
+  celebrate: (content: CelebrationContent) => void,
+) {
+  const previous = useRef<Map<string, number> | null>(null);
+
+  useEffect(() => {
+    const current = new Map([...streaks].map(([id, streak]) => [id, streak.current]));
+    const before = previous.current;
+    previous.current = current;
+    if (!before || date !== today) return;
+    for (const [id, count] of current) {
+      const was = before.get(id);
+      if (was === undefined || count <= was || !MILESTONES.includes(count)) continue;
+      hapticSuccess();
+      celebrate({ message: milestoneMessage(count, streaks.get(id)?.unit ?? 'day'), pieces: 14 });
+      return;
+    }
+  }, [date, today, streaks, celebrate]);
 }
 
 /**

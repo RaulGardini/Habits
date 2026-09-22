@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
+  useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
@@ -18,6 +19,8 @@ import { resolveHabitColor } from '@/theme/habitColors';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from '@/ui/AppText';
 import { Icon } from '@/ui/Icon';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const RING = 4;
 
@@ -76,6 +79,15 @@ export function HabitBubble({
   const circumference = 2 * Math.PI * radiusRing;
   const inner = size - RING * 2 - 4;
 
+  // The ring fills with a spring instead of jumping to the new value.
+  const filled = useSharedValue(progress);
+  useEffect(() => {
+    filled.set(withSpring(progress, { damping: 18, stiffness: 120 }));
+  }, [progress, filled]);
+  const ringProps = useAnimatedProps(() => ({
+    strokeDasharray: `${circumference * filled.get()} ${circumference}`,
+  }));
+
   return (
     <Pressable
       onPress={onPress}
@@ -104,8 +116,8 @@ export function HabitBubble({
             strokeWidth={RING}
             fill="none"
           />
-          {progress > 0 && !done ? (
-            <Circle
+          {done ? null : (
+            <AnimatedCircle
               cx={size / 2}
               cy={size / 2}
               r={radiusRing}
@@ -113,10 +125,10 @@ export function HabitBubble({
               strokeWidth={RING}
               strokeLinecap="round"
               fill="none"
-              strokeDasharray={`${circumference * progress} ${circumference}`}
+              animatedProps={ringProps}
               transform={`rotate(-90 ${size / 2} ${size / 2})`}
             />
-          ) : null}
+          )}
         </Svg>
         <View
           style={[

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { LocalDate } from '@/core/dates/localDate';
@@ -22,6 +23,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { MAX_CONTENT_WIDTH, radius, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { Button } from '@/ui/Button';
+import { Glass, nativeGlass } from '@/ui/Glass';
 import { IconButton } from '@/ui/IconButton';
 
 export interface HabitActionTarget {
@@ -57,29 +59,48 @@ export function HabitActionSheet({
     <Modal
       visible={target !== null}
       transparent
-      animationType="fade"
+      animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <View style={[styles.backdrop, { backgroundColor: colors.overlay }]}>
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel="Fechar"
-        />
+      <View style={styles.backdrop}>
+        <Animated.View
+          entering={FadeIn.duration(180)}
+          style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }]}
+        >
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Fechar"
+          />
+        </Animated.View>
         {target ? (
-          <View
+          <Animated.View
+            entering={SlideInDown.springify().damping(18).stiffness(160)}
             style={[
               styles.sheet,
               {
-                backgroundColor: colors.surface,
+                backgroundColor: nativeGlass ? 'transparent' : colors.surface,
                 paddingBottom: spacing.xl + insets.bottom,
                 boxShadow: `0 -8px 32px ${colors.shadow}33`,
               },
             ]}
             accessibilityViewIsModal
           >
+            {nativeGlass ? (
+              <Glass
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    borderTopLeftRadius: radius.lg + 6,
+                    borderTopRightRadius: radius.lg + 6,
+                    borderBottomLeftRadius: 0,
+                    borderBottomRightRadius: 0,
+                  },
+                ]}
+              />
+            ) : null}
             <SheetContent
               // Fresh local state (e.g. the quantity being edited) for each habit.
               key={target.habit.id}
@@ -89,7 +110,7 @@ export function HabitActionSheet({
               onSave={onSave}
               onTimerToggle={onTimerToggle}
             />
-          </View>
+          </Animated.View>
         ) : null}
       </View>
     </Modal>

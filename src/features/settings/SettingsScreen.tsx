@@ -23,6 +23,7 @@ import { Card } from '@/ui/Card';
 import { confirm, showError } from '@/ui/dialogs';
 import { Screen } from '@/ui/Screen';
 import { SegmentedControl } from '@/ui/SegmentedControl';
+import { TextField } from '@/ui/TextField';
 
 import { AccountSection } from './AccountSection';
 import { CloudBackupSection } from './CloudBackupSection';
@@ -77,6 +78,10 @@ export function SettingsScreen() {
         />
       </Section>
 
+      <Section title="Seu nome">
+        <NameField />
+      </Section>
+
       <Section title="Calendário">
         <SegmentedControl<'0' | '1'>
           label="Primeiro dia da semana"
@@ -127,6 +132,44 @@ export function SettingsScreen() {
         Habits {Constants.expoConfig?.version ?? ''} · gratuito e sem anúncios.
       </AppText>
     </Screen>
+  );
+}
+
+/** Optional first name, used in the greeting on the Today screen. */
+function NameField() {
+  const saved = useSettingsStore((state) => state.displayName);
+  const [name, setName] = useState(saved);
+  // Keep the field in sync when another device changes it.
+  const [lastSaved, setLastSaved] = useState(saved);
+  if (saved !== lastSaved) {
+    setLastSaved(saved);
+    setName(saved);
+  }
+
+  const commit = () => {
+    if (name.trim() === saved) return;
+    useSettingsStore
+      .getState()
+      .setDisplayName(name)
+      .catch((error: unknown) => showError('Não foi possível salvar o nome.', error));
+  };
+
+  return (
+    <>
+      <TextField
+        label="Como quer ser chamado?"
+        value={name}
+        onChangeText={setName}
+        onBlur={commit}
+        onSubmitEditing={commit}
+        placeholder="Ex: Raul"
+        maxLength={40}
+        returnKeyType="done"
+      />
+      <AppText variant="caption" tone="muted">
+        Usado na saudação da tela Hoje. Deixe em branco para não usar nome.
+      </AppText>
+    </>
   );
 }
 

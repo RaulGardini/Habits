@@ -13,17 +13,29 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { radius, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 
-const PIECES = 28;
 const DURATION = 2200;
 
-/** Confetti + a short message when every habit of the day is done. */
-export function Celebration({ visible, onDone }: { visible: boolean; onDone: () => void }) {
+export interface CelebrationContent {
+  message: string;
+  /** Fewer pieces for smaller wins (a streak milestone). */
+  pieces: number;
+}
+
+/** Confetti + a short message: the day is complete, or a habit hit a streak milestone. */
+export function Celebration({
+  content,
+  onDone,
+}: {
+  content: CelebrationContent | null;
+  onDone: () => void;
+}) {
   const { colors, scheme } = useTheme();
   const { width, height } = useWindowDimensions();
   // Deterministic spread (the golden ratio scatters the pieces evenly without randomness).
+  const count = content?.pieces ?? 0;
   const pieces = useMemo(
     () =>
-      Array.from({ length: PIECES }, (_, index) => ({
+      Array.from({ length: count }, (_, index) => ({
         id: index,
         x: width * (((index + 1) * 0.618033) % 1),
         delay: (index % 7) * 70,
@@ -31,16 +43,16 @@ export function Celebration({ visible, onDone }: { visible: boolean; onDone: () 
         spin: index % 2 === 0 ? 1 : -1,
         color: (HABIT_COLORS[index % HABIT_COLORS.length] ?? HABIT_COLORS[0])![scheme].solid,
       })),
-    [width, scheme],
+    [count, width, scheme],
   );
 
   useEffect(() => {
-    if (!visible) return;
+    if (!content) return;
     const id = setTimeout(onDone, DURATION + 400);
     return () => clearTimeout(id);
-  }, [visible, onDone]);
+  }, [content, onDone]);
 
-  if (!visible) return null;
+  if (!content) return null;
 
   return (
     <View
@@ -55,7 +67,7 @@ export function Celebration({ visible, onDone }: { visible: boolean; onDone: () 
       <View style={styles.center}>
         <View style={[styles.toast, { backgroundColor: colors.primary }]}>
           <AppText variant="bodyStrong" tone={colors.onPrimary}>
-            Tudo feito hoje! 🎉
+            {content.message}
           </AppText>
         </View>
       </View>

@@ -106,6 +106,8 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - `Celebration` (confetti, deterministic so the React Compiler stays happy) fires when the last
   habit of the day is completed — never when merely opening an already-finished day.
 - `TodayAgenda` shows the day's events under the habits (up to 4) with links to the Agenda.
+- The greeting uses the optional `displayName` setting ("Bom dia, Raul"), edited in Settings.
+- `Celebration` also fires on streak milestones (7/30/100/365) with fewer confetti pieces.
 
 ## Agenda (`src/features/agenda`, logic in `src/core/planner/agenda.ts`)
 
