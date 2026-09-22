@@ -16,6 +16,21 @@ export function contrastRatio(a: string, b: string): number {
   return ((light ?? 0) + 0.05) / ((dark ?? 0) + 0.05);
 }
 
+/** Mixes a `#rrggbb` color towards white (`amount` > 0) or black (`amount` < 0). */
+export function shade(hex: string, amount: number): string {
+  const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!match) return hex;
+  const target = amount >= 0 ? 255 : 0;
+  const ratio = Math.min(1, Math.abs(amount));
+  const channels = match.slice(1).map((part) => {
+    const value = parseInt(part, 16);
+    return Math.round(value + (target - value) * ratio)
+      .toString(16)
+      .padStart(2, '0');
+  });
+  return `#${channels.join('')}`;
+}
+
 /** Appends an alpha channel to a `#rrggbb` color. */
 export function withAlpha(hex: string, alpha: number): string {
   const byte = Math.round(Math.min(1, Math.max(0, alpha)) * 255);

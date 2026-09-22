@@ -8,7 +8,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { formatClock, formatNumber } from '@/core/format';
 import { entryProgress } from '@/core/habits/entries';
@@ -78,14 +78,20 @@ export function HabitBubble({
   const radiusRing = (size - RING) / 2;
   const circumference = 2 * Math.PI * radiusRing;
   const inner = size - RING * 2 - 4;
+  // SVG gradient ids must be unique per bubble.
+  const fillId = `fill-${habit.id}`;
+  const ringId = `ring-${habit.id}`;
 
-  // The ring fills with a spring instead of jumping to the new value.
-  const filled = useSharedValue(progress);
+  // The ring fills with a spring instead of jumping to the new value; a done habit is full.
+  const ringProgress = done ? 1 : progress;
+  const filled = useSharedValue(ringProgress);
   useEffect(() => {
-    filled.set(withSpring(progress, { damping: 18, stiffness: 120 }));
-  }, [progress, filled]);
+    filled.set(withSpring(ringProgress, { damping: 18, stiffness: 120 }));
+  }, [ringProgress, filled]);
   const ringProps = useAnimatedProps(() => ({
     strokeDasharray: `${circumference * filled.get()} ${circumference}`,
+    // A rounded cap would draw a dot at the top when nothing is done yet.
+    strokeOpacity: filled.get() > 0.002 ? 1 : 0,
   }));
 
   return (
@@ -108,6 +114,24 @@ export function HabitBubble({
     >
       <Animated.View style={[{ width: size, height: size }, animated]}>
         <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+          <Defs>
+            <LinearGradient id={fillId} x1="0" y1="0" x2="1" y2="1">
+              <Stop
+                offset="0"
+                stopColor={done ? color.gradient[0] : color.solid}
+                stopOpacity={done ? 1 : 0.24}
+              />
+              <Stop
+                offset="1"
+                stopColor={done ? color.gradient[1] : color.solid}
+                stopOpacity={done ? 1 : 0.1}
+              />
+            </LinearGradient>
+            <LinearGradient id={ringId} x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0" stopColor={color.gradient[0]} />
+              <Stop offset="1" stopColor={color.gradient[1]} />
+            </LinearGradient>
+          </Defs>
           <Circle
             cx={size / 2}
             cy={size / 2}
@@ -116,32 +140,21 @@ export function HabitBubble({
             strokeWidth={RING}
             fill="none"
           />
-          {done ? null : (
-            <AnimatedCircle
-              cx={size / 2}
-              cy={size / 2}
-              r={radiusRing}
-              stroke={color.solid}
-              strokeWidth={RING}
-              strokeLinecap="round"
-              fill="none"
-              animatedProps={ringProps}
-              transform={`rotate(-90 ${size / 2} ${size / 2})`}
-            />
-          )}
+          <Circle cx={size / 2} cy={size / 2} r={inner / 2} fill={`url(#${fillId})`} />
+          <AnimatedCircle
+            cx={size / 2}
+            cy={size / 2}
+            r={radiusRing}
+            stroke={`url(#${ringId})`}
+            strokeWidth={RING}
+            strokeLinecap="round"
+            fill="none"
+            animatedProps={ringProps}
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          />
         </Svg>
         <View
-          style={[
-            styles.inner,
-            {
-              width: inner,
-              height: inner,
-              borderRadius: inner / 2,
-              top: RING + 2,
-              left: RING + 2,
-              backgroundColor: done ? color.solid : color.soft,
-            },
-          ]}
+          style={[styles.inner, { width: inner, height: inner, top: RING + 2, left: RING + 2 }]}
         >
           <Icon name={habit.icon} size={inner * 0.46} color={done ? color.onSolid : color.solid} />
         </View>

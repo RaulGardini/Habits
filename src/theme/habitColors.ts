@@ -1,4 +1,4 @@
-import { withAlpha } from './contrast';
+import { shade, withAlpha } from './contrast';
 import type { ColorScheme } from './tokens';
 
 export interface HabitColorVariant {
@@ -180,6 +180,8 @@ const byKey = new Map(HABIT_COLORS.map((color) => [color.key, color]));
 export interface ResolvedHabitColor extends HabitColorVariant {
   /** Translucent tint for card backgrounds / unchecked states. */
   soft: string;
+  /** Gradient stops (light → dark) for filled shapes. */
+  gradient: [string, string];
   label: string;
 }
 
@@ -190,6 +192,7 @@ export function resolveHabitColor(key: string, scheme: ColorScheme): ResolvedHab
   return {
     ...variant,
     soft: withAlpha(variant.solid, scheme === 'light' ? 0.12 : 0.2),
+    gradient: [shade(variant.solid, 0.18), shade(variant.solid, -0.14)],
     label: definition.label,
   };
 }

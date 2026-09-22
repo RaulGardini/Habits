@@ -107,3 +107,19 @@ png(
   'widget-heatmap-preview.png',
   card(640, 400, `${text(36, 70, 'Últimas semanas', 36, 700)}${heat.join('')}`),
 );
+
+// Paper grain tile for the light theme background (deterministic, tiles seamlessly).
+const GRAIN = 96;
+let seed = 7;
+const rand = () => {
+  seed = (seed * 1664525 + 1013904223) % 4294967296;
+  return seed / 4294967296;
+};
+const grains = Array.from({ length: 1400 }, () => {
+  const x = Math.floor(rand() * GRAIN);
+  const y = Math.floor(rand() * GRAIN);
+  const dark = rand() > 0.45;
+  const opacity = (0.03 + rand() * 0.05).toFixed(3);
+  return `<rect x="${x}" y="${y}" width="1" height="1" fill="${dark ? '#5a4a2a' : '#ffffff'}" fill-opacity="${opacity}"/>`;
+}).join('');
+png('paper-texture.png', svg(GRAIN, grains));
