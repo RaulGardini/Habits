@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
-import { configureNotifications, syncReminders } from '@/lib/notifications';
+import { configureNotifications } from '@/lib/notifications';
 import { useEntriesStore } from '@/stores/entriesStore';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { usePlannerStore } from '@/stores/plannerStore';
+import { rescheduleReminders } from '@/stores/reminders';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useSyncStore } from '@/stores/syncStore';
 import { useTimerStore } from '@/stores/timerStore';
@@ -84,19 +85,21 @@ function startWidgetSync(): void {
  * roll forward) and after every habit change. Failures are logged, never block the app.
  */
 function startReminderSync(): void {
-  const sync = (habits: Parameters<typeof syncReminders>[0]) =>
-    syncReminders(habits).catch((error: unknown) => console.error('Reminder sync failed', error));
+  const sync = () =>
+    rescheduleReminders().catch((error: unknown) => console.error('Reminder sync failed', error));
 
   configureNotifications()
-    .then(() => sync(useHabitsStore.getState().habits))
+    .then(sync)
     .catch((error: unknown) => console.error('Notification setup failed', error));
 
   let timer: ReturnType<typeof setTimeout> | null = null;
-  useHabitsStore.subscribe((state, previous) => {
-    if (state.habits === previous.habits) return;
+  const later = () => {
     if (timer) clearTimeout(timer);
-    timer = setTimeout(() => sync(useHabitsStore.getState().habits), 500);
-  });
+    timer = setTimeout(sync, 500);
+  };
+  useHabitsStore.subscribe((state, previous) => state.habits !== previous.habits && later());
+  // Agenda writes bump the planner version (events may have reminders).
+  usePlannerStore.subscribe((state, previous) => state.version !== previous.version && later());
 }
 
 // Module-level so it runs once even if the root layout re-mounts (e.g. fast refresh).

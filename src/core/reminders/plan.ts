@@ -3,6 +3,8 @@ import { weekdaysFromMask } from '@/core/dates/weekdays';
 import { formatNumber } from '@/core/format';
 import { isScheduledOn } from '@/core/habits/schedule';
 import type { Habit } from '@/core/habits/types';
+import { eventTimeLabel, expandOccurrences, reminderMoment } from '@/core/planner/agenda';
+import type { PlannerEvent } from '@/core/planner/types';
 
 /** iOS keeps at most 64 pending local notifications; stay below it. */
 export const MAX_SCHEDULED = 60;
@@ -16,7 +18,9 @@ export type ReminderTrigger =
   | { type: 'date'; date: LocalDate; hour: number; minute: number };
 
 export interface PlannedReminder {
-  habitId: string;
+  /** Habit or event the reminder belongs to (sent in the notification data). */
+  habitId?: string;
+  eventId?: string;
   title: string;
   body: string;
   trigger: ReminderTrigger;
@@ -85,8 +89,9 @@ export function planReminders(
   habits: readonly Habit[],
   today: LocalDate,
   now: Date,
+  events: readonly PlannerEvent[] = [],
 ): PlannedReminder[] {
-  const planned: PlannedReminder[] = [];
+  const planned: PlannedReminder[] = [...eventReminders(events, today, now)];
   for (const habit of habits) {
     if (habit.archivedAt !== null) continue;
     for (const time of habit.reminders) {
@@ -103,6 +108,33 @@ export function planReminders(
   return planned
     .sort((a, b) => priority(a.trigger).localeCompare(priority(b.trigger)))
     .slice(0, MAX_SCHEDULED);
+}
+
+/**
+ * One-off reminders for event occurrences in the next `ONE_OFF_HORIZON_DAYS` (a reminder the
+ * day before is included for tomorrow's first days). Past moments are dropped.
+ */
+export function eventReminders(
+  events: readonly PlannerEvent[],
+  today: LocalDate,
+  now: Date,
+): PlannedReminder[] {
+  const nowMinutes = timeOfDayMinutes(now);
+  const horizon = addDaysLocal(today, ONE_OFF_HORIZON_DAYS);
+  const planned: PlannedReminder[] = [];
+  for (const { event, date } of expandOccurrences(events, today, horizon)) {
+    const moment = reminderMoment(event, date);
+    if (!moment || moment.date < today || moment.date > horizon) continue;
+    if (moment.date === today && moment.hour * 60 + moment.minute <= nowMinutes) continue;
+    const when = date === today ? 'Hoje' : date === addDaysLocal(today, 1) ? 'Amanhã' : date;
+    planned.push({
+      eventId: event.id,
+      title: event.title,
+      body: [`${when} · ${eventTimeLabel(event)}`, event.location].filter(Boolean).join(' · '),
+      trigger: { type: 'date', ...moment },
+    });
+  }
+  return planned;
 }
 
 export function reminderBody(habit: Habit): string {

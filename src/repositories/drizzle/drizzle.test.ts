@@ -1,3 +1,4 @@
+import { newEventDraft } from '@/core/planner/agenda';
 import type { HabitDraft } from '@/core/habits/types';
 import { createTestDatabase } from '@/db/testing';
 
@@ -119,15 +120,37 @@ describe('planner', () => {
 
   it('stores events and goals', async () => {
     await repos.events.create({
+      ...newEventDraft('2026-09-21'),
       title: 'Reunião',
-      date: '2026-09-21',
-      startTime: '09:00',
       endTime: '10:00',
-      color: 'blue',
       note: ' ',
     });
     const [event] = await repos.events.listByRange('2026-09-21', '2026-09-21');
-    expect(event).toMatchObject({ title: 'Reunião', note: null });
+    expect(event).toMatchObject({ title: 'Reunião', note: null, allDay: false, excludedDates: [] });
+
+    // Recurring series started before the range are listed; ended ones are not.
+    await repos.events.create({
+      ...newEventDraft('2026-01-05'),
+      title: 'Academia',
+      repeat: 'weekly',
+      excludedDates: ['2026-09-28', '2026-09-21'],
+    });
+    await repos.events.create({
+      ...newEventDraft('2026-01-01'),
+      title: 'Curso',
+      repeat: 'daily',
+      repeatUntil: '2026-03-01',
+    });
+    const inOctober = await repos.events.listByRange('2026-09-28', '2026-10-04');
+    expect(inOctober.map((e) => e.title)).toEqual(['Academia']);
+    expect(inOctober[0]?.excludedDates).toEqual(['2026-09-21', '2026-09-28']);
+
+    const allDay = await repos.events.create({
+      ...newEventDraft('2026-09-22'),
+      title: 'Feriado',
+      allDay: true,
+    });
+    expect(allDay).toMatchObject({ allDay: true, startTime: '00:00', endTime: null });
 
     const goal = await repos.goals.create({
       title: 'Livros',

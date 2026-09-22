@@ -4,6 +4,13 @@ import {
   Stack,
   ThemeProvider as NavigationThemeProvider,
 } from 'expo-router';
+import {
+  Nunito_400Regular,
+  Nunito_600SemiBold,
+  Nunito_700Bold,
+  Nunito_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/nunito';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo } from 'react';
@@ -27,10 +34,18 @@ export default function RootLayout() {
 function App() {
   const bootstrap = useBootstrap();
   const { scheme, colors } = useTheme();
+  // A font that fails to load falls back to the system font: never block the app on it.
+  const [fontsLoaded, fontError] = useFonts({
+    Nunito_400Regular,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
+  });
+  const fontsReady = fontsLoaded || fontError !== null;
 
   useEffect(() => {
-    if (bootstrap.status !== 'loading') SplashScreen.hideAsync().catch(() => {});
-  }, [bootstrap.status]);
+    if (bootstrap.status !== 'loading' && fontsReady) SplashScreen.hideAsync().catch(() => {});
+  }, [bootstrap.status, fontsReady]);
 
   const navigationTheme = useMemo(() => {
     const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
@@ -38,7 +53,7 @@ function App() {
       ...base,
       colors: {
         ...base.colors,
-        primary: colors.primary,
+        primary: colors.accent,
         background: colors.background,
         card: colors.surface,
         text: colors.text,
@@ -47,11 +62,13 @@ function App() {
     };
   }, [scheme, colors]);
 
+  if (!fontsReady) return <View style={[styles.center, { backgroundColor: colors.background }]} />;
+
   if (bootstrap.status !== 'ready') {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
         {bootstrap.status === 'loading' ? (
-          <ActivityIndicator color={colors.primary} accessibilityLabel="Carregando" />
+          <ActivityIndicator color={colors.accent} accessibilityLabel="Carregando" />
         ) : (
           <>
             <AppText variant="heading">Não foi possível abrir seus dados</AppText>
@@ -71,7 +88,6 @@ function App() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="habit/new" options={{ title: 'Novo hábito', presentation: 'modal' }} />
         <Stack.Screen name="habit/[id]" options={{ title: 'Editar hábito' }} />
-        <Stack.Screen name="task/[id]" options={{ title: 'Editar tarefa' }} />
         <Stack.Screen name="event/new" options={{ title: 'Novo evento', presentation: 'modal' }} />
         <Stack.Screen name="event/[id]" options={{ title: 'Editar evento' }} />
         <Stack.Screen name="goal/new" options={{ title: 'Nova meta', presentation: 'modal' }} />

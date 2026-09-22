@@ -5,42 +5,11 @@ import {
   goalPeriodRange,
   goalProgress,
   linkedGoalValue,
-  overdueTasks,
-  pendingTasks,
-  sortEvents,
-  sortTasks,
-  summarizeDays,
   validateEventDraft,
   validateGoalDraft,
-  validateTaskDraft,
 } from './planner';
-import type { Goal, PlannerEvent, Task } from './types';
-
-const task = (patch: Partial<Task>): Task => ({
-  id: 't',
-  title: 'Tarefa',
-  date: '2026-09-21',
-  priority: 'normal',
-  completedAt: null,
-  rolledFrom: null,
-  sortOrder: 0,
-  createdAt: '2026-09-01T00:00:00.000Z',
-  updatedAt: '2026-09-01T00:00:00.000Z',
-  ...patch,
-});
-
-const event = (patch: Partial<PlannerEvent>): PlannerEvent => ({
-  id: 'e',
-  title: 'Evento',
-  date: '2026-09-21',
-  startTime: '09:00',
-  endTime: null,
-  color: 'blue',
-  note: null,
-  createdAt: '',
-  updatedAt: '',
-  ...patch,
-});
+import { makeEvent } from './testing';
+import type { Goal } from './types';
 
 const goal = (patch: Partial<Goal>): Goal => ({
   id: 'g',
@@ -56,55 +25,9 @@ const goal = (patch: Partial<Goal>): Goal => ({
   ...patch,
 });
 
-describe('sortTasks', () => {
-  it('puts pending first, then priority, then order', () => {
-    const sorted = sortTasks([
-      task({ id: 'done', completedAt: '2026-09-21T10:00:00Z', priority: 'high' }),
-      task({ id: 'low', priority: 'low' }),
-      task({ id: 'normal2', sortOrder: 2 }),
-      task({ id: 'high', priority: 'high' }),
-      task({ id: 'normal1', sortOrder: 1 }),
-    ]);
-    expect(sorted.map((t) => t.id)).toEqual(['high', 'normal1', 'normal2', 'low', 'done']);
-  });
-});
-
-describe('overdueTasks / pendingTasks', () => {
-  const tasks = [
-    task({ id: 'old', date: '2026-09-19' }),
-    task({ id: 'oldDone', date: '2026-09-19', completedAt: 'x' }),
-    task({ id: 'today', date: '2026-09-21' }),
-  ];
-
-  it('finds pending tasks before today', () => {
-    expect(overdueTasks(tasks, '2026-09-21').map((t) => t.id)).toEqual(['old']);
-  });
-
-  it('finds pending tasks of a day', () => {
-    expect(pendingTasks(tasks, '2026-09-21').map((t) => t.id)).toEqual(['today']);
-  });
-});
-
-describe('sortEvents', () => {
-  it('orders by start time', () => {
-    const sorted = sortEvents([
-      event({ id: 'b', startTime: '14:00' }),
-      event({ id: 'a', startTime: '08:30' }),
-      event({ id: 'c', startTime: '14:00', endTime: '15:00' }),
-    ]);
-    expect(sorted.map((e) => e.id)).toEqual(['a', 'b', 'c']);
-  });
-});
-
 describe('validation', () => {
-  it('requires task titles', () => {
-    expect(
-      validateTaskDraft({ title: ' ', date: '2026-09-21', priority: 'normal' }).title,
-    ).toBeDefined();
-  });
-
   it('checks event times', () => {
-    const base = { title: 'Reunião', date: '2026-09-21', color: 'blue', note: null };
+    const { id: _id, createdAt: _c, updatedAt: _u, ...base } = makeEvent({ title: 'Reunião' });
     expect(
       validateEventDraft({ ...base, startTime: '9:00', endTime: null }).startTime,
     ).toBeDefined();
@@ -182,16 +105,5 @@ describe('goalProgress', () => {
       ratio: 1,
       achieved: true,
     });
-  });
-});
-
-describe('summarizeDays', () => {
-  it('counts tasks and events per day', () => {
-    const summary = summarizeDays(
-      [task({ date: '2026-09-21' }), task({ date: '2026-09-21', completedAt: 'x' })],
-      [event({ date: '2026-09-22' })],
-    );
-    expect(summary.get('2026-09-21')).toEqual({ pendingTasks: 1, doneTasks: 1, events: 0 });
-    expect(summary.get('2026-09-22')).toEqual({ pendingTasks: 0, doneTasks: 0, events: 1 });
   });
 });

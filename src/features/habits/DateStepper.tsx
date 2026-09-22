@@ -24,7 +24,12 @@ export function DateStepper({ label, value, today, onChange, error }: DateSteppe
       <AppText variant="label" tone="muted">
         {label}
       </AppText>
-      <View style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View
+        style={[
+          styles.row,
+          { backgroundColor: colors.surfaceMuted, borderColor: colors.surfaceMuted },
+        ]}
+      >
         <IconButton
           icon="chevron-left"
           label="Dia anterior"

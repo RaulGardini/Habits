@@ -2,7 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 
 import { todayLocal } from '@/core/dates/localDate';
 import { goalPeriodOf } from '@/core/planner/planner';
-import { NewGoalScreen } from '@/features/planner/GoalFormScreen';
+import { NewGoalScreen } from '@/features/goals/GoalFormScreen';
 
 export default function NewGoalRoute() {
   const params = useLocalSearchParams<{ scope?: string; period?: string }>();

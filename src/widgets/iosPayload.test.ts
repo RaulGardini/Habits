@@ -26,8 +26,8 @@ describe('toIosPayload', () => {
     const payload = toIosPayload(snapshot);
     expect(payload.habits[0]?.light.solid).toBe('#7c3aed');
     expect(payload.habits[0]?.dark.solid).toBe('#a78bfa');
-    expect(payload.light.background).toBe('#ffffff');
-    expect(payload.dark.background).toBe('#1a1a1f');
+    expect(payload.light.background).toBe('#fffdf8');
+    expect(payload.dark.background).toBe('#201d18');
     expect(payload.heatmap).toEqual(snapshot.heatmap);
   });
 });

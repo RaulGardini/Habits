@@ -6,6 +6,9 @@ import type { Streaks } from '@/core/habits/streaks';
 import type { Habit, WeekStartsOn } from '@/core/habits/types';
 import type { MoveDirection } from '@/core/utils/reorder';
 import { useHabitsStore } from '@/stores/habitsStore';
+import { goalPeriodOf } from '@/core/planner/planner';
+import { GoalsSection } from '@/features/goals/GoalsSection';
+import { useToday } from '@/hooks/useNow';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH_SIZE, spacing } from '@/theme/tokens';
@@ -32,6 +35,7 @@ export function HabitsScreen() {
   const active = habits.filter((h) => h.archivedAt === null);
   const archived = habits.filter((h) => h.archivedAt !== null);
 
+  const today = useToday();
   const streaks = useStreaks(habits);
   const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
 
@@ -78,6 +82,17 @@ export function HabitsScreen() {
           ))}
         </Card>
       )}
+
+      <View style={styles.goals}>
+        <AppText variant="heading" accessibilityRole="header">
+          Metas do mês
+        </AppText>
+        <GoalsSection scope="month" period={goalPeriodOf(today, 'month')} />
+        <AppText variant="heading" accessibilityRole="header">
+          Metas do ano
+        </AppText>
+        <GoalsSection scope="year" period={goalPeriodOf(today, 'year')} />
+      </View>
 
       {archived.length > 0 ? (
         <View style={styles.archived}>
@@ -153,6 +168,7 @@ function HabitListRow({ habit, streak, weekStartsOn, children }: HabitListRowPro
 }
 
 const styles = StyleSheet.create({
+  goals: { gap: spacing.sm },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   list: { padding: spacing.sm, gap: spacing.xs },
   row: { flexDirection: 'row', alignItems: 'center' },

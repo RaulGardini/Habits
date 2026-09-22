@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, spacing } from '@/theme/tokens';
+import { radius, softShadow, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { Icon } from '@/ui/Icon';
 
@@ -19,7 +19,10 @@ export function StatTile({ label, value, icon, color, hint }: StatTileProps) {
   const { colors } = useTheme();
   return (
     <View
-      style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      style={[
+        styles.tile,
+        { backgroundColor: colors.surface, boxShadow: softShadow(colors.shadow) },
+      ]}
       accessible
       accessibilityLabel={`${label}: ${value}${hint ? `, ${hint}` : ''}`}
     >
@@ -51,7 +54,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexBasis: 150,
     borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
     padding: spacing.md,
     gap: spacing.xs,
   },

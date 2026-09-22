@@ -28,8 +28,8 @@ export function TextField({ label, error, ...props }: TextFieldProps) {
           props.multiline && styles.multiline,
           {
             color: colors.text,
-            backgroundColor: colors.surface,
-            borderColor: error ? colors.danger : colors.border,
+            backgroundColor: colors.surfaceMuted,
+            borderColor: error ? colors.danger : colors.surfaceMuted,
           },
         ]}
       />

@@ -22,7 +22,7 @@ import type { WeekStartsOn } from '@/core/habits/types';
 import { intensityLevel } from '@/core/stats/stats';
 import { withAlpha } from '@/theme/contrast';
 import { useTheme } from '@/theme/ThemeProvider';
-import { spacing } from '@/theme/tokens';
+import { fonts, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 
 export type HeatmapMode = 'week' | 'month' | 'year';
@@ -31,7 +31,10 @@ export type HeatmapMode = 'week' | 'month' | 'year';
 const LEVEL_ALPHA = [0.3, 0.5, 0.75, 1] as const;
 
 /** SVG text defaults to a serif font on web. */
-const SVG_FONT = Platform.select({ web: 'system-ui, sans-serif', default: undefined });
+const SVG_FONT = Platform.select({
+  web: `${fonts.regular}, system-ui, sans-serif`,
+  default: undefined,
+});
 
 export interface HeatmapProps {
   mode: HeatmapMode;

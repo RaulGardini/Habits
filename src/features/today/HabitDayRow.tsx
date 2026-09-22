@@ -21,7 +21,7 @@ import { hapticLight, hapticSuccess } from '@/lib/haptics';
 import { elapsedSeconds, type ActiveTimer } from '@/stores/timerStore';
 import { resolveHabitColor, type ResolvedHabitColor } from '@/theme/habitColors';
 import { useTheme } from '@/theme/ThemeProvider';
-import { MIN_TOUCH_SIZE, radius, spacing } from '@/theme/tokens';
+import { MIN_TOUCH_SIZE, radius, softShadow, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { Icon } from '@/ui/Icon';
 import { IconButton } from '@/ui/IconButton';
@@ -130,7 +130,8 @@ function RowShell({
         styles.row,
         {
           backgroundColor: highlighted ? color.soft : colors.surface,
-          borderColor: highlighted ? color.solid : colors.border,
+          borderColor: highlighted ? color.solid : colors.surface,
+          boxShadow: highlighted ? 'none' : softShadow(colors.shadow),
         },
         (disabled || dimmed) && styles.dimmed,
       ]}

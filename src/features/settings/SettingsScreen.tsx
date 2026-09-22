@@ -9,21 +9,18 @@ import {
   ensurePermission,
   getPermission,
   notificationsSupported,
-  syncReminders,
   type PermissionState,
 } from '@/lib/notifications';
 import { deleteAllData, exportBackup, importBackup } from '@/stores/dataActions';
-import { useHabitsStore } from '@/stores/habitsStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { rescheduleReminders } from '@/stores/reminders';
 import { useSyncStore } from '@/stores/syncStore';
-import { useTheme } from '@/theme/ThemeProvider';
 import type { ThemePreference } from '@/theme/tokens';
 import { spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { confirm, showError } from '@/ui/dialogs';
-import { Icon } from '@/ui/Icon';
 import { Screen } from '@/ui/Screen';
 import { SegmentedControl } from '@/ui/SegmentedControl';
 
@@ -40,16 +37,15 @@ const WEEK_START_OPTIONS = [
   { value: '1', label: 'Segunda' },
 ] as const;
 
-function Section({ title, icon, children }: { title: string; icon: string; children: ReactNode }) {
-  const { colors } = useTheme();
+/** Settings group: a quiet title above a soft card. */
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <Card style={styles.card}>
-      <View style={styles.sectionHeader} accessibilityRole="header">
-        <Icon name={icon} size={20} color={colors.primary} />
-        <AppText variant="heading">{title}</AppText>
-      </View>
-      {children}
-    </Card>
+    <View style={styles.section}>
+      <AppText variant="label" tone="muted" accessibilityRole="header" style={styles.sectionTitle}>
+        {title}
+      </AppText>
+      <Card style={styles.card}>{children}</Card>
+    </View>
   );
 }
 
@@ -66,7 +62,7 @@ export function SettingsScreen() {
         Ajustes
       </AppText>
 
-      <Section title="Aparência" icon="palette-outline">
+      <Section title="Aparência">
         <SegmentedControl<ThemePreference>
           label="Tema"
           options={THEME_OPTIONS}
@@ -79,7 +75,7 @@ export function SettingsScreen() {
         />
       </Section>
 
-      <Section title="Calendário" icon="calendar-week">
+      <Section title="Calendário">
         <SegmentedControl<'0' | '1'>
           label="Primeiro dia da semana"
           options={WEEK_START_OPTIONS}
@@ -96,20 +92,20 @@ export function SettingsScreen() {
       </Section>
 
       {syncConfigured ? (
-        <Section title="Conta e sincronização" icon="cloud-sync-outline">
+        <Section title="Conta e sincronização">
           <AccountSection />
         </Section>
       ) : null}
 
-      <Section title="Lembretes" icon="bell-outline">
+      <Section title="Lembretes">
         <NotificationsStatus />
       </Section>
 
-      <Section title="Backup" icon="database-export-outline">
+      <Section title="Backup">
         <BackupActions />
       </Section>
 
-      <Section title="Apagar dados" icon="alert-outline">
+      <Section title="Apagar dados">
         <DeleteAllData />
       </Section>
 
@@ -147,7 +143,7 @@ function NotificationsStatus() {
   const request = async () => {
     const granted = await ensurePermission();
     setPermission(granted ? 'granted' : 'denied');
-    if (granted) await syncReminders(useHabitsStore.getState().habits);
+    if (granted) await rescheduleReminders();
   };
 
   return (
@@ -290,7 +286,8 @@ function DeleteAllData() {
 
 const styles = StyleSheet.create({
   card: { gap: spacing.md },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  section: { gap: spacing.sm },
+  sectionTitle: { paddingHorizontal: spacing.xs },
   buttons: { gap: spacing.sm },
   about: { textAlign: 'center' },
 });

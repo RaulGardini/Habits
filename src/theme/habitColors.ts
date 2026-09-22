@@ -95,7 +95,7 @@ export const HABIT_COLORS: readonly HabitColorDefinition[] = [
   },
 ];
 
-export const DEFAULT_HABIT_COLOR = 'violet';
+export const DEFAULT_HABIT_COLOR = 'amber';
 
 const byKey = new Map(HABIT_COLORS.map((color) => [color.key, color]));
 

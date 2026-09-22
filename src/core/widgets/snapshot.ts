@@ -88,7 +88,7 @@ export function buildWidgetSnapshot(
 
   const from = widgetHeatmapStart(today, weekStartsOn);
   const to = periodRange(today, 'week', weekStartsOn).to;
-  const scores = overallDailyScores(habits, entries, { from, to }, today);
+  const scores = overallDailyScores(habits, entries, { from, to }, today, weekStartsOn);
   const heatmap: number[][] = [];
   for (let week = 0; week < WIDGET_HEATMAP_WEEKS; week++) {
     const column: number[] = [];

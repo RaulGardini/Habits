@@ -35,8 +35,8 @@ export function StatsScreen() {
   const [selected, setSelected] = useState<LocalDate | null>(null);
 
   const scores = useMemo(
-    () => overallDailyScores(habits, entries ?? [], period.range, today),
-    [habits, entries, period.range, today],
+    () => overallDailyScores(habits, entries ?? [], period.range, today, weekStartsOn),
+    [habits, entries, period.range, today, weekStartsOn],
   );
   const values = useMemo(
     () => new Map([...scores].map(([date, score]) => [date, score?.ratio ?? null])),

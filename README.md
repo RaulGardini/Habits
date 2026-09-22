@@ -1,6 +1,6 @@
 # Habits
 
-App de hábitos e planner gratuito, local-first (funciona offline, sem login), para iOS, Android e web.
+App de hábitos e agenda gratuito, local-first (funciona offline, sem login), para iOS, Android e web.
 
 Feito com Expo + React Native + TypeScript, Expo Router, expo-sqlite + Drizzle e Zustand.
 

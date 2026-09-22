@@ -22,7 +22,7 @@ gratuita para isso:
   - `src/widgets/iosPayload.ts` → `APP_GROUP`
   - `targets/widget/Snapshot.swift` → `appGroup`
   - depois: `npx expo prebuild --clean`
-- [ ] **Nome na loja** (até 30 caracteres). Ex.: "Habits: Hábitos e Planner".
+- [ ] **Nome na loja** (até 30 caracteres). Ex.: "Habits: Hábitos e Agenda".
 - [ ] Preencher `[NOME DO DESENVOLVEDOR]` e `[E-MAIL DE CONTATO]` em
       `src/features/legal/privacy.json` e rodar `npm run legal`.
 - [ ] Sync na nuvem: publicar **com** (configure o Supabase — `docs/SUPABASE.md`) ou **sem**
@@ -105,13 +105,13 @@ nas lojas.
 
 ## 6. Textos da ficha (pt-BR)
 
-**Nome (30):** Habits: Hábitos e Planner
+**Nome (30):** Habits: Hábitos e Agenda
 
-**Subtítulo iOS (30):** Rotina, metas e planner
+**Subtítulo iOS (30):** Rotina, metas e agenda
 
-**Descrição curta – Play (80):** Hábitos, planner e metas grátis, sem anúncios e funcionando offline.
+**Descrição curta – Play (80):** Hábitos, agenda e metas grátis, sem anúncios e funcionando offline.
 
-**Palavras-chave iOS (100):** habitos,rotina,planner,metas,agenda,tarefas,diario,produtividade,streak,lembrete
+**Palavras-chave iOS (100):** habitos,rotina,agenda,metas,calendario,compromissos,produtividade,streak,lembrete
 
 **Descrição completa:**
 
@@ -125,8 +125,9 @@ nas lojas.
 > 🔥 Sequências que respeitam a sua frequência, taxa de conclusão, totais e o seu melhor dia da
 > semana. Mapas de calor por semana, mês e ano, no estilo GitHub, com a cor de cada hábito.
 >
-> 🗓️ Planner diário, mensal e anual: tarefas com prioridade, eventos em linha do tempo, diário
-> do dia e metas com progresso — inclusive metas ligadas aos seus hábitos.
+> 🗓️ Agenda completa: visão de dia, semana, mês e próximos dias, compromissos que se
+> repetem, dia inteiro, local, lembretes e aviso de conflito de horário. E metas do mês e do ano
+> — inclusive ligadas aos seus hábitos.
 >
 > 🔔 Lembretes no horário que você escolher. Widgets na tela inicial para marcar hábitos sem
 > abrir o app.
@@ -141,8 +142,8 @@ nas lojas.
 1. Tela Hoje com 4–5 hábitos coloridos (alguns marcados).
 2. Estatísticas: mapa de calor do ano.
 3. Estatísticas de um hábito (sequências e taxa).
-4. Planner diário (tarefas + agenda).
-5. Planner mensal com metas.
+4. Agenda do mês com compromissos.
+5. Agenda do dia (linha do tempo) ou metas.
 6. Widget na tela inicial.
 
 Use um aparelho/emulador limpo, tema claro, dados de exemplo realistas e sem notificações

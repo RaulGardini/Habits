@@ -115,6 +115,14 @@ select public.habits_setup_table('events', '
   updated_at text not null,
   deleted_at text', 'user_id, id');
 
+-- Added after the first release: agenda details (idempotent).
+alter table public.events add column if not exists all_day integer not null default 0;
+alter table public.events add column if not exists location text;
+alter table public.events add column if not exists repeat text not null default 'none';
+alter table public.events add column if not exists repeat_until text;
+alter table public.events add column if not exists excluded_dates text not null default '';
+alter table public.events add column if not exists reminder_minutes integer;
+
 select public.habits_setup_table('day_notes', '
   id text not null,
   date text not null,

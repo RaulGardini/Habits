@@ -5,7 +5,7 @@
     {
       "title": "Resumo",
       "paragraphs": [
-        "O Habits é gratuito, sem anúncios e sem rastreamento. Seus hábitos, registros, tarefas, eventos, notas e metas ficam guardados no seu próprio aparelho. Nós não vendemos, não compartilhamos e não analisamos seus dados.",
+        "O Habits é gratuito, sem anúncios e sem rastreamento. Seus hábitos, registros, compromissos da agenda e metas ficam guardados no seu próprio aparelho. Nós não vendemos, não compartilhamos e não analisamos seus dados.",
         "O app não tem cadastro nem login e não envia nenhum dado seu para servidores: tudo fica no aparelho."
       ]
     },
@@ -18,7 +18,7 @@
     {
       "title": "Dados guardados no seu aparelho",
       "paragraphs": [
-        "Tudo o que você cadastra no app (hábitos, registros diários, notas, tarefas, eventos, metas e preferências como tema) é armazenado localmente, em um banco de dados no próprio aparelho ou navegador.",
+        "Tudo o que você cadastra no app (hábitos, registros diários, compromissos da agenda, metas e preferências como tema) é armazenado localmente, em um banco de dados no próprio aparelho ou navegador.",
         "Esses dados são usados apenas para o funcionamento do app: mostrar seus hábitos, calcular sequências e estatísticas, exibir os widgets e agendar lembretes."
       ]
     },

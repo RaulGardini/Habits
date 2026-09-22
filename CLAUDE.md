@@ -40,7 +40,7 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 
 - UI and stores never import Drizzle or `src/db` — only `@/repositories`.
 - Two store styles: cached state with optimistic updates (`habitsStore`, `entriesStore`) for the
-  hot paths, and "query + version" hooks (`plannerStore`: `useTasks`, `useGoals`…) that refetch
+  hot paths, and "query + version" hooks (`plannerStore`: `useEvents`, `useGoals`…) that refetch
   after any write made through `plannerActions`. Writes must go through the actions.
 - Business rules (what is due on a day, progress, streaks…) live in `src/core` as pure functions.
 - Platform-specific code uses file extensions (`foo.web.ts` next to `foo.ts`), e.g. `ui/dialogs`, `lib/haptics`.
@@ -75,7 +75,16 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - Zustand v5: a selector must not build new objects/arrays (`state.habits.filter(...)` loops
   forever). Select the raw value and derive with `useMemo`, or use hooks like `useActiveHabits()`.
 
-- Use `useTheme()` colors/tokens; no hard-coded colors outside `src/theme`.
+- Use `useTheme()` colors/tokens; no hard-coded colors outside `src/theme`. Brand = yellow:
+  `primary` is for fills (buttons, selected chips, progress, heatmap) with `onPrimary` text;
+  use `accent` for brand-colored text/icons on surfaces (yellow text is unreadable on light).
+- Look: warm neutrals, Nunito (`fonts`/`typography`, loaded in the root layout), borderless
+  cards with `softShadow()`, pill buttons, sentence-case headings, short kind copy. Avoid
+  bordered boxes, ALL-CAPS labels and icon-per-heading decoration.
+- Liquid Glass: iOS tabs use `NativeTabs` (`expo-router/unstable-native-tabs`, system glass bar);
+  Android/web keep JS `Tabs` (frosted bar on web). Floating controls use `<Glass>` (`src/ui/Glass`):
+  native `GlassView` on iOS 26+, frosted CSS on web, translucent surface on Android. Never set
+  opacity 0 on a `Glass` or its parents.
 - Touch targets ≥ 44px (`MIN_TOUCH_SIZE`). Every icon-only button has an `accessibilityLabel`.
 - Checkable rows use `accessibilityRole="checkbox"` + `accessibilityState`.
 - Reanimated shared values: use `.get()` / `.set()` (React Compiler is enabled).
@@ -86,6 +95,17 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - `typedRoutes` is disabled: on Windows the dev server's incremental typegen registers non-route
   files and breaks `tsc`. Route strings are therefore not type-checked — double-check paths.
 - Wide screens (≥ 768px): sidebar navigation; content column max 720px (`Screen`).
+
+## Agenda (`src/features/agenda`, logic in `src/core/planner/agenda.ts`)
+
+- The old planner's tasks and day notes are no longer in the UI; their tables/repositories stay
+  (existing data remains in backups and sync). Goals live on the Habits screen.
+- Events: one row per series. `repeat` none/daily/weekly/monthly/yearly from `date`, optional
+  `repeat_until`, `excluded_dates` (comma-separated days removed via "only this day"), `all_day`,
+  `location`, `reminder_minutes` (all-day: before 09:00). `listByRange` also returns series that
+  started before the range; `expandOccurrences` turns them into per-day occurrences.
+- Event reminders are one-off notifications in the same plan as habits (`planReminders(..., events)`);
+  re-planned by `rescheduleReminders()` (`src/stores/reminders.ts`) after habit/agenda changes.
 
 ## Notifications & backup
 
@@ -167,3 +187,4 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 6. ✅ Widgets (iOS/Android, dev build)
 7. ✅ (Optional) Supabase sync, last-write-wins by `updated_at`
 8. ✅ Store release prep (icon, splash, privacy policy, EAS, store checklists)
+9. ✅ Redesign: yellow brand, cozy UI, Liquid Glass on iOS, Planner → Agenda

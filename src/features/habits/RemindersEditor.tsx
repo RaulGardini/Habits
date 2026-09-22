@@ -52,7 +52,10 @@ export function RemindersEditor({ value, onChange, error }: RemindersEditorProps
           {value.map((reminder) => (
             <View
               key={reminder}
-              style={[styles.chip, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              style={[
+                styles.chip,
+                { backgroundColor: colors.surfaceMuted, borderColor: colors.surfaceMuted },
+              ]}
             >
               <Icon name="bell-outline" size={16} color={colors.textMuted} />
               <AppText variant="bodyStrong">{reminder}</AppText>

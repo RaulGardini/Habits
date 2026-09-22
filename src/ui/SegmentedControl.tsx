@@ -17,6 +17,8 @@ interface SegmentedControlProps<T extends string> {
   options: readonly SegmentOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  /** Keep the label for screen readers only. */
+  hideLabel?: boolean;
 }
 
 export function SegmentedControl<T extends string>({
@@ -24,13 +26,16 @@ export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  hideLabel = false,
 }: SegmentedControlProps<T>) {
   const { colors } = useTheme();
   return (
     <View style={styles.container}>
-      <AppText variant="label" tone="muted">
-        {label}
-      </AppText>
+      {hideLabel ? null : (
+        <AppText variant="label" tone="muted">
+          {label}
+        </AppText>
+      )}
       <View
         accessibilityRole="radiogroup"
         accessibilityLabel={label}
@@ -48,7 +53,10 @@ export function SegmentedControl<T extends string>({
               accessibilityState={{ checked: selected }}
               style={[
                 styles.segment,
-                selected && { backgroundColor: colors.surface, borderColor: colors.border },
+                selected && {
+                  backgroundColor: colors.surface,
+                  boxShadow: `0 1px 3px ${colors.shadow}26`,
+                },
               ]}
             >
               {option.icon ? <Icon name={option.icon} size={18} color={foreground} /> : null}
@@ -67,16 +75,14 @@ const styles = StyleSheet.create({
   container: { gap: spacing.xs },
   track: {
     flexDirection: 'row',
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     padding: spacing.xs,
     gap: spacing.xs,
   },
   segment: {
     flex: 1,
     minHeight: MIN_TOUCH_SIZE,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,

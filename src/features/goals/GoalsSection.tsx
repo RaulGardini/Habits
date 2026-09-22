@@ -10,7 +10,7 @@ import { useEntriesInRange } from '@/stores/entriesStore';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { plannerActions, useGoals } from '@/stores/plannerStore';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, spacing } from '@/theme/tokens';
+import { radius, softShadow, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { Button } from '@/ui/Button';
 import { showError } from '@/ui/dialogs';
@@ -68,7 +68,12 @@ function GoalItem({ goal, entries }: { goal: Goal; entries: Parameters<typeof go
   };
 
   return (
-    <View style={[styles.item, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View
+      style={[
+        styles.item,
+        { backgroundColor: colors.surface, boxShadow: softShadow(colors.shadow) },
+      ]}
+    >
       <Pressable
         onPress={() => router.push(`/goal/${goal.id}`)}
         accessibilityRole="button"
@@ -116,7 +121,6 @@ const styles = StyleSheet.create({
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
     borderRadius: radius.md,
     padding: spacing.sm,
     gap: spacing.xs,

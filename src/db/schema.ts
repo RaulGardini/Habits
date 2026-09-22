@@ -126,6 +126,18 @@ export const events = sqliteTable(
     /** Habit palette key. */
     color: text('color').notNull(),
     note: text('note'),
+    /** 0/1. All-day events keep `start_time` = '00:00' and no end time. */
+    allDay: integer('all_day').notNull().default(0),
+    location: text('location'),
+    repeat: text('repeat', { enum: ['none', 'daily', 'weekly', 'monthly', 'yearly'] })
+      .notNull()
+      .default('none'),
+    /** Last local day of the series (inclusive), or null = forever. */
+    repeatUntil: text('repeat_until'),
+    /** Comma-separated local days removed from the series ("only this one" deletes). */
+    excludedDates: text('excluded_dates').notNull().default(''),
+    /** Minutes before the start (all-day: before 09:00), or null = no reminder. */
+    reminderMinutes: integer('reminder_minutes'),
     ...timestamps,
   },
   (t) => [index('events_date_idx').on(t.date)],

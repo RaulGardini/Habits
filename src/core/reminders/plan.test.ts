@@ -1,4 +1,5 @@
 import { makeHabit } from '@/core/habits/testing';
+import { makeEvent } from '@/core/planner/testing';
 
 import { MAX_SCHEDULED, notificationWeekday, planReminders, reminderBody } from './plan';
 
@@ -72,6 +73,32 @@ describe('planReminders', () => {
     const planned = planReminders([interval, daily], today, now);
     expect(planned).toHaveLength(MAX_SCHEDULED);
     expect(planned[0]?.habitId).toBe('d');
+  });
+});
+
+describe('event reminders', () => {
+  it('schedules upcoming occurrences before their start and skips past ones', () => {
+    const events = [
+      makeEvent({ id: 'past', startTime: '09:00', reminderMinutes: 10 }), // 08:50 today: gone
+      makeEvent({ id: 'later', startTime: '15:00', reminderMinutes: 30, location: 'Escritório' }),
+      makeEvent({ id: 'none', startTime: '16:00' }),
+      makeEvent({
+        id: 'weekly',
+        date: '2026-09-22',
+        startTime: '07:00',
+        reminderMinutes: 60,
+        repeat: 'weekly',
+      }),
+    ];
+    const planned = planReminders([], today, now, events);
+    expect(
+      planned.map((r) => `${r.eventId} ${r.trigger.type === 'date' ? r.trigger.date : ''}`),
+    ).toEqual(['later 2026-09-21', 'weekly 2026-09-22', 'weekly 2026-09-29', 'weekly 2026-10-06']);
+    expect(planned[0]).toMatchObject({
+      title: 'Evento',
+      body: 'Hoje · 15:00 · Escritório',
+      trigger: { type: 'date', date: today, hour: 14, minute: 30 },
+    });
   });
 });
 

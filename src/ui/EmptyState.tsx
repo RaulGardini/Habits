@@ -18,7 +18,9 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
   const { colors } = useTheme();
   return (
     <View style={styles.container}>
-      <Icon name={icon} size={48} color={colors.textMuted} />
+      <View style={[styles.badge, { backgroundColor: colors.primarySoft }]}>
+        <Icon name={icon} size={36} color={colors.accent} />
+      </View>
       <AppText variant="heading" style={styles.center}>
         {title}
       </AppText>
@@ -40,5 +42,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxl,
     paddingHorizontal: spacing.lg,
   },
-  center: { textAlign: 'center' },
+  center: { textAlign: 'center', maxWidth: 320 },
+  badge: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

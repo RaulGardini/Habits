@@ -21,7 +21,12 @@ export function Stepper({ label, value, min, max, onChange, suffix }: StepperPro
   const { colors } = useTheme();
   const text = suffix ? `${value} ${suffix}` : String(value);
   return (
-    <View style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View
+      style={[
+        styles.row,
+        { backgroundColor: colors.surfaceMuted, borderColor: colors.surfaceMuted },
+      ]}
+    >
       <IconButton
         icon="minus"
         label={`Diminuir ${label}`}

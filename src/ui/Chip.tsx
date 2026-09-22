@@ -19,7 +19,7 @@ interface ChipProps {
 /** Toggleable pill (e.g. weekday selection). */
 export function Chip({ label, accessibilityLabel, selected, onPress, color, onColor }: ChipProps) {
   const { colors } = useTheme();
-  const background = selected ? (color ?? colors.primary) : colors.surface;
+  const background = selected ? (color ?? colors.primary) : colors.surfaceMuted;
   const foreground = selected ? (onColor ?? colors.onPrimary) : colors.text;
   return (
     <Pressable
@@ -29,7 +29,7 @@ export function Chip({ label, accessibilityLabel, selected, onPress, color, onCo
       accessibilityState={{ checked: selected }}
       style={({ pressed }) => [
         styles.chip,
-        { backgroundColor: background, borderColor: selected ? background : colors.border },
+        { backgroundColor: background, borderColor: background },
         pressed && { opacity: 0.75 },
       ]}
     >

@@ -1,4 +1,4 @@
-import { and, between, eq, isNull, lt, max } from 'drizzle-orm';
+import { and, between, eq, gte, isNull, lt, lte, max, ne, or } from 'drizzle-orm';
 
 import type { DayNote, Goal, PlannerEvent, Task } from '@/core/planner/types';
 import type { Database } from '@/db/client';
@@ -32,10 +32,16 @@ const toEvent = (row: EventRow): PlannerEvent => ({
   id: row.id,
   title: row.title,
   date: row.date,
+  allDay: row.allDay === 1,
   startTime: row.startTime,
   endTime: row.endTime,
+  location: row.location,
   color: row.color,
   note: row.note,
+  repeat: row.repeat,
+  repeatUntil: row.repeatUntil,
+  excludedDates: row.excludedDates ? row.excludedDates.split(',') : [],
+  reminderMinutes: row.reminderMinutes,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
 });
@@ -157,10 +163,16 @@ export function createDrizzleEventRepository(db: Database): EventRepository {
   const columns = (draft: Parameters<EventRepository['create']>[0]) => ({
     title: draft.title.trim(),
     date: draft.date,
-    startTime: draft.startTime,
-    endTime: draft.endTime,
+    allDay: draft.allDay ? 1 : 0,
+    startTime: draft.allDay ? '00:00' : draft.startTime,
+    endTime: draft.allDay ? null : draft.endTime,
+    location: draft.location?.trim() || null,
     color: draft.color,
     note: draft.note?.trim() || null,
+    repeat: draft.repeat,
+    repeatUntil: draft.repeat === 'none' ? null : draft.repeatUntil,
+    excludedDates: [...new Set(draft.excludedDates)].sort().join(','),
+    reminderMinutes: draft.reminderMinutes,
   });
   async function getOrThrow(id: string): Promise<PlannerEvent> {
     const row = await db.query.events.findFirst({ where: and(eq(events.id, id), alive) });
@@ -173,7 +185,20 @@ export function createDrizzleEventRepository(db: Database): EventRepository {
       const rows = await db
         .select()
         .from(events)
-        .where(and(between(events.date, from, to), alive));
+        .where(
+          and(
+            alive,
+            or(
+              between(events.date, from, to),
+              // Recurring series that started before the range and may still run in it.
+              and(
+                ne(events.repeat, 'none'),
+                lte(events.date, to),
+                or(isNull(events.repeatUntil), gte(events.repeatUntil, from)),
+              ),
+            ),
+          ),
+        );
       return rows.map(toEvent);
     },
 

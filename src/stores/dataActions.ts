@@ -6,7 +6,7 @@ import {
 } from '@/core/backup/backup';
 import { todayLocal } from '@/core/dates/localDate';
 import { pickBackupFile, saveBackupFile } from '@/lib/backupFile';
-import { cancelAllReminders, syncReminders } from '@/lib/notifications';
+import { cancelAllReminders } from '@/lib/notifications';
 import { getRepositories } from '@/repositories';
 
 import { useEntriesStore } from './entriesStore';
@@ -14,6 +14,7 @@ import { useHabitsStore } from './habitsStore';
 import { usePlannerStore } from './plannerStore';
 import { useSettingsStore } from './settingsStore';
 import { useTimerStore } from './timerStore';
+import { rescheduleReminders } from './reminders';
 
 /** Reloads every store from the database after a bulk change (import, delete all, sync). */
 export async function reloadAll(): Promise<void> {
@@ -43,7 +44,7 @@ export async function importBackup(): Promise<ImportSummary | null> {
   const backup = parseBackup(json);
   const summary = await getRepositories().backup.importMerge(backup.tables);
   await reloadAll();
-  await syncReminders(useHabitsStore.getState().habits);
+  await rescheduleReminders();
   return summary;
 }
 

@@ -28,9 +28,13 @@ export function Button({
   const { colors } = useTheme();
   const palette = {
     primary: { background: colors.primary, foreground: colors.onPrimary, border: colors.primary },
-    secondary: { background: colors.surface, foreground: colors.text, border: colors.border },
-    danger: { background: colors.surface, foreground: colors.danger, border: colors.danger },
-    ghost: { background: 'transparent', foreground: colors.primary, border: 'transparent' },
+    secondary: {
+      background: colors.surfaceMuted,
+      foreground: colors.text,
+      border: colors.surfaceMuted,
+    },
+    danger: { background: 'transparent', foreground: colors.danger, border: colors.danger },
+    ghost: { background: 'transparent', foreground: colors.accent, border: 'transparent' },
   }[variant];
 
   return (
@@ -58,8 +62,8 @@ export function Button({
 const styles = StyleSheet.create({
   button: {
     minHeight: MIN_TOUCH_SIZE,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radius.full,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',

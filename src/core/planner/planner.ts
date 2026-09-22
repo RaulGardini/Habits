@@ -1,58 +1,11 @@
-import { addDaysLocal, type LocalDate } from '@/core/dates/localDate';
+import type { LocalDate } from '@/core/dates/localDate';
 import type { DateRange } from '@/core/dates/periods';
 import type { Habit, HabitEntry } from '@/core/habits/types';
 import { isValidTime } from '@/core/habits/validation';
 
-import type {
-  EventDraft,
-  Goal,
-  GoalDraft,
-  GoalScope,
-  PlannerEvent,
-  Task,
-  TaskDraft,
-  TaskPriority,
-} from './types';
+import type { EventDraft, Goal, GoalDraft, GoalScope } from './types';
 
 export const TITLE_MAX_LENGTH = 120;
-
-const PRIORITY_RANK: Record<TaskPriority, number> = { high: 0, normal: 1, low: 2 };
-
-/** Pending first, then by priority (high → low), then by the user's order. */
-export function sortTasks(tasks: readonly Task[]): Task[] {
-  return [...tasks].sort((a, b) => {
-    const doneA = a.completedAt !== null ? 1 : 0;
-    const doneB = b.completedAt !== null ? 1 : 0;
-    if (doneA !== doneB) return doneA - doneB;
-    const rank = PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
-    if (rank !== 0) return rank;
-    return a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt);
-  });
-}
-
-/** Pending tasks planned before `today`. */
-export function overdueTasks(tasks: readonly Task[], today: LocalDate): Task[] {
-  return tasks.filter((t) => t.completedAt === null && t.date < today);
-}
-
-/** Pending tasks of `date`, i.e. what "roll over to tomorrow" would move. */
-export function pendingTasks(tasks: readonly Task[], date: LocalDate): Task[] {
-  return tasks.filter((t) => t.completedAt === null && t.date === date);
-}
-
-export function nextDay(date: LocalDate): LocalDate {
-  return addDaysLocal(date, 1);
-}
-
-/** Events ordered by start time, then end time, then title. */
-export function sortEvents(events: readonly PlannerEvent[]): PlannerEvent[] {
-  return [...events].sort(
-    (a, b) =>
-      a.startTime.localeCompare(b.startTime) ||
-      (a.endTime ?? '').localeCompare(b.endTime ?? '') ||
-      a.title.localeCompare(b.title),
-  );
-}
 
 /** Minutes since midnight of `HH:mm`. */
 export function minutesOf(time: string): number {
@@ -69,15 +22,14 @@ export function validateTitle(title: string): string | undefined {
   return undefined;
 }
 
-export function validateTaskDraft(draft: TaskDraft): Partial<Record<keyof TaskDraft, string>> {
-  const title = validateTitle(draft.title);
-  return title ? { title } : {};
-}
-
 export function validateEventDraft(draft: EventDraft): Partial<Record<keyof EventDraft, string>> {
   const errors: Partial<Record<keyof EventDraft, string>> = {};
   const title = validateTitle(draft.title);
   if (title) errors.title = title;
+  if (draft.repeat !== 'none' && draft.repeatUntil !== null && draft.repeatUntil < draft.date) {
+    errors.repeatUntil = 'O fim da repetição deve ser depois do início.';
+  }
+  if (draft.allDay) return errors;
   if (!isValidTime(draft.startTime)) errors.startTime = 'Horário inválido (use HH:mm).';
   if (draft.endTime !== null) {
     if (!isValidTime(draft.endTime)) errors.endTime = 'Horário inválido (use HH:mm).';
@@ -174,34 +126,4 @@ export function goalProgress(
     ratio,
     achieved: current >= goal.target,
   };
-}
-
-// --- Month overview ---------------------------------------------------------------------------
-
-export interface DayPlanSummary {
-  pendingTasks: number;
-  doneTasks: number;
-  events: number;
-}
-
-export function summarizeDays(
-  tasks: readonly Task[],
-  events: readonly PlannerEvent[],
-): Map<LocalDate, DayPlanSummary> {
-  const map = new Map<LocalDate, DayPlanSummary>();
-  const get = (date: LocalDate) => {
-    let summary = map.get(date);
-    if (!summary) {
-      summary = { pendingTasks: 0, doneTasks: 0, events: 0 };
-      map.set(date, summary);
-    }
-    return summary;
-  };
-  for (const task of tasks) {
-    const summary = get(task.date);
-    if (task.completedAt === null) summary.pendingTasks += 1;
-    else summary.doneTasks += 1;
-  }
-  for (const event of events) get(event.date).events += 1;
-  return map;
 }

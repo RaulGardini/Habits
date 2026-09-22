@@ -11,9 +11,7 @@
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.raulgardini.habits",
       "entitlements": {
-        "com.apple.security.application-groups": [
-          "group.com.raulgardini.habits"
-        ]
+        "com.apple.security.application-groups": ["group.com.raulgardini.habits"]
       },
       "supportsTablet": false,
       "infoPlist": {
@@ -97,12 +95,13 @@
             }
           ]
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "reactCompiler": true
     },
-    "description": "Hábitos e planner gratuitos, sem anúncios e que funcionam offline.",
+    "description": "Hábitos e agenda gratuitos, sem anúncios e que funcionam offline.",
     "extra": {
       "router": {
         "headers": {
@@ -119,9 +118,7 @@
                   "bundleIdentifier": "com.raulgardini.habits.widget",
                   "targetName": "HabitsWidget",
                   "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.com.raulgardini.habits"
-                    ]
+                    "com.apple.security.application-groups": ["group.com.raulgardini.habits"]
                   }
                 }
               ]

@@ -1,3 +1,4 @@
+import { newEventDraft } from '@/core/planner/agenda';
 import { getRepositories, setRepositories } from '@/repositories';
 import { createMemoryRepositories } from '@/repositories/memory';
 
@@ -10,41 +11,21 @@ beforeEach(() => {
 
 describe('plannerActions', () => {
   it('bumps the version after each write', async () => {
-    await plannerActions.createTask({ title: 'A', date: '2026-09-21', priority: 'normal' });
+    await plannerActions.createEvent({ ...newEventDraft('2026-09-21'), title: 'A' });
     expect(usePlannerStore.getState().version).toBe(1);
   });
 
-  it('rolls tasks over keeping the original day', async () => {
-    const task = await plannerActions.createTask({
-      title: ' Pagar conta ',
-      date: '2026-09-20',
-      priority: 'high',
+  it('removes one day of a series without touching the others', async () => {
+    const event = await plannerActions.createEvent({
+      ...newEventDraft('2026-09-01'),
+      title: 'Academia',
+      repeat: 'weekly',
     });
-    expect(task.title).toBe('Pagar conta');
-    expect(await getRepositories().tasks.listOverdue('2026-09-21')).toHaveLength(1);
-
-    await plannerActions.moveTasks([task.id], '2026-09-21');
-    await plannerActions.moveTasks([task.id], '2026-09-22');
-    const moved = await getRepositories().tasks.getById(task.id);
-    expect(moved).toMatchObject({ date: '2026-09-22', rolledFrom: '2026-09-20' });
-    expect(await getRepositories().tasks.listOverdue('2026-09-21')).toHaveLength(0);
-  });
-
-  it('completed tasks are not overdue', async () => {
-    const task = await plannerActions.createTask({
-      title: 'A',
-      date: '2026-09-20',
-      priority: 'normal',
-    });
-    await plannerActions.setTaskCompleted(task.id, true);
-    expect(await getRepositories().tasks.listOverdue('2026-09-21')).toHaveLength(0);
-  });
-
-  it('saves and clears the day note', async () => {
-    await plannerActions.saveDayNote('2026-09-21', '  Dia bom  ');
-    expect((await getRepositories().dayNotes.get('2026-09-21'))?.content).toBe('Dia bom');
-    await plannerActions.saveDayNote('2026-09-21', '   ');
-    expect(await getRepositories().dayNotes.get('2026-09-21')).toBeNull();
+    await plannerActions.updateEvent(event.id, { ...event, excludedDates: ['2026-09-08'] });
+    const [stored] = await getRepositories().events.listByRange('2026-09-08', '2026-09-15');
+    expect(stored?.excludedDates).toEqual(['2026-09-08']);
+    await plannerActions.removeEvent(event.id);
+    expect(await getRepositories().events.listByRange('2026-09-01', '2026-12-31')).toEqual([]);
   });
 
   it('creates goals and updates manual progress', async () => {

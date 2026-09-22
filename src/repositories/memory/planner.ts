@@ -72,7 +72,13 @@ export function createMemoryPlannerRepositories(
 
     events: {
       async listByRange(from, to) {
-        return events.filter((e) => e.date >= from && e.date <= to);
+        return events.filter(
+          (e) =>
+            (e.date >= from && e.date <= to) ||
+            (e.repeat !== 'none' &&
+              e.date <= to &&
+              (e.repeatUntil === null || e.repeatUntil >= from)),
+        );
       },
       async getById(id) {
         return events.find((e) => e.id === id) ?? null;

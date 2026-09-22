@@ -65,6 +65,7 @@ describe('overallDailyScores', () => {
       [entry('a', '2026-09-14'), entry('a', '2026-09-15')],
       { from: '2026-09-14', to: '2026-09-15' },
       today,
+      1,
     );
     // Monday 14: a done, b missed → 1/2. Tuesday 15: only a counts → 1.
     expect(scores.get('2026-09-14')).toEqual({ completed: 1, total: 2, ratio: 0.5 });
@@ -72,8 +73,42 @@ describe('overallDailyScores', () => {
   });
 
   it('is null for days where nothing counts', () => {
-    const scores = overallDailyScores([], [], { from: '2026-09-14', to: '2026-09-14' }, today);
+    const scores = overallDailyScores([], [], { from: '2026-09-14', to: '2026-09-14' }, today, 1);
     expect(scores.get('2026-09-14')).toBeNull();
+  });
+
+  it('gets stronger as the habits of today are done instead of jumping to full', () => {
+    const habits = ['a', 'b', 'c', 'd'].map((id) => makeHabit({ id }));
+    const range = { from: today, to: today };
+    expect(overallDailyScores(habits, [], range, today, 1).get(today)).toBeNull();
+    expect(overallDailyScores(habits, [entry('a', today)], range, today, 1).get(today)).toEqual({
+      completed: 1,
+      total: 4,
+      ratio: 0.25,
+    });
+  });
+
+  it('counts an open flexible habit as not done, and stops once the quota is met', () => {
+    const daily = makeHabit({ id: 'daily' });
+    const flexible = makeHabit({
+      id: 'flex',
+      frequency: { type: 'per_period', count: 1, period: 'week' },
+    });
+    const scores = overallDailyScores(
+      [daily, flexible],
+      [
+        entry('daily', '2026-09-14'),
+        entry('daily', '2026-09-15'),
+        entry('flex', '2026-09-15'),
+        entry('daily', '2026-09-16'),
+      ],
+      { from: '2026-09-14', to: '2026-09-16' },
+      today,
+      1,
+    );
+    expect(scores.get('2026-09-14')?.ratio).toBe(0.5); // flex still open
+    expect(scores.get('2026-09-15')?.ratio).toBe(1); // both done
+    expect(scores.get('2026-09-16')?.ratio).toBe(1); // weekly quota met: flex off the list
   });
 });
 

@@ -17,7 +17,7 @@ import { useHabitsStore } from '@/stores/habitsStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useTimerStore } from '@/stores/timerStore';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, spacing } from '@/theme/tokens';
+import { radius, softShadow, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
@@ -29,6 +29,18 @@ import { Screen } from '@/ui/Screen';
 
 import { DayNavigator } from './DayNavigator';
 import { HabitDayRow } from './HabitDayRow';
+
+const GREETING = { morning: 'Bom dia', afternoon: 'Boa tarde', evening: 'Boa noite' } as const;
+
+/** A short, kind line above the day's progress. */
+function encouragement(completed: number, total: number): string {
+  if (total === 0) return 'Dia livre.';
+  if (completed === total) return 'Tudo feito. Que dia bom!';
+  if (completed === 0) return 'Um passo de cada vez.';
+  if (completed * 2 === total) return 'Metade feita. Continue assim!';
+  if (completed * 2 > total) return 'Mais da metade. Falta pouco!';
+  return 'Bom começo!';
+}
 
 export function TodayScreen() {
   const now = useNow();
@@ -81,13 +93,20 @@ export function TodayScreen() {
 
   return (
     <Screen>
-      <DayNavigator date={date} today={today} onChange={setDate} />
+      <DayNavigator
+        date={date}
+        today={today}
+        onChange={setDate}
+        greeting={GREETING[getDayPeriod(now)]}
+      />
 
       {due.length > 0 ? (
-        <Card>
+        <Card style={{ backgroundColor: colors.primarySoft, boxShadow: 'none' }}>
           <View style={styles.progressHeader}>
-            <AppText variant="bodyStrong">Progresso do dia</AppText>
-            <AppText tone="muted">
+            <AppText variant="bodyStrong" style={styles.flex}>
+              {encouragement(progress.completed, progress.total)}
+            </AppText>
+            <AppText variant="label" tone="muted">
               {progress.completed} de {progress.total}
             </AppText>
           </View>
@@ -105,22 +124,25 @@ export function TodayScreen() {
             key={group.timeOfDay}
             style={[
               styles.group,
-              isCurrent && { borderColor: colors.primary, backgroundColor: colors.surface },
+              isCurrent && {
+                backgroundColor: colors.surface,
+                boxShadow: softShadow(colors.shadow),
+              },
             ]}
           >
             <View style={styles.groupHeader} accessibilityRole="header">
               <Icon
                 name={TIME_OF_DAY_ICON[group.timeOfDay]}
                 size={20}
-                color={isCurrent ? colors.primary : colors.textMuted}
+                color={isCurrent ? colors.accent : colors.textMuted}
               />
-              <AppText variant="label" tone={isCurrent ? colors.primary : 'muted'}>
-                {TIME_OF_DAY_LABEL[group.timeOfDay].toUpperCase()}
+              <AppText variant="bodyStrong" tone={isCurrent ? 'default' : 'muted'}>
+                {TIME_OF_DAY_LABEL[group.timeOfDay]}
               </AppText>
               {isCurrent ? (
-                <View style={[styles.nowBadge, { backgroundColor: colors.primary }]}>
-                  <AppText variant="caption" tone={colors.onPrimary}>
-                    Agora
+                <View style={[styles.nowBadge, { backgroundColor: colors.primarySoft }]}>
+                  <AppText variant="caption" tone={colors.accent}>
+                    agora
                   </AppText>
                 </View>
               ) : null}
@@ -197,14 +219,13 @@ function usePeriodQuotas(
 }
 
 const styles = StyleSheet.create({
-  progressHeader: { flexDirection: 'row', justifyContent: 'space-between' },
+  progressHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  flex: { flex: 1 },
   group: {
     gap: spacing.sm,
     padding: spacing.sm,
     marginHorizontal: -spacing.sm,
     borderRadius: radius.lg,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
   },
   groupHeader: {
     flexDirection: 'row',

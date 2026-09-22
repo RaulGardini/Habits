@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 
 import { todayLocal } from '@/core/dates/localDate';
 import type { Habit } from '@/core/habits/types';
+import type { PlannerEvent } from '@/core/planner/types';
 import { planReminders, type ReminderTrigger } from '@/core/reminders/plan';
 
 /** Local notifications only (no server). Web has a no-op implementation. */
@@ -77,19 +78,22 @@ let syncing: Promise<void> = Promise.resolve();
  * Replaces every scheduled notification with the current plan. Runs sequentially so quick
  * successive changes cannot interleave. Does nothing without permission.
  */
-export function syncReminders(habits: readonly Habit[]): Promise<void> {
+export function syncReminders(
+  habits: readonly Habit[],
+  events: readonly PlannerEvent[] = [],
+): Promise<void> {
   syncing = syncing
     .catch(() => {})
     .then(async () => {
       if ((await getPermission()) !== 'granted') return;
       await Notifications.cancelAllScheduledNotificationsAsync();
       const now = new Date();
-      for (const reminder of planReminders(habits, todayLocal(now), now)) {
+      for (const reminder of planReminders(habits, todayLocal(now), now, events)) {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: reminder.title,
             body: reminder.body,
-            data: { habitId: reminder.habitId },
+            data: reminder.eventId ? { eventId: reminder.eventId } : { habitId: reminder.habitId },
           },
           trigger: toTrigger(reminder.trigger),
         });

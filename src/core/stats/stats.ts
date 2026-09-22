@@ -50,12 +50,21 @@ export function indexEntries(entries: readonly HabitEntry[]): Map<string, HabitE
   return map;
 }
 
-/** Combined score of all habits for each day of the range (`null` = nothing counted). */
+/**
+ * Combined score of all habits for each day of the range (`null` = nothing counted).
+ *
+ * The denominator is the day's whole list, so the cell gets stronger as habits are done:
+ * - today counts every due habit once anything was recorded (pending ones score 0);
+ * - a flexible habit counts on days when it was done, and as 0 on days when its period quota
+ *   was still open (it was on the list and not done). Entries before `range.from` are not
+ *   known here, so quotas met before the range are treated as open.
+ */
 export function overallDailyScores(
   habits: readonly Habit[],
   entries: readonly HabitEntry[],
   range: DateRange,
   today: LocalDate,
+  weekStartsOn: WeekStartsOn,
 ): Map<LocalDate, DayScore | null> {
   const index = indexEntries(entries);
   const scores = new Map<LocalDate, DayScore | null>();
@@ -63,17 +72,46 @@ export function overallDailyScores(
     let completed = 0;
     let total = 0;
     let sum = 0;
+    let recorded = false;
     for (const habit of habits) {
       const entry = index.get(`${habit.id}|${date}`);
-      const score = habitDayScore(habit, date, entry, today);
+      let score = habitDayScore(habit, date, entry, today);
+      if (score === null && isOpenOn(habit, date, entry, today, entries, weekStartsOn)) score = 0;
       if (score === null) continue;
+      if (entry) recorded = true;
       total += 1;
       sum += score;
       if (entry?.status === 'done') completed += 1;
     }
-    scores.set(date, total === 0 ? null : { completed, total, ratio: sum / total });
+    const pendingToday = date === today && !recorded;
+    scores.set(date, total === 0 || pendingToday ? null : { completed, total, ratio: sum / total });
   }
   return scores;
+}
+
+/** Was the habit on the day's list without a recorded score (see `overallDailyScores`)? */
+function isOpenOn(
+  habit: Habit,
+  date: LocalDate,
+  entry: HabitEntry | undefined,
+  today: LocalDate,
+  entries: readonly HabitEntry[],
+  weekStartsOn: WeekStartsOn,
+): boolean {
+  if (date > today || date > habitEndDate(habit, today) || !isScheduledOn(habit, date))
+    return false;
+  if (entry?.status === 'skipped') return false;
+  if (habit.frequency.type !== 'per_period') return date === today;
+  const period = periodRange(date, habit.frequency.period, weekStartsOn);
+  const doneBefore = entries.filter(
+    (e) =>
+      e.habitId === habit.id &&
+      e.status === 'done' &&
+      e.date >= period.from &&
+      e.date < date &&
+      e.date >= habit.startDate,
+  ).length;
+  return doneBefore < periodTarget(habit, period);
 }
 
 /** Per-day scores of one habit over the range. */
