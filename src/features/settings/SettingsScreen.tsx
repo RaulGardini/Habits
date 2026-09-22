@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { router } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -109,9 +110,14 @@ export function SettingsScreen() {
         <DeleteAllData />
       </Section>
 
+      <Button
+        variant="ghost"
+        icon="shield-lock-outline"
+        label="Política de privacidade"
+        onPress={() => router.push('/privacy')}
+      />
       <AppText variant="caption" tone="muted" style={styles.about}>
-        Habits {Constants.expoConfig?.version ?? ''} · gratuito, sem anúncios, seus dados ficam só
-        neste dispositivo.
+        Habits {Constants.expoConfig?.version ?? ''} · gratuito e sem anúncios.
       </AppText>
     </Screen>
   );
@@ -208,8 +214,8 @@ function BackupActions() {
   return (
     <>
       <AppText tone="muted">
-        Seus dados ficam apenas neste dispositivo. Exporte um backup em JSON regularmente e guarde-o
-        em um lugar seguro (Drive, e-mail, computador).
+        Sem conta, seus dados ficam só neste aparelho. Exporte um backup em JSON regularmente e
+        guarde-o em um lugar seguro (Drive, e-mail, computador).
       </AppText>
       <View style={styles.buttons}>
         <Button

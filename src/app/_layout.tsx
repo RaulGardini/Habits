@@ -77,6 +77,7 @@ function App() {
         <Stack.Screen name="goal/new" options={{ title: 'Nova meta', presentation: 'modal' }} />
         <Stack.Screen name="goal/[id]" options={{ title: 'Editar meta' }} />
         <Stack.Screen name="stats/[id]" options={{ title: 'Estatísticas do hábito' }} />
+        <Stack.Screen name="privacy" options={{ title: 'Política de privacidade' }} />
         <Stack.Screen name="entry" options={{ title: 'Registro do dia', presentation: 'modal' }} />
       </Stack>
     </NavigationThemeProvider>

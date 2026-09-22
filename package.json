@@ -11,6 +11,7 @@
     "expo": "~57.0.24",
     "expo-constants": "~57.0.19",
     "expo-crypto": "~57.0.3",
+    "expo-dev-client": "~57.0.19",
     "expo-document-picker": "~57.0.2",
     "expo-file-system": "~57.0.7",
     "expo-font": "~57.0.4",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
+    "@resvg/resvg-js": "^2.6.2",
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.2.2",
@@ -66,7 +68,9 @@
     "test:watch": "jest --watch",
     "check": "npm run lint && npm run typecheck && npm test && npm run test:sql",
     "db:generate": "drizzle-kit generate",
-    "test:sql": "node scripts/test-supabase-schema.mjs"
+    "test:sql": "node scripts/test-supabase-schema.mjs",
+    "assets": "node scripts/generate-assets.mjs",
+    "legal": "node scripts/generate-privacy.mjs"
   },
   "private": true,
   "jest": {

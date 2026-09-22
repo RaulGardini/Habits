@@ -18,6 +18,8 @@ npm start            # dev server (Expo Go / dev build)
 npm run check        # lint + typecheck + tests — run before every commit
 npm run db:generate  # generate a migration after editing src/db/schema.ts
 npm run format       # prettier
+npm run assets       # regenerate icon/splash/favicon/widget previews (scripts/generate-assets.mjs)
+npm run legal        # rebuild public/privacidade.html from src/features/legal/privacy.json
 ```
 
 Always add Expo packages with `npx expo install <pkg>` (SDK-compatible versions).
@@ -142,6 +144,18 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - Sync: `src/sync/engine.test.ts` (two sql.js devices + `createFakeRemote()`), and
   `npm run test:sql` (runs `supabase/schema.sql` on PGlite). `npm run check` runs both.
 
+## Release (docs/PUBLISHING.md)
+
+- Icons, splash, favicon and widget previews are generated from SVG by `npm run assets`
+  (resvg). Edit the script, not the PNGs.
+- Privacy policy source: `src/features/legal/privacy.json` → in-app `/privacy` screen and
+  `public/privacidade.html` (`npm run legal`). Keep the text in sync with what the app collects.
+- `eas.json` profiles: `development` (dev client), `preview` (internal APK), `production`
+  (auto-increment, remote app version). No `projectId` yet: the owner runs `eas init`.
+- Bundle id / package `dev.habits.app` and App Group `group.dev.habits.app` are **provisional**;
+  changing them means app.json + `src/widgets/iosPayload.ts` + `targets/widget/Snapshot.swift`.
+- `public/_redirects` makes SPA routes work on Netlify/Cloudflare Pages.
+
 ## Roadmap
 
 1. ✅ Setup + habit CRUD + Today screen (yes/no)
@@ -151,4 +165,4 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 5. ✅ Local notifications, JSON backup/import, settings
 6. ✅ Widgets (iOS/Android, dev build)
 7. ✅ (Optional) Supabase sync, last-write-wins by `updated_at`
-8. Store release prep
+8. ✅ Store release prep (icon, splash, privacy policy, EAS, store checklists)
