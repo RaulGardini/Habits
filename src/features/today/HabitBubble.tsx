@@ -142,7 +142,7 @@ export function HabitBubble({
           >
             <Icon
               name={running ? 'timer-outline' : done ? 'check-bold' : STATUS_ICON.skipped}
-              size={13}
+              size={11}
               color={done ? color.solid : colors.textMuted}
             />
           </View>
@@ -152,7 +152,7 @@ export function HabitBubble({
         {habit.name}
       </AppText>
       {detail ? (
-        <AppText variant="caption" tone="muted" numberOfLines={1} style={styles.name}>
+        <AppText variant="caption" tone="muted" numberOfLines={1} style={styles.detail}>
           {detail}
         </AppText>
       ) : null}
@@ -179,20 +179,21 @@ function bubbleDetail(
 }
 
 const styles = StyleSheet.create({
-  item: { alignItems: 'center', gap: 4 },
+  item: { alignItems: 'center', gap: 3, paddingHorizontal: 2 },
   pressed: { opacity: 0.7 },
   resting: { opacity: 0.45 },
   inner: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   badge: {
     position: 'absolute',
-    right: -1,
-    bottom: -1,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    right: -2,
+    bottom: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  name: { textAlign: 'center' },
+  name: { textAlign: 'center', fontSize: 12, lineHeight: 15 },
+  detail: { textAlign: 'center', fontSize: 10, lineHeight: 13 },
 });

@@ -36,9 +36,9 @@ import { TodayAgenda } from './TodayAgenda';
 
 const GREETING = { morning: 'Bom dia', afternoon: 'Boa tarde', evening: 'Boa noite' } as const;
 
-/** Target width of one habit circle + its name. */
-const CELL_TARGET = 96;
-const MAX_CIRCLE = 74;
+/** Target width of one habit cell; the circle stays small so a row fits 4–5 habits. */
+const CELL_TARGET = 72;
+const MAX_CIRCLE = 56;
 
 /** A short, kind line above the day's progress. */
 function encouragement(completed: number, total: number): string {
@@ -92,7 +92,7 @@ export function TodayScreen() {
   const [width, setWidth] = useState(0);
   const columns = Math.max(3, Math.floor(width / CELL_TARGET) || 4);
   const cell = width > 0 ? width / columns : CELL_TARGET;
-  const circle = Math.min(MAX_CIRCLE, cell - spacing.md);
+  const circle = Math.min(MAX_CIRCLE, cell - spacing.sm);
   const celebrating = useDayCompleted(date, progress.completed, progress.total);
 
   const saveEntry = (habit: Habit, next: EntryInput | null) =>
@@ -291,6 +291,6 @@ const styles = StyleSheet.create({
   groups: { gap: spacing.lg },
   group: { gap: spacing.sm },
   groupHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.md },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.md, columnGap: 0 },
   nowBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
 });
