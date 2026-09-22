@@ -13,7 +13,7 @@ import type { EntryInput, Habit, HabitEntry } from '@/core/habits/types';
 import { describeStreak, TIME_OF_DAY_ICON, TIME_OF_DAY_LABEL } from '@/features/habits/labels';
 import { useStreaks } from '@/features/habits/useStreaks';
 import { useNow } from '@/hooks/useNow';
-import { hapticSuccess } from '@/lib/haptics';
+import { hapticSelection, hapticSuccess } from '@/lib/haptics';
 import { useDayEntries, useEntriesInRange, useEntriesStore } from '@/stores/entriesStore';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -208,7 +208,8 @@ export function TodayScreen() {
                       disabled={isFuture}
                       size={circle}
                       width={cell}
-                      onPress={() =>
+                      onPress={() => {
+                        hapticSelection();
                         setTarget({
                           habit,
                           entry,
@@ -216,8 +217,8 @@ export function TodayScreen() {
                           streak: streaks.get(habit.id),
                           timerSeconds: seconds,
                           running,
-                        })
-                      }
+                        });
+                      }}
                       onLongPress={() =>
                         router.push({ pathname: '/entry', params: { habitId: habit.id, date } })
                       }

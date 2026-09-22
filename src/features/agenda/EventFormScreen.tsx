@@ -29,6 +29,7 @@ import { ToggleRow } from '@/ui/ToggleRow';
 
 import { DatePickerField } from './DatePickerField';
 import { t } from '@/i18n/i18n';
+import { hapticSuccess } from '@/lib/haptics';
 
 const DURATIONS = [30, 60, 90, 120] as const;
 
@@ -93,6 +94,7 @@ function EventForm({
     try {
       if (event) await plannerActions.updateEvent(event.id, next);
       else await plannerActions.createEvent(next);
+      hapticSuccess();
       goBack();
     } catch (error) {
       showError(t('Não foi possível salvar o evento.'), error);

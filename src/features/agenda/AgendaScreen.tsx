@@ -34,6 +34,7 @@ import { EventCard } from './EventCard';
 import { monthLabel, weekLabel } from './format';
 import { MonthGrid } from './MonthGrid';
 import { t } from '@/i18n/i18n';
+import { hapticSelection } from '@/lib/haptics';
 
 type AgendaMode = 'day' | 'week' | 'month' | 'list';
 
@@ -87,6 +88,7 @@ export function AgendaScreen() {
   const byDay = useMemo(() => groupByDate(occurrences), [occurrences]);
 
   const step = (amount: number) => {
+    hapticSelection();
     if (mode === 'day') select(addDaysLocal(date, amount));
     else if (mode === 'week') select(addDaysLocal(date, amount * 7));
     else select(shiftPeriod(date, 'month', amount));
@@ -149,7 +151,10 @@ export function AgendaScreen() {
           <Glass interactive style={styles.navPill}>
             <NavButton icon="chevron-left" label={t('Anterior')} onPress={() => step(-1)} />
             <Pressable
-              onPress={() => setPicked(null)}
+              onPress={() => {
+                hapticSelection();
+                setPicked(null);
+              }}
               accessibilityRole="button"
               accessibilityLabel={t('Ir para hoje')}
               style={styles.todayButton}
@@ -349,7 +354,10 @@ function WeekView({
           return (
             <Pressable
               key={day}
-              onPress={() => onSelect(day)}
+              onPress={() => {
+                hapticSelection();
+                onSelect(day);
+              }}
               accessibilityRole="button"
               accessibilityState={{ selected }}
               accessibilityLabel={`${formatDayLabel(day, today)}, ${t('{count} eventos', { count })}`}

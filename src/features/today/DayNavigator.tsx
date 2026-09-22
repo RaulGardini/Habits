@@ -13,6 +13,7 @@ import { MIN_TOUCH_SIZE, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { Glass } from '@/ui/Glass';
 import { Icon } from '@/ui/Icon';
+import { hapticSelection } from '@/lib/haptics';
 
 interface DayNavigatorProps {
   date: LocalDate;
@@ -47,7 +48,10 @@ export function DayNavigator({ date, today, onChange, greeting }: DayNavigatorPr
       </View>
       <Glass interactive style={styles.pill}>
         <Pressable
-          onPress={() => onChange(addDaysLocal(date, -1))}
+          onPress={() => {
+            hapticSelection();
+            onChange(addDaysLocal(date, -1));
+          }}
           accessibilityRole="button"
           accessibilityLabel={t('Dia anterior')}
           style={styles.button}
@@ -56,7 +60,10 @@ export function DayNavigator({ date, today, onChange, greeting }: DayNavigatorPr
         </Pressable>
         {isToday ? null : (
           <Pressable
-            onPress={() => onChange(today)}
+            onPress={() => {
+              hapticSelection();
+              onChange(today);
+            }}
             accessibilityRole="button"
             accessibilityLabel={t('Voltar para hoje')}
             style={styles.today}
@@ -65,7 +72,10 @@ export function DayNavigator({ date, today, onChange, greeting }: DayNavigatorPr
           </Pressable>
         )}
         <Pressable
-          onPress={() => onChange(addDaysLocal(date, 1))}
+          onPress={() => {
+            hapticSelection();
+            onChange(addDaysLocal(date, 1));
+          }}
           accessibilityRole="button"
           accessibilityLabel={t('Próximo dia')}
           style={styles.button}

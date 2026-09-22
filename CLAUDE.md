@@ -96,6 +96,10 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   native `GlassView` on iOS 26+, frosted CSS on web, translucent surface on Android. Never set
   opacity 0 on a `Glass` or its parents.
 - Touch targets ≥ 44px (`MIN_TOUCH_SIZE`). Every icon-only button has an `accessibilityLabel`.
+- Haptics (`src/lib/haptics.ts`, no-op `.web.ts` — keep both in sync): `hapticSelection` for
+  picking (chips, segmented controls, changing day/period, opening the habit sheet),
+  `hapticLight` for value changes, `hapticSuccess` on save/complete, and `hapticWarning` /
+  `hapticError` fired by `confirm({ destructive })` / `showError`.
 - Checkable rows use `accessibilityRole="checkbox"` + `accessibilityState`.
 - Reanimated shared values: use `.get()` / `.set()` (React Compiler is enabled).
 - Charts use `react-native-svg`. Don't put `onPress` on SVG shapes (leaks responder props to the

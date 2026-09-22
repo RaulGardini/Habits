@@ -20,6 +20,7 @@ import { Screen } from '@/ui/Screen';
 import { SegmentedControl, type SegmentOption } from '@/ui/SegmentedControl';
 import { TextField } from '@/ui/TextField';
 import { t } from '@/i18n/i18n';
+import { hapticSuccess } from '@/lib/haptics';
 
 export const NOTE_MAX_LENGTH = 500;
 
@@ -84,6 +85,7 @@ function EntryForm({ habit, date, entry }: { habit: Habit; date: LocalDate; entr
     setSaving(true);
     try {
       await save(habit.id, date, next);
+      hapticSuccess();
       goBack();
     } catch (error) {
       showError(t('Não foi possível salvar o registro.'), error);

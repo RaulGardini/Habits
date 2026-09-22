@@ -17,6 +17,7 @@ import { reloadAll } from './dataActions';
 import { rescheduleReminders } from './reminders';
 import { useSyncStore } from './syncStore';
 import { t } from '@/i18n/i18n';
+import { hapticSuccess } from '@/lib/haptics';
 
 /** Automatic checks run at most this often per app session (the backup itself is weekly). */
 const AUTO_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
@@ -79,6 +80,7 @@ export const useCloudBackupStore = create<CloudBackupState>()((set, get) => {
       set({ busy: true, error: null });
       try {
         await snapshot();
+        hapticSuccess();
       } catch (error) {
         console.error('Cloud backup failed', error);
         set({ error: friendlyError(error) });
@@ -115,6 +117,7 @@ export const useCloudBackupStore = create<CloudBackupState>()((set, get) => {
         await reloadAll();
         await rescheduleReminders();
         await useSyncStore.getState().syncNow();
+        hapticSuccess();
       } catch (error) {
         console.error('Cloud restore failed', error);
         set({ error: friendlyError(error) });

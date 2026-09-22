@@ -5,6 +5,7 @@ import { MIN_TOUCH_SIZE, radius, spacing } from '@/theme/tokens';
 
 import { AppText } from './AppText';
 import { Icon } from './Icon';
+import { hapticSelection } from '@/lib/haptics';
 
 export interface SegmentOption<T extends string> {
   value: T;
@@ -47,7 +48,10 @@ export function SegmentedControl<T extends string>({
           return (
             <Pressable
               key={option.value}
-              onPress={() => onChange(option.value)}
+              onPress={() => {
+                hapticSelection();
+                onChange(option.value);
+              }}
               accessibilityRole="radio"
               accessibilityLabel={option.label}
               accessibilityState={{ checked: selected }}

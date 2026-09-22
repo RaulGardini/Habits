@@ -27,6 +27,7 @@ import { TIME_OF_DAY_ICON, TIME_OF_DAY_LABEL, describeFrequency, describeTarget 
 import { RemindersEditor } from './RemindersEditor';
 import { TrackingPicker } from './TrackingPicker';
 import { t } from '@/i18n/i18n';
+import { hapticSuccess } from '@/lib/haptics';
 
 interface HabitFormProps {
   initial: HabitDraft;
@@ -64,6 +65,7 @@ export function HabitForm({ initial, submitLabel, onSubmit }: HabitFormProps) {
     setSaving(true);
     try {
       await onSubmit(draft);
+      hapticSuccess();
     } finally {
       setSaving(false);
     }

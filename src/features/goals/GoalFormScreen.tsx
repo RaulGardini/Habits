@@ -19,6 +19,7 @@ import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { TextField } from '@/ui/TextField';
 import { t } from '@/i18n/i18n';
+import { hapticSuccess } from '@/lib/haptics';
 
 /** "Conta automaticamente as vezes que você concluir “Academia” no período." */
 function describeLinkedProgress(habit: Habit): string {
@@ -84,6 +85,7 @@ function GoalForm({
     try {
       if (goal) await plannerActions.updateGoal(goal.id, next);
       else await plannerActions.createGoal(next);
+      hapticSuccess();
       goBack();
     } catch (error) {
       showError(t('Não foi possível salvar a meta.'), error);

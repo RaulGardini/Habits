@@ -5,6 +5,7 @@ import { radius, spacing } from '@/theme/tokens';
 
 import { AppText } from './AppText';
 import { IconButton } from './IconButton';
+import { hapticLight } from '@/lib/haptics';
 
 interface StepperProps {
   label: string;
@@ -30,7 +31,10 @@ export function Stepper({ label, value, min, max, onChange, suffix }: StepperPro
       <IconButton
         icon="minus"
         label={`Diminuir ${label}`}
-        onPress={() => onChange(Math.max(min, value - 1))}
+        onPress={() => {
+          hapticLight();
+          onChange(Math.max(min, value - 1));
+        }}
         disabled={value <= min}
       />
       <AppText
@@ -44,7 +48,10 @@ export function Stepper({ label, value, min, max, onChange, suffix }: StepperPro
       <IconButton
         icon="plus"
         label={`Aumentar ${label}`}
-        onPress={() => onChange(Math.min(max, value + 1))}
+        onPress={() => {
+          hapticLight();
+          onChange(Math.min(max, value + 1));
+        }}
         disabled={value >= max}
       />
     </View>

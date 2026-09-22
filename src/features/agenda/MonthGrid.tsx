@@ -11,6 +11,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { radius } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { t } from '@/i18n/i18n';
+import { hapticSelection } from '@/lib/haptics';
 
 interface MonthGridProps {
   range: DateRange;
@@ -71,7 +72,10 @@ export function MonthGrid({
                 return (
                   <Pressable
                     key={date}
-                    onPress={() => onSelect(date)}
+                    onPress={() => {
+                      hapticSelection();
+                      onSelect(date);
+                    }}
                     disabled={disabled}
                     accessibilityRole="button"
                     accessibilityState={{ selected: isSelected, disabled }}

@@ -4,6 +4,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH_SIZE, radius, spacing } from '@/theme/tokens';
 
 import { AppText } from './AppText';
+import { hapticSelection } from '@/lib/haptics';
 
 interface ChipProps {
   label: string;
@@ -23,7 +24,10 @@ export function Chip({ label, accessibilityLabel, selected, onPress, color, onCo
   const foreground = selected ? (onColor ?? colors.onPrimary) : colors.text;
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        hapticSelection();
+        onPress();
+      }}
       accessibilityRole="checkbox"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ checked: selected }}

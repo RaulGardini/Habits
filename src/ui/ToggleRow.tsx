@@ -5,6 +5,7 @@ import { MIN_TOUCH_SIZE, spacing } from '@/theme/tokens';
 
 import { AppText } from './AppText';
 import { Icon } from './Icon';
+import { hapticSelection } from '@/lib/haptics';
 
 interface ToggleRowProps {
   label: string;
@@ -22,7 +23,10 @@ export function ToggleRow({ label, icon, value, onChange }: ToggleRowProps) {
       <AppText style={styles.label}>{label}</AppText>
       <Switch
         value={value}
-        onValueChange={onChange}
+        onValueChange={(next) => {
+          hapticSelection();
+          onChange(next);
+        }}
         accessibilityLabel={label}
         trackColor={{ true: colors.primary, false: colors.border }}
         thumbColor={colors.surface}
