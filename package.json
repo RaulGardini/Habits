@@ -74,7 +74,7 @@
     "test:sql": "node scripts/test-supabase-schema.mjs",
     "assets": "node scripts/generate-assets.mjs",
     "legal": "node scripts/generate-privacy.mjs",
-    "publish:go": "eas update --channel production --environment production --platform ios --non-interactive --message \"Nova versão\""
+    "publish:go": "npx eas-cli@latest update --channel production --environment production --platform ios --non-interactive --message \"Nova versão\""
   },
   "private": true,
   "jest": {
