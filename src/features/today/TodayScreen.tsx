@@ -36,8 +36,9 @@ import { TodayAgenda } from './TodayAgenda';
 
 const GREETING = { morning: 'Bom dia', afternoon: 'Boa tarde', evening: 'Boa noite' } as const;
 
-/** Target width of one habit cell; the circle stays small so a row fits 4–5 habits. */
-const CELL_TARGET = 72;
+/** Habits per row (more only on wide screens), and the circle size cap. */
+const COLUMNS = 5;
+const WIDE_CELL = 110;
 const MAX_CIRCLE = 56;
 
 /** A short, kind line above the day's progress. */
@@ -90,8 +91,8 @@ export function TodayScreen() {
 
   const [target, setTarget] = useState<HabitActionTarget | null>(null);
   const [width, setWidth] = useState(0);
-  const columns = Math.max(3, Math.floor(width / CELL_TARGET) || 4);
-  const cell = width > 0 ? width / columns : CELL_TARGET;
+  const columns = Math.max(COLUMNS, Math.floor(width / WIDE_CELL));
+  const cell = width > 0 ? width / columns : WIDE_CELL;
   const circle = Math.min(MAX_CIRCLE, cell - spacing.sm);
   const celebrating = useDayCompleted(date, progress.completed, progress.total);
 
