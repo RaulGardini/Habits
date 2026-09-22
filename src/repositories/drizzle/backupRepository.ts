@@ -1,4 +1,4 @@
-import { eq, getTableColumns } from 'drizzle-orm';
+import { eq, getTableColumns, gt } from 'drizzle-orm';
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core';
 
 import {
@@ -61,6 +61,19 @@ export function createDrizzleBackupRepository(db: Database): BackupRepository {
       const result = {} as Record<BackupTable, BackupRow[]>;
       for (const name of IMPORT_ORDER) {
         result[name] = (await db.select().from(TABLES[name])) as BackupRow[];
+      }
+      return result;
+    },
+
+    async exportChangedSince(since) {
+      const result = {} as Record<BackupTable, BackupRow[]>;
+      for (const name of IMPORT_ORDER) {
+        const table = TABLES[name];
+        const updatedAt = getTableColumns(table).updatedAt as SQLiteColumn;
+        const query = db.select().from(table);
+        result[name] = (await (since === null
+          ? query
+          : query.where(gt(updatedAt, since)))) as BackupRow[];
       }
       return result;
     },

@@ -11,9 +11,7 @@
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "dev.habits.app",
       "entitlements": {
-        "com.apple.security.application-groups": [
-          "group.dev.habits.app"
-        ]
+        "com.apple.security.application-groups": ["group.dev.habits.app"]
       }
     },
     "android": {

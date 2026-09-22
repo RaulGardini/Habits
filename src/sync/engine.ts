@@ -1,0 +1,120 @@
+import {
+  BACKUP_TABLES,
+  type BackupRow,
+  type BackupTable,
+  type ImportSummary,
+} from '@/core/backup/backup';
+import {
+  REMOTE_TABLES,
+  SYNC_ORDER,
+  chunk,
+  pushableRows,
+  toLocalRow,
+  toRemoteRow,
+  type SyncState,
+} from '@/core/sync/sync';
+import type { BackupRepository } from '@/repositories';
+
+/** The cloud side, as seen by the sync engine (Supabase in the app, a fake in tests). */
+export interface RemoteStore {
+  /** Inserts or updates rows (remote shape). The server keeps the newer `updated_at`. */
+  upsert(table: string, rows: Record<string, unknown>[]): Promise<void>;
+  /**
+   * Rows ordered by `server_updated_at`, after `since` (or from it when `inclusive`), at most
+   * `limit`. `since = null` means from the beginning.
+   */
+  pull(
+    table: string,
+    since: string | null,
+    inclusive: boolean,
+    limit: number,
+  ): Promise<Record<string, unknown>[]>;
+  /** Deletes every row of the signed-in user. */
+  deleteAll(): Promise<void>;
+}
+
+export interface SyncResult {
+  state: SyncState;
+  pushed: number;
+  pulled: number;
+  applied: ImportSummary;
+}
+
+const PUSH_CHUNK = 200;
+const PULL_PAGE = 500;
+
+function rowKey(table: BackupTable, row: Record<string, unknown>): string {
+  return String(table === 'settings' ? row.key : row.id);
+}
+
+/** Every remote row changed after the table cursor, page by page. */
+async function pullTable(
+  remote: RemoteStore,
+  table: BackupTable,
+  cursor: string | null,
+  pageSize: number,
+): Promise<{ rows: BackupRow[]; cursor: string | null }> {
+  const rows: BackupRow[] = [];
+  const seenAtCursor = new Set<string>();
+  let since = cursor;
+  let inclusive = false;
+  for (;;) {
+    const page = await remote.pull(REMOTE_TABLES[table], since, inclusive, pageSize);
+    // Later pages start *at* the last timestamp (rows may share it); skip the ones already read.
+    const fresh = page.filter(
+      (row) => !(String(row.server_updated_at) === since && seenAtCursor.has(rowKey(table, row))),
+    );
+    for (const row of fresh) {
+      const at = String(row.server_updated_at);
+      if (at !== since) seenAtCursor.clear();
+      since = at;
+      seenAtCursor.add(rowKey(table, row));
+      rows.push(toLocalRow(row));
+    }
+    if (page.length < pageSize || fresh.length === 0) break;
+    inclusive = true;
+  }
+  return { rows: pushableRows(table, rows), cursor: since };
+}
+
+/**
+ * One sync round: push local changes since the last push, then pull remote changes since the
+ * per-table cursors and merge them locally (last-write-wins by `updatedAt`, same rules as the
+ * JSON backup import). Idempotent: running it twice in a row pushes/pulls nothing new.
+ */
+export async function runSync(
+  local: BackupRepository,
+  remote: RemoteStore,
+  state: SyncState,
+  now: () => string = () => new Date().toISOString(),
+  pageSize = PULL_PAGE,
+): Promise<SyncResult> {
+  const startedAt = now();
+
+  const changed = await local.exportChangedSince(state.lastPushedAt);
+  let pushed = 0;
+  for (const table of SYNC_ORDER) {
+    const rows = pushableRows(table, changed[table]);
+    for (const part of chunk(rows, PUSH_CHUNK)) {
+      await remote.upsert(REMOTE_TABLES[table], part.map(toRemoteRow));
+      pushed += part.length;
+    }
+  }
+
+  const incoming = Object.fromEntries(BACKUP_TABLES.map((t) => [t, []])) as unknown as Record<
+    BackupTable,
+    BackupRow[]
+  >;
+  const cursors = { ...state.cursors };
+  let pulled = 0;
+  for (const table of SYNC_ORDER) {
+    const result = await pullTable(remote, table, state.cursors[table] ?? null, pageSize);
+    incoming[table] = result.rows;
+    pulled += result.rows.length;
+    if (result.cursor !== null) cursors[table] = result.cursor;
+  }
+  const applied =
+    pulled > 0 ? await local.importMerge(incoming) : { inserted: 0, updated: 0, skipped: 0 };
+
+  return { state: { lastPushedAt: startedAt, cursors }, pushed, pulled, applied };
+}

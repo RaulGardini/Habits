@@ -91,6 +91,8 @@ export interface GoalRepository {
 export interface BackupRepository {
   /** Every row of every table, including soft-deleted rows. */
   exportAll(): Promise<Record<BackupTable, BackupRow[]>>;
+  /** Rows (incl. soft-deleted) with `updatedAt` after `since` — or every row when null. */
+  exportChangedSince(since: string | null): Promise<Record<BackupTable, BackupRow[]>>;
   /** Merges a backup into the database (last write wins by `updatedAt`). */
   importMerge(tables: Record<BackupTable, BackupRow[]>): Promise<ImportSummary>;
   /** Permanently deletes all data (user-initiated "delete all data"). */

@@ -4,7 +4,9 @@ import { AppState } from 'react-native';
 import { configureNotifications, syncReminders } from '@/lib/notifications';
 import { useEntriesStore } from '@/stores/entriesStore';
 import { useHabitsStore } from '@/stores/habitsStore';
+import { usePlannerStore } from '@/stores/plannerStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useSyncStore } from '@/stores/syncStore';
 import { useTimerStore } from '@/stores/timerStore';
 import { consumePendingWidgetActions, updateWidgets } from '@/widgets/sync';
 
@@ -22,6 +24,35 @@ async function bootstrap(): Promise<void> {
   ]);
   startReminderSync();
   startWidgetSync();
+  startCloudSync();
+}
+
+/**
+ * Optional cloud sync (only when configured and signed in): on start, when the app returns to
+ * the foreground, and a few seconds after local changes.
+ */
+function startCloudSync(): void {
+  const sync = useSyncStore.getState();
+  if (!sync.configured) return;
+  sync
+    .init()
+    .then(() => useSyncStore.getState().syncNow())
+    .catch((error: unknown) => console.error('Sync init failed', error));
+
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const schedule = () => {
+    if (!useSyncStore.getState().userId) return;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => void useSyncStore.getState().syncNow(), 4000);
+  };
+  useHabitsStore.subscribe((state, previous) => state.habits !== previous.habits && schedule());
+  useEntriesStore.subscribe((state, previous) => state.version !== previous.version && schedule());
+  usePlannerStore.subscribe((state, previous) => state.version !== previous.version && schedule());
+  useSettingsStore.subscribe((state, previous) => state !== previous && schedule());
+  AppState.addEventListener(
+    'change',
+    (status) => status === 'active' && void useSyncStore.getState().syncNow(),
+  );
 }
 
 /**

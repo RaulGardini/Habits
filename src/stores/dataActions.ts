@@ -15,8 +15,8 @@ import { usePlannerStore } from './plannerStore';
 import { useSettingsStore } from './settingsStore';
 import { useTimerStore } from './timerStore';
 
-/** Reloads every store from the database after a bulk change (import / delete all). */
-async function reloadAll(): Promise<void> {
+/** Reloads every store from the database after a bulk change (import, delete all, sync). */
+export async function reloadAll(): Promise<void> {
   useEntriesStore.getState().reset();
   usePlannerStore.getState().bump();
   await Promise.all([

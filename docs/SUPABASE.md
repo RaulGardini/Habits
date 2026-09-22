@@ -1,0 +1,58 @@
+# Sincronização na nuvem (Supabase — plano gratuito)
+
+A sincronização é **opcional**. Sem configurar nada, o app funciona 100% offline e a seção
+"Conta e sincronização" apenas explica que o recurso não está disponível.
+
+## Como funciona
+
+- Login com e-mail e senha (Supabase Auth).
+- Cada tabela local tem uma cópia no Postgres do Supabase (`supabase/schema.sql`), protegida por
+  **Row Level Security**: cada usuário só enxerga e altera as próprias linhas.
+- O app sincroniza ao abrir, ao voltar para o primeiro plano, alguns segundos após qualquer
+  alteração e pelo botão "Sincronizar agora".
+- Conflitos: **vence a alteração mais recente** (`updated_at`). O servidor recusa escritas mais
+  antigas (gatilho `lww_guard`); o download usa `server_updated_at`, então relógios errados nos
+  aparelhos não fazem perder alterações.
+- Exclusões são sincronizadas (soft delete). "Apagar todos os dados" com conta conectada apaga
+  também a nuvem. "Excluir conta" apaga a conta e todos os dados da nuvem (exigência da App Store).
+
+## Configurar (uma vez, ~10 minutos)
+
+1. Crie uma conta e um projeto em <https://supabase.com> (plano Free). Escolha a região
+   **South America (São Paulo)** para menor latência.
+2. No projeto, abra **SQL Editor**, cole o conteúdo de `supabase/schema.sql` e clique em **Run**.
+   (Pode rodar de novo sem problema.)
+3. **Authentication → Sign In / Providers → Email**: deixe habilitado.
+   - "Confirm email" ligado (recomendado): o usuário confirma pelo link enviado por e-mail.
+     O envio de e-mails do plano gratuito é limitado (poucos por hora) — para produção,
+     configure um SMTP próprio (ex.: Resend ou Brevo têm planos gratuitos).
+4. **Project Settings → API**: copie a **Project URL** e a **Publishable key**.
+5. Na raiz do projeto crie `.env.local` (já está no `.gitignore`), a partir de `.env.example`:
+
+   ```bash
+   EXPO_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+   EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+   ```
+
+6. Reinicie o servidor (`npm run web` / `npm start`). A seção de conta aparece nos Ajustes.
+7. Para builds na nuvem (EAS), cadastre as mesmas variáveis:
+
+   ```bash
+   npx eas-cli@latest env:create --name EXPO_PUBLIC_SUPABASE_URL --value https://SEU-PROJETO.supabase.co --environment production --visibility plaintext
+   npx eas-cli@latest env:create --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value sb_publishable_... --environment production --visibility plaintext
+   ```
+
+A publishable key é pública por natureza (vai dentro do app); a segurança vem do RLS.
+**Nunca** coloque a `service_role`/secret key no app.
+
+## Limites do plano gratuito (2026)
+
+500 MB de banco, 50 mil usuários ativos/mês e pausa do projeto após 7 dias sem uso (reativa pelo
+painel). Para um app de hábitos (linhas pequenas) isso comporta muitos usuários.
+
+## Testes
+
+- `npm run test:sql` roda `supabase/schema.sql` num Postgres real (PGlite) e verifica
+  "mais recente vence", isolamento entre usuários e exclusão de conta.
+- `src/sync/engine.test.ts` simula dois aparelhos sincronizando por um servidor falso com as
+  mesmas regras.

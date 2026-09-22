@@ -116,8 +116,21 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - Local Android build (Windows): needs `ANDROID_HOME` and **JDK 17/21** (`JAVA_HOME` = Android
   Studio `jbr`); JDK 24+ breaks the CMake step. Fast emulator build:
   `./gradlew assembleRelease -PreactNativeArchitectures=x86_64 -x lintVitalAnalyzeRelease
-  -x lintVitalReportRelease -x lintVitalRelease`. If JS changes don't show up in a release APK,
+-x lintVitalReportRelease -x lintVitalRelease`. If JS changes don't show up in a release APK,
   delete `android/app/build/generated/assets/react` (Gradle may reuse a stale bundle).
+
+## Cloud sync (optional — docs/SUPABASE.md)
+
+- Enabled only when `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` exist
+  (`.env.local`, EAS env). Otherwise `syncConfigured` is false and the app stays offline-only.
+- Remote schema: `supabase/schema.sql` (snake_case mirror + `user_id` + `server_updated_at`,
+  RLS per user, `lww_guard` trigger, `delete_my_account()`). **Any local schema change must be
+  mirrored there** (and in `REMOTE_TABLES`), then re-run it in the Supabase SQL editor.
+- Engine: `runSync` (`src/sync/engine.ts`) = push rows with `updatedAt > lastPushedAt`, then pull
+  rows with `server_updated_at > cursor` per table and merge with the backup's `importMerge`.
+  Device-only settings (`activeTimer`, `syncState`) never sync (`LOCAL_ONLY_SETTINGS`).
+- `useSyncStore` owns auth + sync status; bootstrap triggers sync on start, foreground and
+  4 s after local changes. After a backup import call `requestFullSync()`.
 
 ## Testing
 
@@ -126,6 +139,8 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - Drizzle repositories are integration-tested against real SQLite in memory (`sql.js`) with the
   app's migrations: `createTestDatabase()` in `src/db/testing.ts` (see `drizzle.test.ts`).
 - Test builders: `src/core/habits/testing.ts` (`makeHabit`, `makeEntry`).
+- Sync: `src/sync/engine.test.ts` (two sql.js devices + `createFakeRemote()`), and
+  `npm run test:sql` (runs `supabase/schema.sql` on PGlite). `npm run check` runs both.
 
 ## Roadmap
 
@@ -135,5 +150,5 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 4. ✅ Planner (daily / monthly / yearly) + goals
 5. ✅ Local notifications, JSON backup/import, settings
 6. ✅ Widgets (iOS/Android, dev build)
-7. (Optional) Supabase sync, last-write-wins by `updated_at`
+7. ✅ (Optional) Supabase sync, last-write-wins by `updated_at`
 8. Store release prep

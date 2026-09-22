@@ -14,6 +14,7 @@ import {
 import { deleteAllData, exportBackup, importBackup } from '@/stores/dataActions';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useSyncStore } from '@/stores/syncStore';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { ThemePreference } from '@/theme/tokens';
 import { spacing } from '@/theme/tokens';
@@ -24,6 +25,8 @@ import { confirm, showError } from '@/ui/dialogs';
 import { Icon } from '@/ui/Icon';
 import { Screen } from '@/ui/Screen';
 import { SegmentedControl } from '@/ui/SegmentedControl';
+
+import { AccountSection } from './AccountSection';
 
 const THEME_OPTIONS = [
   { value: 'system', label: 'Sistema', icon: 'theme-light-dark' },
@@ -88,6 +91,10 @@ export function SettingsScreen() {
         <AppText variant="caption" tone="muted">
           Usado nos calendários e nos hábitos &quot;X vezes por semana&quot;.
         </AppText>
+      </Section>
+
+      <Section title="Conta e sincronização" icon="cloud-sync-outline">
+        <AccountSection />
       </Section>
 
       <Section title="Lembretes" icon="bell-outline">
@@ -180,6 +187,12 @@ function BackupActions() {
     try {
       const summary = await importBackup();
       if (summary) {
+        // Imported rows may be older than the last push: send everything on the next sync.
+        const sync = useSyncStore.getState();
+        if (sync.userId) {
+          await sync.requestFullSync();
+          void sync.syncNow();
+        }
         setResult(
           `Importação concluída: ${summary.inserted} novos, ${summary.updated} atualizados, ${summary.skipped} ignorados.`,
         );
@@ -223,11 +236,14 @@ function BackupActions() {
 }
 
 function DeleteAllData() {
+  const signedIn = useSyncStore((state) => state.userId !== null);
+
   const run = async () => {
     const first = await confirm({
       title: 'Apagar todos os dados?',
-      message:
-        'Hábitos, registros, tarefas, eventos, notas, metas e ajustes serão apagados deste dispositivo. Recomendamos exportar um backup antes.',
+      message: signedIn
+        ? 'Hábitos, registros, tarefas, eventos, notas, metas e ajustes serão apagados deste aparelho E da nuvem (sua conta continua existindo). Recomendamos exportar um backup antes.'
+        : 'Hábitos, registros, tarefas, eventos, notas, metas e ajustes serão apagados deste dispositivo. Recomendamos exportar um backup antes.',
       confirmLabel: 'Continuar',
       destructive: true,
     });
@@ -240,6 +256,8 @@ function DeleteAllData() {
     });
     if (!second) return;
     try {
+      // Cloud first: otherwise the next sync would bring everything back.
+      if (signedIn) await useSyncStore.getState().deleteCloudData();
       await deleteAllData();
     } catch (error) {
       showError('Não foi possível apagar os dados.', error);

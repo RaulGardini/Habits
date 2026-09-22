@@ -128,6 +128,9 @@ export function createMemoryRepositories(initial: { habits?: Habit[] } = {}): Re
       async exportAll() {
         throw new Error('Backup is not available in memory repositories');
       },
+      async exportChangedSince() {
+        throw new Error('Backup is not available in memory repositories');
+      },
       async importMerge() {
         throw new Error('Backup is not available in memory repositories');
       },
