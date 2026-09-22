@@ -104,6 +104,8 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   (`src/widgets/android/`), registered from the custom entry `index.js`. The task opens the DB
   itself (`initRepositories()`) and writes taps directly. Widget sizes/labels: `app.json` plugin.
   That library crashes on import in Expo Go → only `require` it lazily behind `isExpoGo`.
+  Every widget component must start with `'use no memo'` (the library calls components as plain
+  functions; React Compiler hooks crash them — a module-level directive is NOT enough).
 - **iOS** (`@bacons/apple-targets`, `targets/widget/*.swift`): SwiftUI cannot run JS or open
   the SQLite DB. The app writes a JSON snapshot to the App Group `group.dev.habits.app`
   (`src/widgets/sync.ios.ts`); widget taps (AppIntent, iOS 17+) append to a queue that the app
@@ -111,6 +113,11 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   with `src/widgets/iosPayload.ts`.
 - The app redraws widgets after any habit/entry/settings change (`updateWidgets`, bootstrap).
 - Native changes: `npx expo prebuild --clean`, then `npm run android` / EAS build.
+- Local Android build (Windows): needs `ANDROID_HOME` and **JDK 17/21** (`JAVA_HOME` = Android
+  Studio `jbr`); JDK 24+ breaks the CMake step. Fast emulator build:
+  `./gradlew assembleRelease -PreactNativeArchitectures=x86_64 -x lintVitalAnalyzeRelease
+  -x lintVitalReportRelease -x lintVitalRelease`. If JS changes don't show up in a release APK,
+  delete `android/app/build/generated/assets/react` (Gradle may reuse a stale bundle).
 
 ## Testing
 

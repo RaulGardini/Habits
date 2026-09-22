@@ -1,3 +1,6 @@
+// react-native-android-widget calls these components as plain functions, so the React
+// Compiler's memoization (hooks) must not run: every component opts out with 'use no memo'.
+
 import { FlexWidget, SvgWidget, TextWidget } from 'react-native-android-widget';
 
 import { heatmapSvg, type WidgetSnapshot } from '@/core/widgets/snapshot';
@@ -22,6 +25,7 @@ interface WidgetProps {
 }
 
 function ProgressBar({ ratio, color, track }: { ratio: number; color: string; track: string }) {
+  'use no memo';
   const filled = Math.round(Math.min(1, Math.max(0, ratio)) * 100);
   return (
     <FlexWidget
@@ -45,6 +49,7 @@ function ProgressBar({ ratio, color, track }: { ratio: number; color: string; tr
 }
 
 export function TodayWidget({ snapshot, scheme, height }: WidgetProps) {
+  'use no memo';
   const colors = themeColors[scheme];
   const rows = Math.max(1, Math.floor((height - 64) / 40));
   const habits = snapshot.habits.slice(0, rows);
@@ -156,6 +161,7 @@ export function TodayWidget({ snapshot, scheme, height }: WidgetProps) {
 }
 
 export function HeatmapWidget({ snapshot, scheme }: WidgetProps) {
+  'use no memo';
   const colors = themeColors[scheme];
   const svg = heatmapSvg(snapshot.heatmap, {
     color: colors.primary,
