@@ -173,8 +173,9 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - `eas.json` profiles: `development` (dev client), `preview` (internal APK), `production`
   (auto-increment, remote app version), `apk` (production-signed APK for direct install, no store).
 - Bundle id / package `com.raulgardini.habits`, App Group `group.com.raulgardini.habits` (final;
-  they live in app.json + `src/widgets/iosPayload.ts` + `targets/widget/Snapshot.swift`). First release ships **without** cloud sync
-  (no Supabase env vars; the privacy policy has no account section — restore it if sync is enabled).
+  they live in app.json + `src/widgets/iosPayload.ts` + `targets/widget/Snapshot.swift`). Cloud sync is **on**: Supabase project
+  `jjmgidotiujptltxpfls`; URL + publishable key in `.env.local` (local/web export) and in EAS env
+  (development/preview/production, used by `eas update --environment production`).
 - `public/_redirects` makes SPA routes work on Netlify/Cloudflare Pages.
 - The owner uses the app on iPhone through **Expo Go + EAS Update** (no paid Apple account):
   `npm run publish:go` publishes the iOS JS bundle to channel `production`; Expo Go opens

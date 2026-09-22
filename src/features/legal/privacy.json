@@ -6,7 +6,7 @@
       "title": "Resumo",
       "paragraphs": [
         "O Habits é gratuito, sem anúncios e sem rastreamento. Seus hábitos, registros, compromissos da agenda e metas ficam guardados no seu próprio aparelho. Nós não vendemos, não compartilhamos e não analisamos seus dados.",
-        "O app não tem cadastro nem login e não envia nenhum dado seu para servidores: tudo fica no aparelho."
+        "A conta é opcional. Sem conta, nenhum dado seu sai do aparelho."
       ]
     },
     {
@@ -20,6 +20,14 @@
       "paragraphs": [
         "Tudo o que você cadastra no app (hábitos, registros diários, compromissos da agenda, metas e preferências como tema) é armazenado localmente, em um banco de dados no próprio aparelho ou navegador.",
         "Esses dados são usados apenas para o funcionamento do app: mostrar seus hábitos, calcular sequências e estatísticas, exibir os widgets e agendar lembretes."
+      ]
+    },
+    {
+      "title": "Conta e sincronização (opcional)",
+      "paragraphs": [
+        "Se você criar uma conta, coletamos seu e-mail e uma senha (armazenada de forma criptografada pelo provedor de autenticação) e enviamos uma cópia dos seus dados do app para a nuvem, apenas para sincronizá-los entre os seus aparelhos e protegê-los contra perda.",
+        "O serviço de nuvem utilizado é o Supabase (supabase.com), que atua como operador dos dados. A conexão é criptografada e cada conta só consegue acessar os próprios dados.",
+        "Você pode sair da conta a qualquer momento (os dados continuam no aparelho) ou excluí-la em Ajustes > Conta e sincronização > Excluir conta, o que apaga permanentemente a conta e todos os dados guardados na nuvem."
       ]
     },
     {
@@ -43,7 +51,7 @@
     {
       "title": "Seus direitos (LGPD)",
       "paragraphs": [
-        "Você pode acessar, exportar (Ajustes > Backup), corrigir e apagar seus dados a qualquer momento pelo próprio app (Ajustes > Apagar dados). Como não guardamos nenhum dado seu, não há nada a solicitar fora do app; dúvidas podem ser enviadas pelo e-mail acima."
+        "Você pode acessar, exportar (Ajustes > Backup), corrigir e apagar seus dados a qualquer momento pelo próprio app (Ajustes > Apagar dados). Para dados na nuvem, use Excluir conta ou entre em contato pelo e-mail acima."
       ]
     },
     {

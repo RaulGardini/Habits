@@ -60,8 +60,8 @@ function SignInForm() {
   return (
     <View style={styles.container}>
       <AppText tone="muted">
-        Opcional: entre para sincronizar hábitos, registros e o planner entre seus aparelhos. Sem
-        conta, tudo continua funcionando offline.
+        Opcional: entre para sincronizar hábitos, registros, agenda e metas entre seus aparelhos.
+        Sem conta, tudo continua funcionando offline.
       </AppText>
       <TextField
         label="E-mail"
