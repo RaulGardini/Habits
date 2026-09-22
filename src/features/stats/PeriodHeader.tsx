@@ -12,6 +12,7 @@ import { IconButton } from '@/ui/IconButton';
 import { SegmentedControl } from '@/ui/SegmentedControl';
 
 import type { HeatmapMode } from './Heatmap';
+import { Glass } from '@/ui/Glass';
 
 function MODE_OPTIONS() {
   return [
@@ -75,11 +76,6 @@ export function PeriodHeader({ period }: { period: StatsPeriod }) {
         onChange={period.setMode}
       />
       <View style={styles.row}>
-        <IconButton
-          icon="chevron-left"
-          label={t('Período anterior')}
-          onPress={() => period.shift(-1)}
-        />
         <AppText
           variant="heading"
           style={styles.label}
@@ -88,12 +84,19 @@ export function PeriodHeader({ period }: { period: StatsPeriod }) {
         >
           {label.charAt(0).toUpperCase() + label.slice(1)}
         </AppText>
-        <IconButton
-          icon="chevron-right"
-          label={t('Próximo período')}
-          onPress={() => period.shift(1)}
-          disabled={period.isCurrent}
-        />
+        <Glass interactive style={styles.pill}>
+          <IconButton
+            icon="chevron-left"
+            label={t('Período anterior')}
+            onPress={() => period.shift(-1)}
+          />
+          <IconButton
+            icon="chevron-right"
+            label={t('Próximo período')}
+            onPress={() => period.shift(1)}
+            disabled={period.isCurrent}
+          />
+        </Glass>
       </View>
     </View>
   );
@@ -101,6 +104,7 @@ export function PeriodHeader({ period }: { period: StatsPeriod }) {
 
 const styles = StyleSheet.create({
   container: { gap: spacing.sm },
-  row: { flexDirection: 'row', alignItems: 'center' },
-  label: { flex: 1, textAlign: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  label: { flex: 1 },
+  pill: { flexDirection: 'row', alignItems: 'center' },
 });

@@ -35,6 +35,7 @@ import { monthLabel, weekLabel } from './format';
 import { MonthGrid } from './MonthGrid';
 import { t } from '@/i18n/i18n';
 import { hapticSelection } from '@/lib/haptics';
+import { GlassAddButton } from '@/ui/GlassAddButton';
 
 type AgendaMode = 'day' | 'week' | 'month' | 'list';
 
@@ -123,16 +124,10 @@ export function AgendaScreen() {
             )}
           </AppText>
         </View>
-        <Glass interactive tinted style={styles.addButton}>
-          <Pressable
-            onPress={() => newEvent(mode === 'list' ? today : date)}
-            accessibilityRole="button"
-            accessibilityLabel={t('Novo evento')}
-            style={styles.addPressable}
-          >
-            <PlusIcon />
-          </Pressable>
-        </Glass>
+        <GlassAddButton
+          label={t('Novo evento')}
+          onPress={() => newEvent(mode === 'list' ? today : date)}
+        />
       </View>
 
       <SegmentedControl<AgendaMode>
@@ -250,11 +245,6 @@ function summaryLine(todayCount: number | null, mode: AgendaMode): string {
   return todayCount === 1
     ? t('1 compromisso hoje.')
     : t('{count} compromissos hoje.', { count: todayCount });
-}
-
-function PlusIcon() {
-  const { colors } = useTheme();
-  return <Icon name="plus" size={26} color={colors.onPrimary} />;
 }
 
 function NavButton({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
@@ -514,8 +504,6 @@ function ListView({
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   flex: { flex: 1 },
-  addButton: { width: 52, height: 52 },
-  addPressable: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   navRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   navPill: { flexDirection: 'row', alignItems: 'center' },
   navButton: {

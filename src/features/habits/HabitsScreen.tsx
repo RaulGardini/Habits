@@ -13,7 +13,6 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MIN_TOUCH_SIZE, spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
-import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { showError } from '@/ui/dialogs';
 import { EmptyState } from '@/ui/EmptyState';
@@ -25,6 +24,7 @@ import { HabitIcon } from './HabitIcon';
 import { TIME_OF_DAY_LABEL, describeFrequency, describeStreak, describeTarget } from './labels';
 import { useStreaks } from './useStreaks';
 import { t } from '@/i18n/i18n';
+import { GlassAddButton } from '@/ui/GlassAddButton';
 
 export function HabitsScreen() {
   const habits = useHabitsStore((state) => state.habits);
@@ -48,10 +48,10 @@ export function HabitsScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <AppText variant="title" accessibilityRole="header">
+        <AppText variant="title" accessibilityRole="header" style={styles.headerTitle}>
           {t('Hábitos')}
         </AppText>
-        <Button label={t('Novo')} icon="plus" onPress={() => router.push('/habit/new')} />
+        <GlassAddButton label={t('Novo hábito')} onPress={() => router.push('/habit/new')} />
       </View>
 
       {active.length === 0 ? (
@@ -172,7 +172,8 @@ function HabitListRow({ habit, streak, weekStartsOn, children }: HabitListRowPro
 
 const styles = StyleSheet.create({
   goals: { gap: spacing.sm },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  headerTitle: { flex: 1 },
   list: { padding: spacing.sm, gap: spacing.xs },
   row: { flexDirection: 'row', alignItems: 'center' },
   rowMain: {

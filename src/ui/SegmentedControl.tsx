@@ -6,6 +6,7 @@ import { MIN_TOUCH_SIZE, radius, spacing } from '@/theme/tokens';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
 import { hapticSelection } from '@/lib/haptics';
+import { Glass } from './Glass';
 
 export interface SegmentOption<T extends string> {
   value: T;
@@ -37,11 +38,7 @@ export function SegmentedControl<T extends string>({
           {label}
         </AppText>
       )}
-      <View
-        accessibilityRole="radiogroup"
-        accessibilityLabel={label}
-        style={[styles.track, { backgroundColor: colors.surfaceMuted }]}
-      >
+      <Glass accessibilityRole="radiogroup" accessibilityLabel={label} style={styles.track}>
         {options.map((option) => {
           const selected = option.value === value;
           const foreground = selected ? colors.text : colors.textMuted;
@@ -70,7 +67,7 @@ export function SegmentedControl<T extends string>({
             </Pressable>
           );
         })}
-      </View>
+      </Glass>
     </View>
   );
 }
