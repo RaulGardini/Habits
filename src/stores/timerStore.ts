@@ -60,16 +60,25 @@ export const useTimerStore = create<TimerState>()((set, get) => ({
     const active = get().active;
     if (!active) return;
     set({ active: null });
-    await getRepositories().settings.set(ACTIVE_TIMER_KEY, null);
+    // The time is saved before the timer is forgotten: if the app dies in between, the timer
+    // is still running on the next start (the entry holds a total, so nothing is counted twice)
+    // instead of the elapsed time being lost.
     const habit = useHabitsStore.getState().habits.find((h) => h.id === active.habitId);
-    if (!habit) return;
-    const entries = useEntriesStore.getState();
-    const entry = entries.byDate[active.date]?.[habit.id];
-    await entries.save(
-      habit.id,
-      active.date,
-      entryWithValue(habit, entry, elapsedSeconds(active, Date.now())),
-    );
+    if (habit) {
+      const entries = useEntriesStore.getState();
+      const entry = entries.byDate[active.date]?.[habit.id];
+      try {
+        await entries.save(
+          habit.id,
+          active.date,
+          entryWithValue(habit, entry, elapsedSeconds(active, Date.now())),
+        );
+      } catch (error) {
+        set({ active });
+        throw error;
+      }
+    }
+    await getRepositories().settings.set(ACTIVE_TIMER_KEY, null);
   },
 
   async clear() {

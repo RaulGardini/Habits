@@ -210,6 +210,21 @@ describe('timerStore', () => {
     expect(useTimerStore.getState().active).toBeNull();
   });
 
+  it('keeps the timer when saving the time fails', async () => {
+    jest.useFakeTimers({ now: new Date(2026, 8, 21, 10, 0, 0) });
+    const habit = await useHabitsStore
+      .getState()
+      .create(draft('Ler', { tracking: { type: 'timer', targetSeconds: 600 } }));
+    await useTimerStore.getState().start(habit, '2026-09-21');
+    jest.setSystemTime(new Date(2026, 8, 21, 10, 5, 0));
+    jest.spyOn(getRepositories().entries, 'upsert').mockRejectedValueOnce(new Error('disk full'));
+    await expect(useTimerStore.getState().stop()).rejects.toThrow('disk full');
+    expect(useTimerStore.getState().active?.habitId).toBe(habit.id);
+    expect(await getRepositories().settings.get('activeTimer')).toMatchObject({
+      habitId: habit.id,
+    });
+  });
+
   it('persists the running timer', async () => {
     const habit = await useHabitsStore
       .getState()

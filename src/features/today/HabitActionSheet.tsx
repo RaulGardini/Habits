@@ -28,6 +28,8 @@ import { t } from '@/i18n/i18n';
 
 export interface HabitActionTarget {
   habit: Habit;
+  /** Day the sheet was opened for: kept even if the screen rolls over to a new day meanwhile. */
+  date: LocalDate;
   entry: HabitEntry | undefined;
   quota: PeriodQuota | null;
   streak: Streaks | undefined;

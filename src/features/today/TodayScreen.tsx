@@ -118,15 +118,15 @@ export function TodayScreen() {
   useDayCompleted(date, progress.completed, progress.total, setCelebration);
   useStreakMilestones(date, today, streaks, setCelebration);
 
-  const saveEntry = (habit: Habit, next: EntryInput | null) =>
-    save(habit.id, date, next).catch((error: unknown) =>
+  const saveEntry = (habit: Habit, next: EntryInput | null, day: LocalDate) =>
+    save(habit.id, day, next).catch((error: unknown) =>
       showError(t('Não foi possível salvar o registro.'), error),
     );
 
-  const toggleTimer = (habit: Habit) => {
+  const toggleTimer = (habit: Habit, day: LocalDate) => {
     const timers = useTimerStore.getState();
-    const running = activeTimer?.habitId === habit.id && activeTimer.date === date;
-    (running ? timers.stop() : timers.start(habit, date)).catch((error: unknown) =>
+    const running = activeTimer?.habitId === habit.id && activeTimer.date === day;
+    (running ? timers.stop() : timers.start(habit, day)).catch((error: unknown) =>
       showError(t('Não foi possível salvar o timer.'), error),
     );
   };
@@ -237,6 +237,7 @@ export function TodayScreen() {
                         hapticSelection();
                         setTarget({
                           habit,
+                          date,
                           entry,
                           quota: quotas.get(habit.id) ?? null,
                           streak: streaks.get(habit.id),
@@ -281,10 +282,11 @@ export function TodayScreen() {
 
       <HabitActionSheet
         target={target}
-        date={date}
+        date={target?.date ?? date}
         onClose={() => setTarget(null)}
-        onSave={saveEntry}
-        onTimerToggle={toggleTimer}
+        // The sheet's day, not the screen's: at midnight the screen may already show the next day.
+        onSave={(habit, next) => saveEntry(habit, next, target?.date ?? date)}
+        onTimerToggle={(habit) => toggleTimer(habit, target?.date ?? date)}
       />
       <StreakSheet streak={streak} visible={streakOpen} onClose={() => setStreakOpen(false)} />
       <Celebration content={celebration} onDone={() => setCelebration(null)} />
