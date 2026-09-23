@@ -135,11 +135,19 @@ export function authErrorMessage(message: string): string {
   if (text.includes('password') && /weak|pwned|leaked|known|at least/.test(text)) {
     return t('Senha fraca. Use pelo menos 8 caracteres e evite senhas comuns.');
   }
-  if (
-    text.includes('rate limit') ||
-    text.includes('too many') ||
-    text.includes('security purposes')
-  ) {
+  // Supabase: one e-mail per address every 60 s ("For security purposes, you can only request
+  // this after 42 seconds.")…
+  const seconds = /after (\d+) seconds?/.exec(text)?.[1];
+  if (text.includes('security purposes')) {
+    return seconds
+      ? t('Aguarde {seconds} s para pedir outro e-mail.', { seconds })
+      : t('Aguarde um minuto para pedir outro e-mail.');
+  }
+  // …and a cap on e-mails per hour for the whole project (2/hour with the built-in sender).
+  if (text.includes('email rate limit')) {
+    return t('O servidor atingiu o limite de e-mails por hora. Tente de novo mais tarde.');
+  }
+  if (text.includes('rate limit') || text.includes('too many')) {
     return t('Muitas tentativas. Aguarde alguns minutos.');
   }
   if (text.includes('jwt') || text.includes('refresh token')) {

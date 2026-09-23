@@ -70,10 +70,15 @@ O resto é configuração do projeto:
 3. **Authentication → Sessions / Refresh tokens**: "Detect and revoke potentially compromised
    refresh tokens" **ligado** (rotação: cada refresh gera um token novo e o antigo reusado
    derruba a sessão). Mantenha o "Refresh token reuse interval" em 10 s.
-4. **Authentication → Rate Limits**: confira os limites de e-mails enviados, de login/cadastro
-   por IP e de verificações. Com o SMTP padrão o limite de e-mails é baixo (poucos por hora);
-   com SMTP próprio, algo como 30 e-mails/hora é suficiente.
-5. **Authentication → Emails → Templates**: os modelos padrão já usam `{{ .ConfirmationURL }}`,
+4. **E-mails: configure um SMTP próprio** (Authentication → Emails → SMTP Settings). O remetente
+   padrão do Supabase envia **só 2 e-mails por hora para o projeto inteiro** — cadastro,
+   "Esqueci minha senha" e reenvio de confirmação somam no mesmo limite, e o app mostra
+   "O servidor atingiu o limite de e-mails por hora". Resend (3.000/mês) e Brevo (300/dia) têm
+   plano gratuito: crie a conta, verifique um domínio (ou use o de teste) e cole host, porta,
+   usuário e senha SMTP. Além disso, o mesmo e-mail só pode pedir um novo link a cada 60 s.
+5. **Authentication → Rate Limits**: com o SMTP próprio o limite de e-mails passa a ser
+   ajustável (algo como 30/hora basta); confira também os limites de login/cadastro por IP.
+6. **Authentication → Emails → Templates**: os modelos padrão já usam `{{ .ConfirmationURL }}`,
    que respeita o `redirectTo` enviado pelo app.
 
 Para conferir o básico sem entrar no painel:

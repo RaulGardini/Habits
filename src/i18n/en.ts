@@ -777,4 +777,8 @@ export const EN: Record<string, string> = {
   'Sincronização indisponível.': 'Sync is not available.',
   'Se existir uma conta com este e-mail, enviamos um link para criar uma nova senha. Abra-o neste aparelho.':
     'If an account exists for this e-mail, we sent a link to create a new password. Open it on this device.',
+  'Aguarde {seconds} s para pedir outro e-mail.': 'Wait {seconds} s to ask for another e-mail.',
+  'Aguarde um minuto para pedir outro e-mail.': 'Wait a minute to ask for another e-mail.',
+  'O servidor atingiu o limite de e-mails por hora. Tente de novo mais tarde.':
+    'The server reached its hourly e-mail limit. Try again later.',
 };

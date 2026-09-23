@@ -50,6 +50,14 @@ describe('credentials and errors', () => {
     expect(authErrorMessage('User already registered')).toContain('Já existe');
     expect(authErrorMessage('something else')).toContain('Tente novamente');
   });
+
+  it('tells which e-mail limit of the server was hit', () => {
+    expect(authErrorMessage('email rate limit exceeded')).toContain('limite de e-mails por hora');
+    expect(
+      authErrorMessage('For security purposes, you can only request this after 42 seconds.'),
+    ).toBe('Aguarde 42 s para pedir outro e-mail.');
+    expect(authErrorMessage('Request rate limit reached')).toContain('Aguarde alguns minutos');
+  });
 });
 
 describe('planRemoteApply', () => {
