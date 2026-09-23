@@ -246,6 +246,19 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - Sync: `src/sync/engine.test.ts` (two sql.js devices + `createFakeRemote()`), and
   `npm run test:sql` (runs `supabase/schema.sql` on PGlite). `npm run check` runs both.
 
+## Remote database security & backup (docs/SUPABASE.md)
+
+- RLS on every table (`own rows`, `user_id = auth.uid()` in `using` and `with check`),
+  `user_id default auth.uid()`, owner never changes (`lww_guard`), `anon` has no privileges.
+  `npm run test:sql` checks it on PGlite (with Supabase's default grants emulated);
+  `node --env-file=.env.local scripts/pentest-supabase.mjs` attacks the real project with the
+  public key (and, with two test accounts in `PENTEST_*`, user B against user A).
+- Only the publishable key ships in the app; never the secret/service_role key. `.env*` is
+  git-ignored except `.env.example`.
+- The free plan has no Postgres backups: `.github/workflows/db-backup.yml` (weekly, encrypted,
+  secrets `SUPABASE_DB_URL` + `BACKUP_PASSPHRASE`), `scripts/db-restore.sh`, and
+  `scripts/db-backup-drill.sh` (full dump → wipe → restore on a local Supabase).
+
 ## Release (docs/PUBLISHING.md)
 
 - Icons, splash, favicon and widget previews are generated from SVG by `npm run assets`

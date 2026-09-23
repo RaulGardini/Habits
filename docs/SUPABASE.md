@@ -85,10 +85,64 @@ Para conferir o básico sem entrar no painel:
 `curl "$EXPO_PUBLIC_SUPABASE_URL/auth/v1/settings" -H "apikey: $EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY"`
 (`mailer_autoconfirm` deve ser `false`).
 
+## Backup do banco (o plano gratuito não tem)
+
+O Supabase Free **não faz backup nenhum** do Postgres. Os backups semanais que o app guarda em
+`cloud_backups` ficam dentro do mesmo banco: protegem contra erro do usuário, não contra perder
+o projeto. Por isso há um backup externo automático:
+
+- `.github/workflows/db-backup.yml` roda toda segunda às 06:00 UTC (e sob demanda): `supabase db
+  dump` de papéis, esquema e dados (`public` + `auth`), **criptografado com AES-256** (o
+  repositório é público, então o arquivo nunca sobe aberto) e guardado como artefato por 90 dias.
+- Configurar uma vez, em GitHub → Settings → Secrets and variables → Actions:
+  - `SUPABASE_DB_URL`: Supabase → **Connect** → **Session pooler** → URI, com a senha do banco
+    no lugar de `[YOUR-PASSWORD]` (a conexão direta é só IPv6 e o GitHub não alcança).
+  - `BACKUP_PASSPHRASE`: uma frase longa e aleatória (ex.: `openssl rand -base64 32`). Guarde
+    uma cópia no gerenciador de senhas: sem ela o backup não abre.
+- Depois, rode uma vez em Actions → **Database backup** → **Run workflow** e confira o artefato.
+
+**Restaurar** (num projeto novo e vazio, nunca por cima da produção): baixe o artefato e rode
+
+```bash
+BACKUP_PASSPHRASE='…' TARGET_DB_URL='postgresql://…' scripts/db-restore.sh habits-db-AAAA-MM-DD.tar.gz.enc
+```
+
+Precisa de Docker (o `psql` roda num contêiner). Depois aponte o app para o projeto novo
+(`.env.local` e variáveis do EAS) e rode `supabase/schema.sql` só se algo faltar.
+
+**Simulado**: `scripts/db-backup-drill.sh` faz o ciclo inteiro num Supabase local (Docker):
+cria dados, faz backup com os mesmos comandos do workflow, apaga o banco, restaura e confere
+linhas, donos, RLS, políticas e gatilhos. Testado em 23/09/2026: 2 contas, 1.000 registros,
+tudo de volta.
+
 ## Limites do plano gratuito (2026)
 
-500 MB de banco, 50 mil usuários ativos/mês e pausa do projeto após 7 dias sem uso (reativa pelo
-painel). Para um app de hábitos (linhas pequenas) isso comporta muitos usuários.
+| Recurso | Limite Free | Como o app fica |
+| --- | --- | --- |
+| Banco de dados | 500 MB | ver estimativa abaixo |
+| Usuários ativos/mês | 50.000 | folgado |
+| Tráfego de saída | 5 GB/mês | sync envia só o que mudou; ok |
+| Storage (arquivos) | 1 GB | não usado |
+| E-mails de autenticação | 2/hora com o remetente padrão | exige SMTP próprio (Segurança do login, item 4) |
+| Pausa por inatividade | após 7 dias sem requisições | o app mostra erro de sync e tenta de novo; reative no painel |
+| Projetos gratuitos | 2 por organização | um para produção, outro livre para restaurar backups |
+| Backups | nenhum | backup externo acima |
+
+**Estimativa de espaço** (medida com a massa de teste do app): um usuário que usa muito
+(40 hábitos) gera ~15 mil linhas por ano, e cada cópia do backup interno (`cloud_backups`) tem
+~3 MB por ano de histórico (9,3 MB com 3 anos). Como o app guarda **8 cópias por usuário**, o
+backup interno ocupa bem mais que os próprios dados: ~25–40 MB por usuário intenso com alguns
+anos (o Postgres comprime parte disso). Com 500 MB, isso dá dezenas de usuários intensos ou
+algumas centenas de usuários leves. Antes de crescer: guardar menos cópias (ex.: 3), comprimir
+o JSON, ou passar ao plano Pro.
+
+Para ver o tamanho atual (SQL Editor):
+
+```sql
+select pg_size_pretty(pg_database_size(current_database())) as banco,
+       pg_size_pretty(pg_total_relation_size('public.cloud_backups')) as backups_internos,
+       (select count(*) from auth.users) as usuarios;
+```
 
 ## Testes
 
