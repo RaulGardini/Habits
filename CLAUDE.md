@@ -125,6 +125,11 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - `Celebration` (confetti, deterministic so the React Compiler stays happy) fires when the last
   habit of the day is completed — never when merely opening an already-finished day.
 - `TodayAgenda` shows the day's events under the habits (up to 4) with links to the Agenda.
+- Perfect-day streak: `perfectStreak` (`src/core/habits/perfectStreak.ts`) counts consecutive days
+  where every due habit was done — days with nothing due are neutral and an unfinished today never
+  breaks it. `FLAME_TIERS` (0/10/30/50/100/200/300/500/1000) pick the colors in
+  `src/theme/flameColors.ts`; `<Flame>` is an animated SVG (no emoji) living in the daily progress
+  card, and tapping it opens `StreakSheet` with the whole ladder.
 - The greeting uses the optional `displayName` setting ("Bom dia, Raul"), edited in Settings.
 - `Celebration` also fires on streak milestones (7/30/100/365) with fewer confetti pieces.
 - Light theme only: a tiled paper grain behind every `Screen` (`assets/images/paper-texture.png`,

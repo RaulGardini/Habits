@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { getDayPeriod } from '@/core/dates/dayPeriod';
 import { isLocalDate, todayLocal, type LocalDate } from '@/core/dates/localDate';
@@ -27,12 +27,15 @@ import { showError } from '@/ui/dialogs';
 import { EmptyState } from '@/ui/EmptyState';
 import { Icon } from '@/ui/Icon';
 import { ProgressBar } from '@/ui/ProgressBar';
+import { Flame } from '@/ui/Flame';
 import { Screen } from '@/ui/Screen';
 
 import { Celebration, type CelebrationContent } from './Celebration';
 import { DayNavigator } from './DayNavigator';
 import { HabitActionSheet, type HabitActionTarget } from './HabitActionSheet';
 import { HabitBubble } from './HabitBubble';
+import { StreakSheet } from './StreakSheet';
+import { usePerfectStreak } from './usePerfectStreak';
 import { TodayAgenda } from './TodayAgenda';
 import { t } from '@/i18n/i18n';
 
@@ -105,6 +108,8 @@ export function TodayScreen() {
   const hasHabits = habits.some((h) => h.archivedAt === null);
 
   const [target, setTarget] = useState<HabitActionTarget | null>(null);
+  const [streakOpen, setStreakOpen] = useState(false);
+  const streak = usePerfectStreak(today);
   const [width, setWidth] = useState(0);
   const columns = Math.max(COLUMNS, Math.floor(width / WIDE_CELL));
   const cell = width > 0 ? width / columns : WIDE_CELL;
@@ -150,21 +155,40 @@ export function TodayScreen() {
 
       {due.length > 0 ? (
         <Card style={{ backgroundColor: colors.primarySoft, boxShadow: 'none' }}>
-          <View style={styles.progressHeader}>
-            <AppText variant="bodyStrong" style={styles.flex}>
-              {encouragement(progress.completed, progress.total)}
-            </AppText>
-            <AppText variant="label" tone="muted">
-              {progress.completed} de {progress.total}
-            </AppText>
+          <View style={styles.progressRow}>
+            <View style={styles.flex}>
+              <View style={styles.progressHeader}>
+                <AppText variant="bodyStrong" style={styles.flex}>
+                  {encouragement(progress.completed, progress.total)}
+                </AppText>
+                <AppText variant="label" tone="muted">
+                  {progress.completed} de {progress.total}
+                </AppText>
+              </View>
+              <ProgressBar
+                value={progress.ratio}
+                label={t('{completed} de {total} hábitos concluídos', {
+                  completed: progress.completed,
+                  total: progress.total,
+                })}
+              />
+            </View>
+            <Pressable
+              onPress={() => {
+                hapticSelection();
+                setStreakOpen(true);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t(
+                'Sequência de {count} dias perfeitos. Ver a trilha das chamas.',
+                { count: streak.current },
+              )}
+              style={({ pressed }) => [styles.streak, pressed && styles.pressed]}
+            >
+              <Flame days={streak.current} size={36} dimmed={streak.current === 0} />
+              <AppText variant="label">{streak.current}</AppText>
+            </Pressable>
           </View>
-          <ProgressBar
-            value={progress.ratio}
-            label={t('{completed} de {total} hábitos concluídos', {
-              completed: progress.completed,
-              total: progress.total,
-            })}
-          />
         </Card>
       ) : null}
 
@@ -261,6 +285,7 @@ export function TodayScreen() {
         onSave={saveEntry}
         onTimerToggle={toggleTimer}
       />
+      <StreakSheet streak={streak} visible={streakOpen} onClose={() => setStreakOpen(false)} />
       <Celebration content={celebration} onDone={() => setCelebration(null)} />
     </Screen>
   );
@@ -342,7 +367,10 @@ function usePeriodQuotas(
 }
 
 const styles = StyleSheet.create({
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   progressHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  streak: { alignItems: 'center', minWidth: 44, gap: 2 },
+  pressed: { opacity: 0.7 },
   flex: { flex: 1 },
   groups: { gap: spacing.lg },
   group: { gap: spacing.sm },
