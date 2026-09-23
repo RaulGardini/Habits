@@ -1,9 +1,7 @@
-// Persists the auth session on Android/iOS (no-op on web, which has localStorage).
-import 'expo-sqlite/localStorage/install';
-
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 
+import { authStorage } from '@/lib/authStorage';
 import { loadTestDatabaseName } from '@/lib/loadTest';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -18,9 +16,14 @@ export const supabase: SupabaseClient | null =
   url && key && !loadTestDatabaseName()
     ? createClient(url, key, {
         auth: {
-          storage: localStorage,
+          // Keychain / Keystore on the phone (never plain text); localStorage on the web.
+          storage: authStorage,
           autoRefreshToken: true,
           persistSession: true,
+          // E-mail links (confirmation, password reset) come back with a one-time `code` that
+          // only this device can exchange (PKCE): a stolen link is useless elsewhere.
+          flowType: 'pkce',
+          // Handled by the /auth/callback route.
           detectSessionInUrl: false,
         },
       })
