@@ -1,6 +1,6 @@
 {
   "title": "Privacy policy",
-  "updatedAt": "September 22, 2026",
+  "updatedAt": "September 23, 2026",
   "sections": [
     {
       "title": "Summary",
@@ -27,7 +27,9 @@
       "paragraphs": [
         "If you create an account, we collect your e-mail and a password (stored encrypted by the authentication provider) and send a copy of your app data to the cloud, only to sync it between your devices and protect it against loss.",
         "The cloud service used is Supabase (supabase.com), acting as data processor. The connection is encrypted and each account can only access its own data.",
-        "You can sign out at any time (the data stays on the device) or delete the account in Settings > Account and sync > Delete account, which permanently erases the account and all data stored in the cloud."
+        "On phones, the account session is kept in the system's secure storage (Keychain on iPhone, Keystore on Android), never as plain text.",
+        "When you create an account or change your password, the app checks whether the chosen password has appeared in known data breaches, using the free Have I Been Pwned service (haveibeenpwned.com). The password is never sent: only the first 5 characters of a cryptographic digest of it (SHA-1 hash), shared by hundreds of different passwords, and the final comparison happens on the device.",
+        "You can sign out at any time: the account's data is removed from this device, stays in the cloud and comes back when you sign in again. You can also delete the account in Settings > Account and sync > Delete account, which permanently deletes the account and all data stored in the cloud."
       ]
     },
     {

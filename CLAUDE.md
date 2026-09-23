@@ -221,6 +221,13 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   `markPushed(upTo)`), then pull rows with `server_updated_at > cursor` per table and
   `applyRemote` them (`planRemoteApply`: server order wins, except rows still in the outbox).
   Device-only settings (`activeTimer`, `syncState`) never sync (`LOCAL_ONLY_SETTINGS`).
+- Auth security: the Supabase session lives in the Keychain/Keystore (`src/lib/authStorage.ts`,
+  chunked; `.web.ts` = localStorage), `flowType: 'pkce'`. E-mail links come back to
+  `/auth/callback` (`authRedirectUrl`, must be in the Supabase Redirect URLs allow list) and are
+  finished by `completeAuthLink`; password reset → `/auth/new-password`. Rules in
+  `src/core/auth/auth.ts` (8+ chars, sign-in throttling, link errors); leaked passwords via
+  `isPwnedPassword` (HIBP k-anonymity). Sign-out syncs, then deletes tokens and local data
+  (asks first when changes could not be sent); an expired session only stops sync (`notice`).
 - `useSyncStore` owns auth + sync status; bootstrap triggers sync on start, foreground and
   4 s after local changes. One round at a time (a request during a round runs another after);
   failures retry with exponential backoff (`retryDelayMs`). The first sync of the device with an

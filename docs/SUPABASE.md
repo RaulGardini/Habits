@@ -49,6 +49,37 @@ A sincronização é **opcional**. Sem configurar nada, o app funciona 100% offl
 A publishable key é pública por natureza (vai dentro do app); a segurança vem do RLS.
 **Nunca** coloque a `service_role`/secret key no app.
 
+## Segurança do login (configurar no painel)
+
+O app já faz a parte dele: sessão no Keychain/Keystore (`expo-secure-store`), fluxo **PKCE**
+nos links de e-mail, bloqueio progressivo após 3 senhas erradas, 1 e-mail por minuto, senha nova
+com no mínimo 8 caracteres e verificação de senhas vazadas (Have I Been Pwned, k-anonimato).
+O resto é configuração do projeto:
+
+1. **Authentication → URL Configuration → Redirect URLs** — os links de confirmação e de nova
+   senha voltam para a rota `/auth/callback` do app. Adicione:
+   - `habits://auth/callback**` (builds do app, esquema próprio `habits`);
+   - `exp://**` (Expo Go — o endereço muda com o canal/projeto);
+   - `http://localhost:8081/auth/callback**` (web em desenvolvimento);
+   - `https://SEU-SITE/auth/callback**` (web publicada).
+
+   Em **Site URL** use o endereço da web publicada. Qualquer destino fora da lista é recusado.
+2. **Authentication → Sign In / Providers → Email**: "Confirm email" **ligado** (verificado:
+   `mailer_autoconfirm: false`). "Minimum password length": **8**. "Password requirements":
+   letras e números. ("Prevent use of leaked passwords" é só no plano Pro — por isso o app checa.)
+3. **Authentication → Sessions / Refresh tokens**: "Detect and revoke potentially compromised
+   refresh tokens" **ligado** (rotação: cada refresh gera um token novo e o antigo reusado
+   derruba a sessão). Mantenha o "Refresh token reuse interval" em 10 s.
+4. **Authentication → Rate Limits**: confira os limites de e-mails enviados, de login/cadastro
+   por IP e de verificações. Com o SMTP padrão o limite de e-mails é baixo (poucos por hora);
+   com SMTP próprio, algo como 30 e-mails/hora é suficiente.
+5. **Authentication → Emails → Templates**: os modelos padrão já usam `{{ .ConfirmationURL }}`,
+   que respeita o `redirectTo` enviado pelo app.
+
+Para conferir o básico sem entrar no painel:
+`curl "$EXPO_PUBLIC_SUPABASE_URL/auth/v1/settings" -H "apikey: $EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY"`
+(`mailer_autoconfirm` deve ser `false`).
+
 ## Limites do plano gratuito (2026)
 
 500 MB de banco, 50 mil usuários ativos/mês e pausa do projeto após 7 dias sem uso (reativa pelo
