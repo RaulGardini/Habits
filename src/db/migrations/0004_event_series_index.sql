@@ -1,0 +1,1 @@
+CREATE INDEX `events_series_idx` ON `events` (`date`) WHERE repeat <> 'none';

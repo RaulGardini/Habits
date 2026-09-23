@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 /**
@@ -140,7 +141,12 @@ export const events = sqliteTable(
     reminderMinutes: integer('reminder_minutes'),
     ...timestamps,
   },
-  (t) => [index('events_date_idx').on(t.date)],
+  (t) => [
+    index('events_date_idx').on(t.date),
+    // Recurring series that started before a range (see `EventRepository.listByRange`). The
+    // query must use the same literal predicate for SQLite to pick this partial index.
+    index('events_series_idx').on(t.date).where(sql.raw(`repeat <> 'none'`)),
+  ],
 );
 
 export const dayNotes = sqliteTable(

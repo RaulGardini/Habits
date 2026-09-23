@@ -1,4 +1,4 @@
-import { and, between, eq, gte, isNull, lt, lte, max, ne, or } from 'drizzle-orm';
+import { and, between, eq, gte, isNull, lt, lte, max, or, sql } from 'drizzle-orm';
 
 import type { DayNote, Goal, PlannerEvent, Task } from '@/core/planner/types';
 import type { Database } from '@/db/client';
@@ -192,7 +192,8 @@ export function createDrizzleEventRepository(db: Database): EventRepository {
               between(events.date, from, to),
               // Recurring series that started before the range and may still run in it.
               and(
-                ne(events.repeat, 'none'),
+                // Literal (not a bound parameter) so SQLite can use `events_series_idx`.
+                sql`${events.repeat} <> 'none'`,
                 lte(events.date, to),
                 or(isNull(events.repeatUntil), gte(events.repeatUntil, from)),
               ),

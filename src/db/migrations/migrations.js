@@ -5,6 +5,7 @@ import m0000 from './0000_init.sql';
 import m0001 from './0001_quantity_step.sql';
 import m0002 from './0002_planner.sql';
 import m0003 from './0003_event_details.sql';
+import m0004 from './0004_event_series_index.sql';
 
   export default {
     journal,
@@ -12,7 +13,8 @@ import m0003 from './0003_event_details.sql';
       m0000,
 m0001,
 m0002,
-m0003
+m0003,
+m0004
     }
   }
   
