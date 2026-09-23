@@ -25,7 +25,8 @@ Built in phases; see "Roadmap". **Do not start a new phase without the owner's a
 ```bash
 npm run web          # dev server (web) — http://localhost:8081
 npm start            # dev server (Expo Go / dev build)
-npm run check        # lint + typecheck + tests — run before every commit
+npm run check        # lint + typecheck + tests (+ time zones, SQL) — run before every commit
+npm run test:tz      # date tests once per device time zone (Jest cannot switch zones in a run)
 npm run db:generate  # generate a migration after editing src/db/schema.ts
 npm run format       # prettier
 npm run assets       # regenerate icon/splash/favicon/widget previews (scripts/generate-assets.mjs)
@@ -50,7 +51,8 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 
 - UI and stores never import Drizzle or `src/db` — only `@/repositories`.
 - Two store styles: cached state with optimistic updates (`habitsStore`, `entriesStore`) for the
-  hot paths, and "query + version" hooks (`plannerStore`: `useEvents`, `useGoals`…) that refetch
+  hot paths (`entriesStore` also caches date ranges — `useEntriesInRange` — patched in memory on
+  save, so a check never reloads years of history; the day on screen loads before long ranges), and "query + version" hooks (`plannerStore`: `useEvents`, `useGoals`…) that refetch
   after any write made through `plannerActions`. Writes must go through the actions.
 - Business rules (what is due on a day, progress, streaks…) live in `src/core` as pure functions.
 - Platform-specific code uses file extensions (`foo.web.ts` next to `foo.ts`), e.g. `ui/dialogs`, `lib/haptics`.
@@ -61,11 +63,20 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - Every synced table has `id` (UUID via `expo-crypto`), `created_at`, `updated_at`, `deleted_at`.
 - **Soft delete only** (`deleted_at`); every read filters `deleted_at IS NULL`.
 - Instants are ISO-8601 UTC strings (`nowIso()`); **calendar days are local `YYYY-MM-DD` strings**
-  (`LocalDate`, `src/core/dates/localDate.ts`). Never store a day as a timestamp.
+  (`LocalDate`, `src/core/dates/localDate.ts`). Never store a day as a timestamp. Day arithmetic
+  is integer calendar math (`dayNumber`), never `Date` math, so time zones and DST cannot shift it.
+- `useNow`/`useToday` tick on minute boundaries and refresh on foreground (midnight rollover).
+  UI that acts on a day keeps the day it was opened for (see `HabitActionTarget.date`).
 - `habit_entries` has a unique `(habit_id, date)`; upserts revive soft-deleted rows.
 - Habit colors are stored as palette keys (`"violet"`), resolved per theme by `resolveHabitColor`.
 - Schema change → edit `src/db/schema.ts` → `npm run db:generate` → commit the generated files.
-  Migrations run at startup (`src/db/migrate.ts`).
+  Migrations run at startup (`prepareDatabase` in `src/db/migrate.ts`: `PRAGMA foreign_keys = ON`
+  + one transaction per migration), the same code path the tests use.
+- Any write of more than one row/table goes in `db.transaction` (use `tx` inside, never `db`).
+  Transactions are serialized (`src/db/transactions.ts`): the single connection cannot nest `BEGIN`.
+- Every hot query must use an index; `src/db/load.test.ts` checks the plans (`EXPLAIN QUERY PLAN`)
+  on 40 habits × 3 years (`generateSeedData`, `src/db/seed.ts`). A partial index only works when
+  the query repeats its predicate as a literal (see `events_series_idx`).
 
 ## Web / SQLite (important)
 
@@ -208,6 +219,9 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - Drizzle repositories are integration-tested against real SQLite in memory (`sql.js`) with the
   app's migrations: `createTestDatabase()` in `src/db/testing.ts` (see `drizzle.test.ts`).
 - Test builders: `src/core/habits/testing.ts` (`makeHabit`, `makeEntry`).
+- Load test on a real screen: `npm run web` and open `/?loadtest` (dev, or a web export built with
+  `EXPO_PUBLIC_LOADTEST=1`): a separate `habits-loadtest.db` seeded with 3 years of data; cloud
+  sync is disabled in that mode.
 - Sync: `src/sync/engine.test.ts` (two sql.js devices + `createFakeRemote()`), and
   `npm run test:sql` (runs `supabase/schema.sql` on PGlite). `npm run check` runs both.
 

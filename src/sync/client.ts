@@ -4,6 +4,8 @@ import 'expo-sqlite/localStorage/install';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 
+import { loadTestDatabaseName } from '@/lib/loadTest';
+
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
@@ -12,7 +14,8 @@ const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
  * 100% offline and hides account features.
  */
 export const supabase: SupabaseClient | null =
-  url && key
+  // Never sync the fake data of the dev load-test database.
+  url && key && !loadTestDatabaseName()
     ? createClient(url, key, {
         auth: {
           storage: localStorage,
