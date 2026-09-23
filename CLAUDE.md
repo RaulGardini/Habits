@@ -73,7 +73,10 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   Migrations run at startup (`prepareDatabase` in `src/db/migrate.ts`: `PRAGMA foreign_keys = ON`
   + one transaction per migration), the same code path the tests use.
 - Any write of more than one row/table goes in `db.transaction` (use `tx` inside, never `db`).
-  Transactions are serialized (`src/db/transactions.ts`): the single connection cannot nest `BEGIN`.
+  Every statement goes through one queue (`createSerializedDatabase`, `src/db/transactions.ts`)
+  and a transaction holds it until COMMIT: nothing else can run inside (and vanish with) it.
+- Editing a `.sql` migration after it was bundled: clear caches (`npx jest --clearCache`,
+  `npx expo start -c`); both inline the SQL at transform time.
 - Every hot query must use an index; `src/db/load.test.ts` checks the plans (`EXPLAIN QUERY PLAN`)
   on 40 habits × 3 years (`generateSeedData`, `src/db/seed.ts`). A partial index only works when
   the query repeats its predicate as a literal (see `events_series_idx`).
@@ -110,6 +113,9 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   native `GlassView` on iOS 26+, frosted CSS on web, translucent surface on Android. Never set
   opacity 0 on a `Glass` or its parents.
 - Touch targets ≥ 44px (`MIN_TOUCH_SIZE`). Every icon-only button has an `accessibilityLabel`.
+- Sheets/buttons that save do it once per opening (see `HabitActionSheet` `once`). Saves of the
+  same entry are ordered and the newest tap wins (`entriesStore.save`); timer actions are queued
+  (`timerStore.toggle`).
 - Haptics (`src/lib/haptics.ts`, no-op `.web.ts` — keep both in sync): `hapticSelection` for
   picking (chips, segmented controls, changing day/period, opening the habit sheet),
   `hapticLight` for value changes, `hapticSuccess` on save/complete, and `hapticWarning` /
@@ -206,11 +212,19 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - Remote schema: `supabase/schema.sql` (snake_case mirror + `user_id` + `server_updated_at`,
   RLS per user, `lww_guard` trigger, `delete_my_account()`). **Any local schema change must be
   mirrored there** (and in `REMOTE_TABLES`), then re-run it in the Supabase SQL editor.
-- Engine: `runSync` (`src/sync/engine.ts`) = push rows with `updatedAt > lastPushedAt`, then pull
-  rows with `server_updated_at > cursor` per table and merge with the backup's `importMerge`.
+- Conflicts: **last write to reach the server wins** (server clock, `server_updated_at`); client
+  `updated_at` never decides (device clocks can be wrong). `lww_guard` only stamps the server time.
+- Pending changes live in `sync_outbox`, filled by SQLite triggers (migration 0005) in the same
+  transaction as each write — any write path (repos, import, restore) is queued automatically.
+  Rows pulled from the cloud are applied with the triggers paused (`sync_pause`).
+- Engine: `runSync` (`src/sync/engine.ts`) = push the outbox (`pendingChanges`, then
+  `markPushed(upTo)`), then pull rows with `server_updated_at > cursor` per table and
+  `applyRemote` them (`planRemoteApply`: server order wins, except rows still in the outbox).
   Device-only settings (`activeTimer`, `syncState`) never sync (`LOCAL_ONLY_SETTINGS`).
 - `useSyncStore` owns auth + sync status; bootstrap triggers sync on start, foreground and
-  4 s after local changes. After a backup import call `requestFullSync()`.
+  4 s after local changes. One round at a time (a request during a round runs another after);
+  failures retry with exponential backoff (`retryDelayMs`). The first sync of the device with an
+  account (`SyncState.userId`) queues every row (`enqueueAll`).
 
 ## Testing
 
@@ -253,6 +267,6 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 4. ✅ Planner (daily / monthly / yearly) + goals
 5. ✅ Local notifications, JSON backup/import, settings
 6. ✅ Widgets (iOS/Android, dev build)
-7. ✅ (Optional) Supabase sync, last-write-wins by `updated_at`
+7. ✅ (Optional) Supabase sync, last-write-wins by server time
 8. ✅ Store release prep (icon, splash, privacy policy, EAS, store checklists)
 9. ✅ Redesign: yellow brand, cozy UI, Liquid Glass on iOS, Planner → Agenda
