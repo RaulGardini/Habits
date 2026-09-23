@@ -1,6 +1,8 @@
 import { eachDay, nextPeriodStart, periodRange } from '@/core/dates/periods';
 import type { LocalDate } from '@/core/dates/localDate';
 
+import { countInRange } from '@/core/utils/sorted';
+
 import { periodTarget } from './quota';
 import { habitEndDate, isScheduledOn } from './schedule';
 import type { Habit, HabitEntry, WeekStartsOn } from './types';
@@ -60,6 +62,10 @@ function periodStreaks(
 ): Streaks {
   if (habit.frequency.type !== 'per_period') throw new Error('Expected a per_period habit');
   const unit = habit.frequency.period;
+  const doneDates = [...byDate]
+    .filter(([date, entry]) => entry.status === 'done' && date >= habit.startDate)
+    .map(([date]) => date)
+    .sort();
   let run = 0;
   let longest = 0;
 
@@ -69,17 +75,7 @@ function periodStreaks(
     cursor = nextPeriodStart(cursor, unit, weekStartsOn)
   ) {
     const range = periodRange(cursor, unit, weekStartsOn);
-    let done = 0;
-    for (const [date, entry] of byDate) {
-      if (
-        entry.status === 'done' &&
-        date >= range.from &&
-        date <= range.to &&
-        date >= habit.startDate
-      ) {
-        done += 1;
-      }
-    }
+    const done = countInRange(doneDates, range.from, range.to);
     if (done >= periodTarget(habit, range)) {
       run += 1;
       longest = Math.max(longest, run);

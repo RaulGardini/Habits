@@ -1,16 +1,15 @@
-import {
-  differenceInCalendarDays,
-  endOfMonth,
-  endOfWeek,
-  endOfYear,
-  startOfMonth,
-  startOfWeek,
-  startOfYear,
-} from 'date-fns';
+import { endOfMonth, endOfWeek, endOfYear, startOfMonth, startOfWeek, startOfYear } from 'date-fns';
 
 import type { PeriodUnit, WeekStartsOn } from '@/core/habits/types';
 
-import { addDaysLocal, parseLocalDate, toLocalDate, type LocalDate } from './localDate';
+import {
+  addDaysLocal,
+  dayNumber,
+  fromDayNumber,
+  parseLocalDate,
+  toLocalDate,
+  type LocalDate,
+} from './localDate';
 
 export type RangeUnit = PeriodUnit | 'year';
 
@@ -73,13 +72,14 @@ export function shiftPeriod(date: LocalDate, unit: RangeUnit, amount: number): L
 
 /** Whole days from `a` to `b` (positive when b is later). */
 export function daysBetween(a: LocalDate, b: LocalDate): number {
-  return differenceInCalendarDays(parseLocalDate(b), parseLocalDate(a));
+  return dayNumber(b) - dayNumber(a);
 }
 
 /** Every day in the inclusive range, in order. Empty when `from > to`. */
 export function eachDay(from: LocalDate, to: LocalDate): LocalDate[] {
   const days: LocalDate[] = [];
-  for (let day = from; day <= to; day = addDaysLocal(day, 1)) days.push(day);
+  const last = dayNumber(to);
+  for (let day = dayNumber(from); day <= last; day++) days.push(fromDayNumber(day));
   return days;
 }
 

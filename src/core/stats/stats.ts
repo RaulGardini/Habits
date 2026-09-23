@@ -11,6 +11,7 @@ import { entryProgress } from '@/core/habits/entries';
 import { periodTarget } from '@/core/habits/quota';
 import { habitEndDate, isScheduledOn } from '@/core/habits/schedule';
 import type { Habit, HabitEntry, WeekStartsOn } from '@/core/habits/types';
+import { lowerBound } from '@/core/utils/sorted';
 
 /**
  * Score of one habit on one day, 0..1, or `null` when the day does not count:
@@ -67,51 +68,58 @@ export function overallDailyScores(
   weekStartsOn: WeekStartsOn,
 ): Map<LocalDate, DayScore | null> {
   const index = indexEntries(entries);
+  const openness = habits.map((habit) => openChecker(habit, entries, today, weekStartsOn));
   const scores = new Map<LocalDate, DayScore | null>();
   for (const date of eachDay(range.from, range.to)) {
     let completed = 0;
     let total = 0;
     let sum = 0;
     let recorded = false;
-    for (const habit of habits) {
+    habits.forEach((habit, i) => {
       const entry = index.get(`${habit.id}|${date}`);
       let score = habitDayScore(habit, date, entry, today);
-      if (score === null && isOpenOn(habit, date, entry, today, entries, weekStartsOn)) score = 0;
-      if (score === null) continue;
+      if (score === null && openness[i]?.(date, entry)) score = 0;
+      if (score === null) return;
       if (entry) recorded = true;
       total += 1;
       sum += score;
       if (entry?.status === 'done') completed += 1;
-    }
+    });
     const pendingToday = date === today && !recorded;
     scores.set(date, total === 0 || pendingToday ? null : { completed, total, ratio: sum / total });
   }
   return scores;
 }
 
-/** Was the habit on the day's list without a recorded score (see `overallDailyScores`)? */
-function isOpenOn(
+/**
+ * Was the habit on the day's list without a recorded score (see `overallDailyScores`)?
+ * Built once per habit: flexible habits count their done days with a binary search instead of
+ * scanning every entry for every day (years of history would make that quadratic).
+ */
+function openChecker(
   habit: Habit,
-  date: LocalDate,
-  entry: HabitEntry | undefined,
-  today: LocalDate,
   entries: readonly HabitEntry[],
+  today: LocalDate,
   weekStartsOn: WeekStartsOn,
-): boolean {
-  if (date > today || date > habitEndDate(habit, today) || !isScheduledOn(habit, date))
-    return false;
-  if (entry?.status === 'skipped') return false;
-  if (habit.frequency.type !== 'per_period') return date === today;
-  const period = periodRange(date, habit.frequency.period, weekStartsOn);
-  const doneBefore = entries.filter(
-    (e) =>
-      e.habitId === habit.id &&
-      e.status === 'done' &&
-      e.date >= period.from &&
-      e.date < date &&
-      e.date >= habit.startDate,
-  ).length;
-  return doneBefore < periodTarget(habit, period);
+): (date: LocalDate, entry: HabitEntry | undefined) => boolean {
+  const end = habitEndDate(habit, today);
+  const frequency = habit.frequency;
+  const doneDates =
+    frequency.type === 'per_period'
+      ? entries
+          .filter((e) => e.habitId === habit.id && e.status === 'done' && e.date >= habit.startDate)
+          .map((e) => e.date)
+          .sort()
+      : [];
+
+  return (date, entry) => {
+    if (date > today || date > end || !isScheduledOn(habit, date)) return false;
+    if (entry?.status === 'skipped') return false;
+    if (frequency.type !== 'per_period') return date === today;
+    const period = periodRange(date, frequency.period, weekStartsOn);
+    const doneBefore = lowerBound(doneDates, date) - lowerBound(doneDates, period.from);
+    return doneBefore < periodTarget(habit, period);
+  };
 }
 
 /** Per-day scores of one habit over the range. */
