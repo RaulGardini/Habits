@@ -38,6 +38,9 @@ begin
        using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()))',
     table_name);
   execute format('grant select, insert, update, delete on public.%I to authenticated', table_name);
+  -- Supabase grants every new public table to `anon` by default; RLS already hides the rows,
+  -- but signed-out requests should not have privileges at all (defense in depth).
+  execute format('revoke all on public.%I from anon', table_name);
   execute format('drop trigger if exists lww_guard on public.%I', table_name);
   execute format(
     'create trigger lww_guard before insert or update on public.%I
@@ -164,6 +167,7 @@ drop policy if exists "own rows" on public.cloud_backups;
 create policy "own rows" on public.cloud_backups for all to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 grant select, insert, delete on public.cloud_backups to authenticated;
+revoke all on public.cloud_backups from anon;
 create index if not exists cloud_backups_user_idx on public.cloud_backups (user_id, created_at desc);
 
 -- In-app account deletion (required by the App Store): removes the auth user; every synced

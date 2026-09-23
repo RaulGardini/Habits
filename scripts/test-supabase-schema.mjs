@@ -19,6 +19,9 @@ await db.exec(`
   create role authenticated;
   create role anon;
   grant usage on schema public, auth to authenticated;
+  -- Like Supabase: anonymous requests can use the schema and get every new table by default.
+  grant usage on schema public to anon;
+  alter default privileges in schema public grant all on tables to anon, authenticated;
   insert into auth.users values ('${A}'), ('${B}');
 `);
 await db.exec(readFileSync(new URL('../supabase/schema.sql', import.meta.url), 'utf8'));
@@ -82,6 +85,24 @@ assert.equal(
   'B must not see A backups',
 );
 assert.equal((await as(A, 'select * from public.cloud_backups')).rows.length, 1);
+
+// Every table of the public schema has Row Level Security, and anonymous requests have no
+// privileges at all (the app only talks to the tables when signed in).
+const unprotected = await db.query(`select relname from pg_class
+  where relnamespace = 'public'::regnamespace and relkind = 'r' and not relrowsecurity`);
+assert.deepEqual(unprotected.rows, [], 'every public table must have RLS');
+await db.exec('set role anon;');
+await assert.rejects(db.query('select * from public.habits'), /permission denied/);
+await assert.rejects(db.query('select * from public.cloud_backups'), /permission denied/);
+await db.exec('reset role;');
+
+// An owner cannot be changed: the row stays with A even if A tries to give it to B.
+await as(A, `update public.settings set user_id = '${B}' where key = 'theme'`);
+assert.equal(
+  (await as(A, `select count(*)::int as n from public.settings where key = 'theme'`)).rows[0].n,
+  1,
+  'the row must stay with its owner',
+);
 
 // Account deletion removes the user and cascades to every table.
 await as(A, 'select public.delete_my_account()');
