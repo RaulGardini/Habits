@@ -154,7 +154,7 @@ export function TodayScreen() {
       />
 
       {due.length > 0 ? (
-        <Card style={{ backgroundColor: colors.primarySoft, boxShadow: 'none' }}>
+        <Card style={[styles.progressCard, { backgroundColor: colors.primarySoft }]}>
           <View style={styles.progressRow}>
             <View style={styles.flex}>
               <View style={styles.progressHeader}>
@@ -166,6 +166,7 @@ export function TodayScreen() {
                 </AppText>
               </View>
               <ProgressBar
+                height={8}
                 value={progress.ratio}
                 label={t('{completed} de {total} hábitos concluídos', {
                   completed: progress.completed,
@@ -185,7 +186,7 @@ export function TodayScreen() {
               )}
               style={({ pressed }) => [styles.streak, pressed && styles.pressed]}
             >
-              <Flame days={streak.current} size={36} dimmed={streak.current === 0} />
+              <Flame days={streak.current} size={32} dimmed={streak.current === 0} />
               <AppText variant="label">{streak.current}</AppText>
             </Pressable>
           </View>
@@ -367,9 +368,11 @@ function usePeriodQuotas(
 }
 
 const styles = StyleSheet.create({
+  // A shorter card: the day's progress should not dominate the screen.
+  progressCard: { boxShadow: 'none', paddingVertical: spacing.md, gap: spacing.sm },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   progressHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  streak: { alignItems: 'center', minWidth: 44, gap: 2 },
+  streak: { alignItems: 'center', minWidth: 44, gap: 0 },
   pressed: { opacity: 0.7 },
   flex: { flex: 1 },
   groups: { gap: spacing.lg },
