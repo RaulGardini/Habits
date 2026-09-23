@@ -251,4 +251,39 @@ describe('integrity', () => {
     await expect(failing).rejects.toThrow('boom');
     expect((await repos.habits.getById(a.id))?.name).toBe('A');
   });
+
+  it('never lets a write join (and vanish with) another transaction', async () => {
+    const { db } = await openTestDatabase();
+    const repos = createDrizzleRepositories(db);
+    const habit = await repos.habits.create(draft());
+    let release!: () => void;
+    const holding = new Promise<void>((resolve) => (release = resolve));
+
+    // A sync merge is running and will fail...
+    const merge = db.transaction(async (tx) => {
+      await tx.run(sql`UPDATE habits SET name = 'merge' WHERE id = ${habit.id}`);
+      await holding;
+      throw new Error('network lost');
+    });
+    // ...while the user checks the habit.
+    const check = repos.entries.upsert(habit.id, '2026-03-01', { status: 'done' });
+    release();
+
+    await expect(merge).rejects.toThrow('network lost');
+    await check;
+    expect(await repos.entries.listByDate('2026-03-01')).toHaveLength(1);
+    expect((await repos.habits.getById(habit.id))?.name).toBe('Ler');
+  });
+
+  it('runs statements in the order they were issued', async () => {
+    const { db } = await openTestDatabase();
+    const repos = createDrizzleRepositories(db);
+    const habit = await repos.habits.create(draft());
+    await Promise.all([
+      repos.entries.upsert(habit.id, '2026-03-01', { status: 'done' }),
+      repos.entries.remove(habit.id, '2026-03-01'),
+      repos.entries.upsert(habit.id, '2026-03-01', { status: 'skipped' }),
+    ]);
+    expect((await repos.entries.listByDate('2026-03-01'))[0]?.status).toBe('skipped');
+  });
 });

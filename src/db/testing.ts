@@ -1,10 +1,8 @@
-import { drizzle } from 'drizzle-orm/sqlite-proxy';
 import initSqlJs, { type BindParams, type Database as SqlJsDatabase } from 'sql.js';
 
 import type { Database } from './client';
 import { prepareDatabase, type MigrationBundle, type MigrationDatabase } from './migrate';
-import * as schema from './schema';
-import { serializeTransactions } from './transactions';
+import { createSerializedDatabase } from './transactions';
 
 /** Runs a statement and returns its rows as objects. */
 function allRows(sqlite: SqlJsDatabase, sql: string, params: unknown[]): Record<string, unknown>[] {
@@ -54,27 +52,24 @@ export interface TestDatabase {
   queries: { sql: string; params: unknown[] }[];
 }
 
-/** Drizzle (sqlite-proxy, serialized transactions — like the app) on a sql.js database. */
+/** Drizzle with the app's statement queue (see `createSerializedDatabase`) on sql.js. */
 export function wrapSqlJs(sqlite: SqlJsDatabase): TestDatabase {
   const queries: TestDatabase['queries'] = [];
-  const db = drizzle(
-    async (sql, params, method) => {
-      queries.push({ sql, params });
-      const statement = sqlite.prepare(sql);
-      try {
-        statement.bind(params as BindParams);
-        const rows: unknown[][] = [];
-        while (statement.step()) rows.push(statement.get());
-        if (method === 'run') return { rows: [] };
-        if (method === 'get') return { rows: rows[0] as unknown[] };
-        return { rows };
-      } finally {
-        statement.free();
-      }
-    },
-    { schema },
-  );
-  return { db: serializeTransactions(db), sqlite, queries };
+  const db = createSerializedDatabase(async (sql, params, method) => {
+    queries.push({ sql, params });
+    const statement = sqlite.prepare(sql);
+    try {
+      statement.bind(params as BindParams);
+      const rows: unknown[][] = [];
+      while (statement.step()) rows.push(statement.get());
+      if (method === 'run') return { rows: [] };
+      if (method === 'get') return { rows: rows[0] as unknown[] };
+      return { rows };
+    } finally {
+      statement.free();
+    }
+  });
+  return { db, sqlite, queries };
 }
 
 /**
