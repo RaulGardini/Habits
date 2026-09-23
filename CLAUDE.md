@@ -127,7 +127,7 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - `TodayAgenda` shows the day's events under the habits (up to 4) with links to the Agenda.
 - Perfect-day streak: `perfectStreak` (`src/core/habits/perfectStreak.ts`) counts consecutive days
   where every due habit was done — days with nothing due are neutral and an unfinished today never
-  breaks it. `FLAME_TIERS` (0/10/30/50/100/200/300/500/1000) pick the colors in
+  breaks it. `FLAME_TIERS` (0/5/10/30/50/100/200/300/500/1000) pick the colors in
   `src/theme/flameColors.ts`; `<Flame>` is an animated SVG (no emoji) living in the daily progress
   card, and tapping it opens `StreakSheet` with the whole ladder.
 - The greeting uses the optional `displayName` setting ("Bom dia, Raul"), edited in Settings.

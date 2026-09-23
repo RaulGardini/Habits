@@ -86,13 +86,15 @@ describe('perfectStreak', () => {
 describe('flame tiers', () => {
   it('moves up at each threshold', () => {
     expect(FLAME_TIERS[flameTierIndex(0)]).toBe(0);
-    expect(FLAME_TIERS[flameTierIndex(9)]).toBe(0);
+    expect(FLAME_TIERS[flameTierIndex(4)]).toBe(0);
+    expect(FLAME_TIERS[flameTierIndex(9)]).toBe(5);
     expect(FLAME_TIERS[flameTierIndex(10)]).toBe(10);
     expect(FLAME_TIERS[flameTierIndex(99)]).toBe(50);
     expect(FLAME_TIERS[flameTierIndex(2000)]).toBe(1000);
   });
 
   it('reports what is missing for the next flame', () => {
+    expect(daysToNextTier(2)).toEqual({ threshold: 5, remaining: 3 });
     expect(daysToNextTier(7)).toEqual({ threshold: 10, remaining: 3 });
     expect(daysToNextTier(120)).toEqual({ threshold: 200, remaining: 80 });
     expect(daysToNextTier(1200)).toBeNull();
@@ -101,6 +103,7 @@ describe('flame tiers', () => {
   it('fills the bar between two tiers', () => {
     expect(tierProgress(10)).toBe(0);
     expect(tierProgress(20)).toBe(0.5);
+    expect(tierProgress(5)).toBe(0);
     expect(tierProgress(1500)).toBe(1);
   });
 });

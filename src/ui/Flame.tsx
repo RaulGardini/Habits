@@ -9,122 +9,96 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { flameTierIndex } from '@/core/habits/perfectStreak';
 import { flameColors } from '@/theme/flameColors';
 
-/** Plump, rounded flame (Duolingo-ish) plus its lighter core, drawn in a 64×80 box. */
+/**
+ * Round, friendly flame: a nearly circular body, a tall tip on the right and a small hump on the
+ * left, with a teardrop core — drawn in a 64×80 box.
+ */
 const OUTER =
-  'M32 4 C 41 15, 55 25, 57 40 C 59 57, 47 74, 32 77 C 17 74, 5 57, 7 40 C 9 25, 23 15, 32 4 Z';
+  'M38 4 C 44 15, 57 27, 57 46 C 57 62, 46 76, 32 76 C 18 76, 7 62, 7 46 C 7 36, 12 28, 19 21 C 20 29, 23 34, 27 36 C 30 27, 34 14, 38 4 Z';
 const CORE =
-  'M32 32 C 38 41, 45 48, 45 57 C 45 67, 39 73, 32 73 C 25 73, 19 67, 19 57 C 19 48, 26 41, 32 32 Z';
+  'M32 28 C 36 38, 44 45, 44 55 C 44 65, 39 71, 32 71 C 25 71, 20 65, 20 55 C 20 45, 28 38, 32 28 Z';
 
 interface FlameProps {
   /** Streak length: decides the colors. */
   days: number;
   size?: number;
-  /** Still flames (ladder steps) skip the flicker. */
+  /** Still flames (ladder steps) skip the animation. */
   animated?: boolean;
   /** Not yet reached: drawn as a faint outline. */
   dimmed?: boolean;
 }
 
-/** Animated flame that changes color with the streak: it breathes, sways and throws sparks. */
+/** Flame that changes color with the streak, breathing slowly with an occasional spark. */
 export function Flame({ days, size = 34, animated = true, dimmed = false }: FlameProps) {
   const tier = flameTierIndex(days);
   const colors = flameColors(tier);
   const height = size * 1.25;
   const live = animated && !dimmed;
 
-  // Independent loops with different periods, so the movement never looks mechanical.
+  // Calm on purpose: one slow breath and a rare spark.
   const body = useSharedValue(1);
-  const sway = useSharedValue(0);
   const core = useSharedValue(1);
-  const halo = useSharedValue(0.5);
-  const sparkA = useSharedValue(0);
-  const sparkB = useSharedValue(0);
+  const spark = useSharedValue(0);
 
   useEffect(() => {
     if (!live) return;
-    const loop = (value: number, up: number, upMs: number, down: number, downMs: number) =>
+    body.set(
       withRepeat(
         withSequence(
-          withTiming(up, { duration: upMs, easing: Easing.inOut(Easing.quad) }),
-          withTiming(down, { duration: downMs, easing: Easing.inOut(Easing.quad) }),
+          withTiming(1.04, { duration: 1400, easing: Easing.inOut(Easing.quad) }),
+          withTiming(0.98, { duration: 1600, easing: Easing.inOut(Easing.quad) }),
         ),
         -1,
         true,
-      );
-    body.set(loop(1, 1.08, 560, 0.95, 720));
-    sway.set(loop(0, 3.5, 900, -3.5, 900));
-    core.set(loop(1, 0.84, 380, 1.1, 460));
-    halo.set(loop(0.5, 1, 700, 0.45, 900));
-    const spark = (delay: number) =>
-      withDelay(
-        delay,
-        withRepeat(
-          withSequence(
-            withTiming(1, { duration: 1100, easing: Easing.out(Easing.quad) }),
-            withTiming(0, { duration: 0 }),
-          ),
-          -1,
-          false,
+      ),
+    );
+    core.set(
+      withRepeat(
+        withSequence(
+          withTiming(0.94, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
+          withTiming(1.03, { duration: 1300, easing: Easing.inOut(Easing.quad) }),
         ),
-      );
-    sparkA.set(spark(0));
-    sparkB.set(spark(600));
-  }, [live, body, sway, core, halo, sparkA, sparkB]);
+        -1,
+        true,
+      ),
+    );
+    spark.set(
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 1500, easing: Easing.out(Easing.quad) }),
+          withDelay(1800, withTiming(0, { duration: 0 })),
+        ),
+        -1,
+        false,
+      ),
+    );
+  }, [live, body, core, spark]);
 
   const bodyStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: (1 - body.get()) * size * 0.06 },
-      { scaleY: body.get() },
-      { scaleX: 2 - body.get() },
-      { rotate: `${sway.get()}deg` },
-    ],
+    transform: [{ scaleY: body.get() }, { scaleX: 2 - body.get() }],
   }));
   const coreStyle = useAnimatedStyle(() => ({
-    opacity: 0.25 + core.get() * 0.5,
-    transform: [{ scaleY: core.get() }, { scaleX: 2 - core.get() }],
+    opacity: 0.55 + core.get() * 0.4,
+    transform: [{ scaleY: core.get() }],
   }));
-  const haloStyle = useAnimatedStyle(() => ({ opacity: halo.get() }));
-  const sparkAStyle = useAnimatedStyle(() => ({
-    opacity: sparkA.get() === 0 ? 0 : (1 - sparkA.get()) * 0.9,
+  const sparkStyle = useAnimatedStyle(() => ({
+    opacity: spark.get() === 0 ? 0 : (1 - spark.get()) * 0.8,
     transform: [
-      { translateY: -sparkA.get() * size * 0.55 },
-      { translateX: sparkA.get() * size * 0.12 },
-      { scale: 1 - sparkA.get() * 0.5 },
-    ],
-  }));
-  const sparkBStyle = useAnimatedStyle(() => ({
-    opacity: sparkB.get() === 0 ? 0 : (1 - sparkB.get()) * 0.9,
-    transform: [
-      { translateY: -sparkB.get() * size * 0.55 },
-      { translateX: -sparkB.get() * size * 0.1 },
-      { scale: 1 - sparkB.get() * 0.5 },
+      { translateY: -spark.get() * size * 0.45 },
+      { translateX: spark.get() * size * 0.1 },
+      { rotate: `${45 + spark.get() * 90}deg` },
     ],
   }));
 
   const gradientId = `flame-${tier}${dimmed ? '-dim' : ''}`;
-  const haloId = `halo-${tier}`;
 
   return (
     <View style={{ width: size, height }} accessibilityElementsHidden>
-      {live ? (
-        <Animated.View style={[styles.layer, haloStyle]}>
-          <Svg width={size} height={height} viewBox="0 0 64 80">
-            <Defs>
-              <RadialGradient id={haloId} cx="50%" cy="60%" r="50%">
-                <Stop offset="0" stopColor={colors.to} stopOpacity="0.45" />
-                <Stop offset="1" stopColor={colors.to} stopOpacity="0" />
-              </RadialGradient>
-            </Defs>
-            <Circle cx="32" cy="48" r="32" fill={`url(#${haloId})`} />
-          </Svg>
-        </Animated.View>
-      ) : null}
-
       <Animated.View style={[styles.layer, live ? bodyStyle : undefined]}>
         <Svg width={size} height={height} viewBox="0 0 64 80">
           <Defs>
@@ -153,14 +127,9 @@ export function Flame({ days, size = 34, animated = true, dimmed = false }: Flam
       )}
 
       {live ? (
-        <>
-          <Animated.View style={[styles.spark, { left: size * 0.62 }, sparkAStyle]}>
-            <View style={[styles.dot, { backgroundColor: colors.to }]} />
-          </Animated.View>
-          <Animated.View style={[styles.spark, { left: size * 0.28 }, sparkBStyle]}>
-            <View style={[styles.dotSmall, { backgroundColor: colors.core }]} />
-          </Animated.View>
-        </>
+        <Animated.View style={[styles.spark, { left: size * 0.68 }, sparkStyle]}>
+          <View style={[styles.diamond, { backgroundColor: colors.to }]} />
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -168,7 +137,6 @@ export function Flame({ days, size = 34, animated = true, dimmed = false }: Flam
 
 const styles = StyleSheet.create({
   layer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  spark: { position: 'absolute', top: 2 },
-  dot: { width: 4, height: 4, borderRadius: 2 },
-  dotSmall: { width: 3, height: 3, borderRadius: 1.5 },
+  spark: { position: 'absolute', top: 4 },
+  diamond: { width: 5, height: 5, borderRadius: 1 },
 });

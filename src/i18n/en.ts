@@ -550,7 +550,7 @@ export const EN: Record<string, string> = {
   Laranja: 'Orange',
   Brasa: 'Ember',
   Rubro: 'Crimson',
-  Esmeralda: 'Emerald',
+  Rubi: 'Ruby',
   Branca: 'White',
   // Palette
   Vermelho: 'Red',

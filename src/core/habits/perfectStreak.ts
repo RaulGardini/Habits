@@ -14,7 +14,7 @@ export interface PerfectStreak {
 }
 
 /** Flame tiers: each threshold changes the flame's color and name. */
-export const FLAME_TIERS = [0, 10, 30, 50, 100, 200, 300, 500, 1000] as const;
+export const FLAME_TIERS = [0, 5, 10, 30, 50, 100, 200, 300, 500, 1000] as const;
 
 export type FlameTier = (typeof FLAME_TIERS)[number];
 
