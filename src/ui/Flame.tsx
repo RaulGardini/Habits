@@ -19,9 +19,12 @@ import { flameColors } from '@/theme/flameColors';
  * left, with a teardrop core — drawn in a 64×80 box.
  */
 const OUTER =
-  'M38 4 C 44 15, 57 27, 57 46 C 57 62, 46 76, 32 76 C 18 76, 7 62, 7 46 C 7 36, 12 28, 19 21 C 20 29, 23 34, 27 36 C 30 27, 34 14, 38 4 Z';
+  'M38 8 C 43 18, 55 29, 55 46 C 55 62, 45 74, 32 74 C 19 74, 9 62, 9 46 C 9 37, 13 30, 19 24 C 20 31, 23 35, 27 37 C 30 28, 34 17, 38 8 Z';
 const CORE =
-  'M32 28 C 36 38, 44 45, 44 55 C 44 65, 39 71, 32 71 C 25 71, 20 65, 20 55 C 20 45, 28 38, 32 28 Z';
+  'M32 38 C 35 44, 40 49, 40 56 C 40 63, 36.5 68, 32 68 C 27.5 68, 24 63, 24 56 C 24 49, 29 44, 32 38 Z';
+/** Same-color stroke with round joins: the tip and the hump lose their sharp corners. */
+const ROUND_OUTER = 7;
+const ROUND_CORE = 3;
 
 interface FlameProps {
   /** Streak length: decides the colors. */
@@ -110,8 +113,8 @@ export function Flame({ days, size = 34, animated = true, dimmed = false }: Flam
           <Path
             d={OUTER}
             fill={dimmed ? 'none' : `url(#${gradientId})`}
-            stroke={dimmed ? colors.from : 'none'}
-            strokeWidth={dimmed ? 4 : 0}
+            stroke={dimmed ? colors.from : `url(#${gradientId})`}
+            strokeWidth={dimmed ? 4 : ROUND_OUTER}
             strokeLinejoin="round"
             opacity={dimmed ? 0.45 : 1}
           />
@@ -121,7 +124,13 @@ export function Flame({ days, size = 34, animated = true, dimmed = false }: Flam
       {dimmed ? null : (
         <Animated.View style={[styles.layer, live ? coreStyle : undefined]}>
           <Svg width={size} height={height} viewBox="0 0 64 80">
-            <Path d={CORE} fill={colors.core} />
+            <Path
+              d={CORE}
+              fill={colors.core}
+              stroke={colors.core}
+              strokeWidth={ROUND_CORE}
+              strokeLinejoin="round"
+            />
           </Svg>
         </Animated.View>
       )}
