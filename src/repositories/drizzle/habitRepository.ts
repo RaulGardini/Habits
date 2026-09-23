@@ -8,6 +8,9 @@ import { newId, nowIso } from '@/lib/id';
 import type { HabitRepository } from '../types';
 import { frequencyColumns, toHabit, trackingColumns } from './mappers';
 
+/** A transaction handle (`db.transaction(async (tx) => …)`). */
+type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
+
 const notDeleted = isNull(habits.deletedAt);
 const reminderNotDeleted = isNull(habitReminders.deletedAt);
 
@@ -45,16 +48,20 @@ export function createDrizzleHabitRepository(db: Database): HabitRepository {
   }
 
   /** Keeps unchanged times, soft-deletes removed ones and inserts new ones. */
-  async function saveReminders(habitId: string, times: readonly string[]): Promise<void> {
+  async function saveReminders(
+    tx: Transaction,
+    habitId: string,
+    times: readonly string[],
+  ): Promise<void> {
     const now = nowIso();
-    const existing = await db
+    const existing = await tx
       .select({ id: habitReminders.id, time: habitReminders.time })
       .from(habitReminders)
       .where(and(eq(habitReminders.habitId, habitId), reminderNotDeleted));
     const wanted = new Set(times);
     const removed = existing.filter((r) => !wanted.has(r.time)).map((r) => r.id);
     if (removed.length > 0) {
-      await db
+      await tx
         .update(habitReminders)
         .set({ deletedAt: now, updatedAt: now })
         .where(inArray(habitReminders.id, removed));
@@ -62,7 +69,7 @@ export function createDrizzleHabitRepository(db: Database): HabitRepository {
     const existingTimes = new Set(existing.map((r) => r.time));
     const added = [...wanted].filter((time) => !existingTimes.has(time));
     if (added.length > 0) {
-      await db
+      await tx
         .insert(habitReminders)
         .values(
           added.map((time) => ({ id: newId(), habitId, time, createdAt: now, updatedAt: now })),
@@ -83,29 +90,34 @@ export function createDrizzleHabitRepository(db: Database): HabitRepository {
     },
 
     async create(draft) {
-      const [last] = await db
-        .select({ value: max(habits.sortOrder) })
-        .from(habits)
-        .where(notDeleted);
       const now = nowIso();
       const id = newId();
-      await db.insert(habits).values({
-        id,
-        ...draftColumns(draft),
-        sortOrder: (last?.value ?? -1) + 1,
-        createdAt: now,
-        updatedAt: now,
+      // Habit + reminders are one unit: never a habit without its reminders.
+      await db.transaction(async (tx) => {
+        const [last] = await tx
+          .select({ value: max(habits.sortOrder) })
+          .from(habits)
+          .where(notDeleted);
+        await tx.insert(habits).values({
+          id,
+          ...draftColumns(draft),
+          sortOrder: (last?.value ?? -1) + 1,
+          createdAt: now,
+          updatedAt: now,
+        });
+        await saveReminders(tx, id, draft.reminders);
       });
-      await saveReminders(id, draft.reminders);
       return getOrThrow(id);
     },
 
     async update(id, draft) {
-      await db
-        .update(habits)
-        .set({ ...draftColumns(draft), updatedAt: nowIso() })
-        .where(and(eq(habits.id, id), notDeleted));
-      await saveReminders(id, draft.reminders);
+      await db.transaction(async (tx) => {
+        await tx
+          .update(habits)
+          .set({ ...draftColumns(draft), updatedAt: nowIso() })
+          .where(and(eq(habits.id, id), notDeleted));
+        await saveReminders(tx, id, draft.reminders);
+      });
       return getOrThrow(id);
     },
 
@@ -120,11 +132,13 @@ export function createDrizzleHabitRepository(db: Database): HabitRepository {
 
     async remove(id) {
       const now = nowIso();
-      await db.update(habits).set({ deletedAt: now, updatedAt: now }).where(eq(habits.id, id));
-      await db
-        .update(habitReminders)
-        .set({ deletedAt: now, updatedAt: now })
-        .where(and(eq(habitReminders.habitId, id), reminderNotDeleted));
+      await db.transaction(async (tx) => {
+        await tx.update(habits).set({ deletedAt: now, updatedAt: now }).where(eq(habits.id, id));
+        await tx
+          .update(habitReminders)
+          .set({ deletedAt: now, updatedAt: now })
+          .where(and(eq(habitReminders.habitId, id), reminderNotDeleted));
+      });
     },
 
     async reorder(orderedIds) {

@@ -11,19 +11,30 @@ interface JournalEntry {
   tag: string;
 }
 
-interface MigrationBundle {
+export interface MigrationBundle {
   journal: { entries: JournalEntry[] };
   migrations: Record<string, string>;
 }
 
+/** The part of expo-sqlite's async API the migrator needs (lets tests run it on sql.js). */
+export type MigrationDatabase = Pick<
+  SQLiteDatabase,
+  'execAsync' | 'getFirstAsync' | 'runAsync' | 'withTransactionAsync'
+>;
+
+export const bundledMigrations = migrations as MigrationBundle;
+
 /**
  * Applies the drizzle-kit migrations bundled in `./migrations` (generated with
  * `npm run db:generate`). Same bookkeeping as Drizzle's own migrator: a migration runs when its
- * journal timestamp is newer than the last applied one. Each migration runs in a transaction.
+ * journal timestamp is newer than the last applied one. Each migration runs in a transaction,
+ * so a failure leaves the database exactly as the previous migration left it (SQLite DDL is
+ * transactional) and the migration is retried on the next start.
  */
-export async function runMigrations(sqlite: SQLiteDatabase): Promise<void> {
-  const bundle = migrations as MigrationBundle;
-
+export async function runMigrations(
+  sqlite: MigrationDatabase,
+  bundle: MigrationBundle = bundledMigrations,
+): Promise<void> {
   await sqlite.execAsync(
     `CREATE TABLE IF NOT EXISTS ${MIGRATIONS_TABLE} (
       id INTEGER PRIMARY KEY,
@@ -56,4 +67,17 @@ export async function runMigrations(sqlite: SQLiteDatabase): Promise<void> {
       );
     });
   }
+}
+
+/**
+ * Per-connection setup + migrations, shared by the app (`openDatabase`) and the tests.
+ * Foreign keys are off by default in SQLite and must be enabled on every connection, outside
+ * a transaction.
+ */
+export async function prepareDatabase(
+  sqlite: MigrationDatabase,
+  bundle: MigrationBundle = bundledMigrations,
+): Promise<void> {
+  await sqlite.execAsync('PRAGMA foreign_keys = ON;');
+  await runMigrations(sqlite, bundle);
 }

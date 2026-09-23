@@ -1,32 +1,65 @@
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
-import initSqlJs, { type BindParams } from 'sql.js';
+import initSqlJs, { type BindParams, type Database as SqlJsDatabase } from 'sql.js';
 
 import type { Database } from './client';
-import migrations from './migrations/migrations';
+import { prepareDatabase, type MigrationBundle, type MigrationDatabase } from './migrate';
 import * as schema from './schema';
+import { serializeTransactions } from './transactions';
 
-/**
- * Test-only: a real SQLite database in memory (sql.js / WebAssembly) behind the same Drizzle
- * sqlite-proxy driver and the same migrations as the app. Lets repository tests run in Jest.
- */
-export async function createTestDatabase(): Promise<Database> {
-  const SQL = await initSqlJs();
-  const sqlite = new SQL.Database();
-  sqlite.run('PRAGMA foreign_keys = ON;');
-
-  const bundle = migrations as {
-    journal: { entries: { idx: number }[] };
-    migrations: Record<string, string>;
-  };
-  for (const entry of bundle.journal.entries) {
-    const sql = bundle.migrations[`m${entry.idx.toString().padStart(4, '0')}`] ?? '';
-    for (const statement of sql.split('--> statement-breakpoint')) {
-      if (statement.trim()) sqlite.run(statement);
-    }
+/** Runs a statement and returns its rows as objects. */
+function allRows(sqlite: SqlJsDatabase, sql: string, params: unknown[]): Record<string, unknown>[] {
+  const statement = sqlite.prepare(sql);
+  try {
+    statement.bind(params as BindParams);
+    const rows: Record<string, unknown>[] = [];
+    while (statement.step()) rows.push(statement.getAsObject());
+    return rows;
+  } finally {
+    statement.free();
   }
+}
 
-  return drizzle(
+/** expo-sqlite's async API (the subset used by the migrator) on top of sql.js. */
+export function migrationAdapter(sqlite: SqlJsDatabase): MigrationDatabase {
+  const adapter: MigrationDatabase = {
+    async execAsync(source: string) {
+      sqlite.exec(source);
+    },
+    async getFirstAsync(source: string, ...params: unknown[]) {
+      return (allRows(sqlite, source, params.flat())[0] ?? null) as never;
+    },
+    async runAsync(source: string, ...params: unknown[]) {
+      allRows(sqlite, source, params.flat());
+      return { lastInsertRowId: 0, changes: sqlite.getRowsModified() };
+    },
+    async withTransactionAsync(task: () => Promise<void>) {
+      sqlite.exec('BEGIN');
+      try {
+        await task();
+        sqlite.exec('COMMIT');
+      } catch (error) {
+        sqlite.exec('ROLLBACK');
+        throw error;
+      }
+    },
+  } as MigrationDatabase;
+  return adapter;
+}
+
+export interface TestDatabase {
+  db: Database;
+  /** The underlying sql.js database, for raw SQL (EXPLAIN QUERY PLAN, PRAGMA…). */
+  sqlite: SqlJsDatabase;
+  /** Every statement Drizzle sent, in order (with its parameters). */
+  queries: { sql: string; params: unknown[] }[];
+}
+
+/** Drizzle (sqlite-proxy, serialized transactions — like the app) on a sql.js database. */
+export function wrapSqlJs(sqlite: SqlJsDatabase): TestDatabase {
+  const queries: TestDatabase['queries'] = [];
+  const db = drizzle(
     async (sql, params, method) => {
+      queries.push({ sql, params });
       const statement = sqlite.prepare(sql);
       try {
         statement.bind(params as BindParams);
@@ -41,4 +74,20 @@ export async function createTestDatabase(): Promise<Database> {
     },
     { schema },
   );
+  return { db: serializeTransactions(db), sqlite, queries };
+}
+
+/**
+ * Test-only: a real SQLite database in memory (sql.js / WebAssembly) behind the same Drizzle
+ * sqlite-proxy driver, the same setup (pragmas + migrator) as the app.
+ */
+export async function openTestDatabase(bundle?: MigrationBundle): Promise<TestDatabase> {
+  const SQL = await initSqlJs();
+  const sqlite = new SQL.Database();
+  await prepareDatabase(migrationAdapter(sqlite), bundle);
+  return wrapSqlJs(sqlite);
+}
+
+export async function createTestDatabase(): Promise<Database> {
+  return (await openTestDatabase()).db;
 }

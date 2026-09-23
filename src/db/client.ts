@@ -1,8 +1,9 @@
 import { drizzle, type SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
 import { openDatabaseAsync, type SQLiteBindValue, type SQLiteDatabase } from 'expo-sqlite';
 
-import { runMigrations } from './migrate';
+import { prepareDatabase } from './migrate';
 import * as schema from './schema';
+import { serializeTransactions } from './transactions';
 
 export const DATABASE_NAME = 'habits.db';
 
@@ -16,7 +17,7 @@ export type Database = SqliteRemoteDatabase<typeof schema>;
  * out. The async API works everywhere and does not block the JS thread on native either.
  */
 function createDrizzle(sqlite: SQLiteDatabase): Database {
-  return drizzle(
+  const db = drizzle(
     async (sql, params, method) => {
       const statement = await sqlite.prepareAsync(sql);
       try {
@@ -31,12 +32,12 @@ function createDrizzle(sqlite: SQLiteDatabase): Database {
     },
     { schema },
   );
+  return serializeTransactions(db);
 }
 
 /** Opens the database and applies pending migrations. */
-export async function openDatabase(): Promise<Database> {
-  const sqlite = await openDatabaseAsync(DATABASE_NAME);
-  await sqlite.execAsync('PRAGMA foreign_keys = ON;');
-  await runMigrations(sqlite);
+export async function openDatabase(name = DATABASE_NAME): Promise<Database> {
+  const sqlite = await openDatabaseAsync(name);
+  await prepareDatabase(sqlite);
   return createDrizzle(sqlite);
 }
