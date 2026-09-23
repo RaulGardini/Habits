@@ -70,9 +70,10 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
-    "check": "npm run lint && npm run typecheck && npm test && npm run test:sql",
+    "check": "npm run lint && npm run typecheck && npm test && npm run test:tz && npm run test:sql",
     "db:generate": "drizzle-kit generate",
     "test:sql": "node scripts/test-supabase-schema.mjs",
+    "test:tz": "node scripts/test-timezones.mjs",
     "assets": "node scripts/generate-assets.mjs",
     "legal": "node scripts/generate-privacy.mjs",
     "publish:go": "npx eas-cli@latest update --channel production --environment production --platform ios --non-interactive --message \"Nova versão\""
