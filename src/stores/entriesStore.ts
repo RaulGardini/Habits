@@ -35,6 +35,13 @@ const MAX_RANGES = 12;
 
 const rangeKey = (from: LocalDate, to: LocalDate) => `${from}|${to}`;
 
+/** Saves in flight per `habitId|date`: the newest tap wins on screen and in the database. */
+const pendingSaves = new Map<
+  string,
+  { latest: number; confirmed: HabitEntry | undefined; count: number }
+>();
+let saveSeq = 0;
+
 /** Loads in flight, so concurrent requests for the same data share one query. */
 const inflightRanges = new Map<string, Promise<void>>();
 const inflightDays = new Map<LocalDate, Promise<void>>();
@@ -127,8 +134,18 @@ export const useEntriesStore = create<EntriesState>()((set, get) => {
     },
 
     async save(habitId, date, next) {
+      const key = `${habitId}|${date}`;
       const previous = get().byDate[date]?.[habitId];
       const { entries } = getRepositories();
+      const seq = ++saveSeq;
+      let pending = pendingSaves.get(key);
+      if (!pending) {
+        // What the database holds before this burst of taps (for rollbacks).
+        pending = { latest: seq, confirmed: previous, count: 0 };
+        pendingSaves.set(key, pending);
+      }
+      pending.latest = seq;
+      pending.count += 1;
 
       if (next === null) {
         setEntry(date, habitId, undefined);
@@ -147,15 +164,20 @@ export const useEntriesStore = create<EntriesState>()((set, get) => {
       }
 
       try {
-        if (next === null) {
-          await entries.remove(habitId, date);
-        } else {
-          setEntry(date, habitId, await entries.upsert(habitId, date, next));
-        }
+        // Writes run in the order they were issued (one database queue), so the last tap is
+        // the one that ends up stored.
+        const saved = next === null ? undefined : await entries.upsert(habitId, date, next);
+        if (next === null) await entries.remove(habitId, date);
+        pending.confirmed = saved;
+        // An older write finishing late must not overwrite what a newer tap shows.
+        if (pending.latest === seq) setEntry(date, habitId, saved);
         set((state) => ({ version: state.version + 1 }));
       } catch (error) {
-        setEntry(date, habitId, previous);
+        if (pending.latest === seq) setEntry(date, habitId, pending.confirmed);
         throw error;
+      } finally {
+        pending.count -= 1;
+        if (pending.count === 0) pendingSaves.delete(key);
       }
     },
 

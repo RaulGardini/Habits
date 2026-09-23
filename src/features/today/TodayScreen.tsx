@@ -123,13 +123,11 @@ export function TodayScreen() {
       showError(t('Não foi possível salvar o registro.'), error),
     );
 
-  const toggleTimer = (habit: Habit, day: LocalDate) => {
-    const timers = useTimerStore.getState();
-    const running = activeTimer?.habitId === habit.id && activeTimer.date === day;
-    (running ? timers.stop() : timers.start(habit, day)).catch((error: unknown) =>
-      showError(t('Não foi possível salvar o timer.'), error),
-    );
-  };
+  const toggleTimer = (habit: Habit, day: LocalDate) =>
+    useTimerStore
+      .getState()
+      .toggle(habit, day)
+      .catch((error: unknown) => showError(t('Não foi possível salvar o timer.'), error));
 
   const timerInfo = (habit: Habit, entry: HabitEntry | undefined) => {
     if (habit.tracking.type !== 'timer') return { seconds: null, running: false };

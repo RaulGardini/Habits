@@ -112,6 +112,34 @@ describe('entriesStore.save', () => {
     expect(useEntriesStore.getState().version).toBe(0);
   });
 
+  it('keeps the last of several quick taps, on screen and in the database', async () => {
+    const store = useEntriesStore.getState();
+    await Promise.all([
+      store.save('h1', date, { status: 'done' }),
+      store.save('h1', date, null),
+      store.save('h1', date, { status: 'done' }),
+      store.save('h1', date, null),
+    ]);
+    expect(entryOf()).toBeUndefined();
+    expect(await getRepositories().entries.listByDate(date)).toEqual([]);
+
+    await Promise.all([store.save('h1', date, null), store.save('h1', date, { status: 'done' })]);
+    expect(entryOf()?.status).toBe('done');
+    expect((await getRepositories().entries.listByDate(date))[0]?.status).toBe('done');
+  });
+
+  it('shows what the database holds when the last of quick taps fails', async () => {
+    const store = useEntriesStore.getState();
+    jest.spyOn(getRepositories().entries, 'remove').mockRejectedValueOnce(new Error('disk full'));
+    const results = await Promise.allSettled([
+      store.save('h1', date, { status: 'done' }),
+      store.save('h1', date, null),
+    ]);
+    expect(results.map((r) => r.status)).toEqual(['fulfilled', 'rejected']);
+    expect(entryOf()?.status).toBe('done');
+    expect(entryOf()?.id).not.toMatch(/^pending-/);
+  });
+
   it('loads a day from the repository', async () => {
     await getRepositories().entries.upsert('h2', date, { status: 'done' });
     await useEntriesStore.getState().loadDate(date);
@@ -223,6 +251,47 @@ describe('timerStore', () => {
     expect(await getRepositories().settings.get('activeTimer')).toMatchObject({
       habitId: habit.id,
     });
+  });
+
+  it('starts and stops on two quick toggles instead of restarting', async () => {
+    jest.useFakeTimers({ now: new Date(2026, 8, 21, 10, 0, 0) });
+    const habit = await useHabitsStore
+      .getState()
+      .create(draft('Ler', { tracking: { type: 'timer', targetSeconds: 600 } }));
+    const timers = useTimerStore.getState();
+    await Promise.all([timers.toggle(habit, '2026-09-21'), timers.toggle(habit, '2026-09-21')]);
+    expect(useTimerStore.getState().active).toBeNull();
+    expect(await getRepositories().settings.get('activeTimer')).toBeNull();
+  });
+
+  it('stays consistent across background, a notification and an app restart', async () => {
+    jest.useFakeTimers({ now: new Date(2026, 8, 21, 23, 50, 0) });
+    const habit = await useHabitsStore
+      .getState()
+      .create(draft('Meditar', { tracking: { type: 'timer', targetSeconds: 1200 } }));
+    await useTimerStore.getState().start(habit, '2026-09-21');
+
+    // In the background the JS clock stops; a reminder is re-planned meanwhile (writes too).
+    jest.setSystemTime(new Date(2026, 8, 22, 0, 5, 0));
+    await Promise.all([
+      getRepositories().settings.set('weekStartsOn', 1),
+      useEntriesStore.getState().save(habit.id, '2026-09-22', { status: 'skipped' }),
+    ]);
+    // The app is killed and opened again: the running timer is restored from the database.
+    useTimerStore.setState({ active: null });
+    await useTimerStore.getState().load();
+    expect(useTimerStore.getState().active).toMatchObject({
+      habitId: habit.id,
+      date: '2026-09-21',
+    });
+
+    jest.setSystemTime(new Date(2026, 8, 22, 0, 10, 0));
+    await useTimerStore.getState().stop();
+    // 20 minutes, all on the day the timer was started; the next day's entry is untouched.
+    const entries = useEntriesStore.getState().byDate;
+    expect(entries['2026-09-21']?.[habit.id]).toMatchObject({ status: 'done', value: 1200 });
+    expect(entries['2026-09-22']?.[habit.id]?.status).toBe('skipped');
+    expect(await getRepositories().settings.get('activeTimer')).toBeNull();
   });
 
   it('persists the running timer', async () => {

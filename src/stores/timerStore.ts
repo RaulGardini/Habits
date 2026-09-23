@@ -26,6 +26,11 @@ interface TimerState {
   start(habit: Habit, date: LocalDate): Promise<void>;
   /** Stops the running timer and saves the elapsed time to the entry. */
   stop(): Promise<void>;
+  /**
+   * Starts the habit's timer on `date`, or stops it if it is the one running. Decided when it
+   * runs (not when tapped), so two quick taps start and stop instead of restarting.
+   */
+  toggle(habit: Habit, date: LocalDate): Promise<void>;
   /** Forgets the running timer without saving (e.g. habit deleted, data wiped). */
   clear(): Promise<void>;
 }
@@ -34,17 +39,18 @@ export function elapsedSeconds(timer: ActiveTimer, now: number): number {
   return timer.baseSeconds + Math.max(0, Math.floor((now - timer.startedAt) / 1000));
 }
 
-export const useTimerStore = create<TimerState>()((set, get) => ({
-  active: null,
+export const useTimerStore = create<TimerState>()((set, get) => {
+  // Timer operations run one at a time: a start racing a stop could otherwise save 0 s over the
+  // entry or leave two runs recorded.
+  let queue: Promise<unknown> = Promise.resolve();
+  const serial = <T>(task: () => Promise<T>): Promise<T> => {
+    const result = queue.then(task);
+    queue = result.catch(() => undefined);
+    return result;
+  };
 
-  async load() {
-    const active = await getRepositories().settings.get<ActiveTimer | null>(ACTIVE_TIMER_KEY);
-    set({ active: active ?? null });
-  },
-
-  async start(habit, date) {
-    const current = get().active;
-    if (current) await get().stop();
+  async function start(habit: Habit, date: LocalDate) {
+    if (get().active) await stop();
     const entry = useEntriesStore.getState().byDate[date]?.[habit.id];
     const active: ActiveTimer = {
       habitId: habit.id,
@@ -54,9 +60,9 @@ export const useTimerStore = create<TimerState>()((set, get) => ({
     };
     set({ active });
     await getRepositories().settings.set(ACTIVE_TIMER_KEY, active);
-  },
+  }
 
-  async stop() {
+  async function stop() {
     const active = get().active;
     if (!active) return;
     set({ active: null });
@@ -79,10 +85,32 @@ export const useTimerStore = create<TimerState>()((set, get) => ({
       }
     }
     await getRepositories().settings.set(ACTIVE_TIMER_KEY, null);
-  },
+  }
 
-  async clear() {
-    set({ active: null });
-    await getRepositories().settings.set(ACTIVE_TIMER_KEY, null);
-  },
-}));
+  return {
+    active: null,
+
+    load: () =>
+      serial(async () => {
+        const active = await getRepositories().settings.get<ActiveTimer | null>(ACTIVE_TIMER_KEY);
+        set({ active: active ?? null });
+      }),
+
+    start: (habit, date) => serial(() => start(habit, date)),
+
+    stop: () => serial(stop),
+
+    toggle: (habit, date) =>
+      serial(async () => {
+        const active = get().active;
+        if (active?.habitId === habit.id && active.date === date) await stop();
+        else await start(habit, date);
+      }),
+
+    clear: () =>
+      serial(async () => {
+        set({ active: null });
+        await getRepositories().settings.set(ACTIVE_TIMER_KEY, null);
+      }),
+  };
+});

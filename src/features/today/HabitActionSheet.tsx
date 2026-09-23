@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -137,17 +137,28 @@ function SheetContent({
     .filter(Boolean)
     .join(' · ');
 
-  const save = (next: EntryInput | null, success: boolean) => {
-    if (success) hapticSuccess();
-    else hapticLight();
-    onSave(habit, next);
-    onClose();
+  // One action per opening: the sheet stays tappable while it slides away, and a second tap
+  // (double tap, or a tap on another button) must not save again.
+  const acted = useRef(false);
+  const once = (action: () => void) => {
+    if (acted.current) return;
+    acted.current = true;
+    action();
   };
 
-  const more = () => {
-    onClose();
-    router.push({ pathname: '/entry', params: { habitId: habit.id, date } });
-  };
+  const save = (next: EntryInput | null, success: boolean) =>
+    once(() => {
+      if (success) hapticSuccess();
+      else hapticLight();
+      onSave(habit, next);
+      onClose();
+    });
+
+  const more = () =>
+    once(() => {
+      onClose();
+      router.push({ pathname: '/entry', params: { habitId: habit.id, date } });
+    });
 
   return (
     <>
@@ -204,11 +215,13 @@ function SheetContent({
           <Button
             icon={target.running ? 'pause' : 'play'}
             label={target.running ? 'Pausar timer' : 'Iniciar timer'}
-            onPress={() => {
-              hapticLight();
-              onTimerToggle(habit);
-              onClose();
-            }}
+            onPress={() =>
+              once(() => {
+                hapticLight();
+                onTimerToggle(habit);
+                onClose();
+              })
+            }
           />
           {!done ? (
             <Button
