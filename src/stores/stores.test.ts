@@ -23,7 +23,7 @@ const draft = (name: string, patch: Partial<HabitDraft> = {}): HabitDraft => ({
 beforeEach(() => {
   setRepositories(createMemoryRepositories());
   useHabitsStore.setState({ habits: [], status: 'idle' });
-  useEntriesStore.setState({ byDate: {}, version: 0 });
+  useEntriesStore.setState({ byDate: {}, ranges: {}, version: 0 });
   useSettingsStore.setState({ themePreference: 'system', weekStartsOn: 0 });
   useTimerStore.setState({ active: null });
 });
@@ -116,6 +116,69 @@ describe('entriesStore.save', () => {
     await getRepositories().entries.upsert('h2', date, { status: 'done' });
     await useEntriesStore.getState().loadDate(date);
     expect(useEntriesStore.getState().byDate[date]?.h2?.status).toBe('done');
+  });
+});
+
+describe('entriesStore ranges', () => {
+  const rangeOf = () => useEntriesStore.getState().ranges['2026-09-01|2026-09-30'];
+
+  it('shares one query between concurrent requests for the same range', async () => {
+    const spy = jest.spyOn(getRepositories().entries, 'listByRange');
+    await Promise.all([
+      useEntriesStore.getState().loadRange('2026-09-01', '2026-09-30'),
+      useEntriesStore.getState().loadRange('2026-09-01', '2026-09-30'),
+    ]);
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(rangeOf()).toEqual([]);
+  });
+
+  it('keeps loaded ranges in sync on save without querying again', async () => {
+    await getRepositories().entries.upsert('h1', '2026-09-10', { status: 'done' });
+    await useEntriesStore.getState().loadRange('2026-09-01', '2026-09-30');
+    const spy = jest.spyOn(getRepositories().entries, 'listByRange');
+
+    await useEntriesStore.getState().save('h2', '2026-09-05', { status: 'done' });
+    await useEntriesStore.getState().save('h1', '2026-09-10', { status: 'skipped' });
+    await useEntriesStore.getState().save('h3', '2026-10-01', { status: 'done' }); // outside
+    expect(rangeOf()?.map((e) => [e.habitId, e.date, e.status])).toEqual([
+      ['h2', '2026-09-05', 'done'],
+      ['h1', '2026-09-10', 'skipped'],
+    ]);
+    await useEntriesStore.getState().save('h2', '2026-09-05', null);
+    expect(rangeOf()?.map((e) => e.habitId)).toEqual(['h1']);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('rolls the range back when saving fails', async () => {
+    await useEntriesStore.getState().loadRange('2026-09-01', '2026-09-30');
+    jest.spyOn(getRepositories().entries, 'upsert').mockRejectedValueOnce(new Error('disk full'));
+    await expect(
+      useEntriesStore.getState().save('h1', '2026-09-02', { status: 'done' }),
+    ).rejects.toThrow('disk full');
+    expect(rangeOf()).toEqual([]);
+  });
+
+  it('drops ranges on reset (import, sync, widget changes)', async () => {
+    await useEntriesStore.getState().loadRange('2026-09-01', '2026-09-30');
+    useEntriesStore.getState().reset();
+    expect(rangeOf()).toBeUndefined();
+  });
+
+  it('loads the day on screen before a long range', async () => {
+    const order: string[] = [];
+    const { entries } = getRepositories();
+    jest.spyOn(entries, 'listByDate').mockImplementation(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      order.push('day');
+      return [];
+    });
+    jest.spyOn(entries, 'listByRange').mockImplementation(async () => {
+      order.push('range');
+      return [];
+    });
+    const day = useEntriesStore.getState().loadDate('2026-09-23');
+    await Promise.all([useEntriesStore.getState().loadRange('2023-01-01', '2026-09-23'), day]);
+    expect(order).toEqual(['day', 'range']);
   });
 });
 

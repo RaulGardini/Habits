@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { addDaysLocal, type LocalDate } from '@/core/dates/localDate';
 import { perfectStreak, type PerfectStreak } from '@/core/habits/perfectStreak';
 import { overallDailyScores } from '@/core/stats/stats';
-import { useEntriesInRange } from '@/stores/entriesStore';
+import { useFullHistory } from '@/features/habits/useStreaks';
 import { useHabitsStore } from '@/stores/habitsStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 
@@ -14,13 +14,9 @@ const HORIZON_DAYS = 1200;
 export function usePerfectStreak(today: LocalDate): PerfectStreak {
   const habits = useHabitsStore((state) => state.habits);
   const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
-  const earliest = habits.reduce(
-    (min, habit) => (habit.startDate < min ? habit.startDate : min),
-    today,
-  );
-  const from =
-    earliest < addDaysLocal(today, -HORIZON_DAYS) ? addDaysLocal(today, -HORIZON_DAYS) : earliest;
-  const entries = useEntriesInRange(from, today);
+  const { from: earliest, entries } = useFullHistory(today);
+  const horizon = addDaysLocal(today, -HORIZON_DAYS);
+  const from = earliest < horizon ? horizon : earliest;
 
   return useMemo(() => {
     if (!entries) return { current: 0, longest: 0, startedOn: null };

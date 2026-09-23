@@ -10,35 +10,120 @@ export type DayEntries = Record<string, HabitEntry | undefined>;
 
 interface EntriesState {
   byDate: Record<LocalDate, DayEntries | undefined>;
-  /** Incremented after every change; range hooks refetch when it changes. */
+  /**
+   * Loaded date ranges (`from|to` → entries ordered by date), shared by every screen that asks
+   * for the same range. Kept up to date in memory on each save, so a check never refetches
+   * years of history; dropped by `reset()`.
+   */
+  ranges: Record<string, HabitEntry[] | undefined>;
+  /** Incremented after every change (sync, widgets and per-habit history listen to it). */
   version: number;
   loadDate(date: LocalDate): Promise<void>;
+  loadRange(from: LocalDate, to: LocalDate): Promise<void>;
   /**
    * Saves (or removes, with `null`) the entry of a habit on a day. Optimistic: the UI updates
    * immediately and rolls back if persisting fails.
    */
   save(habitId: string, date: LocalDate, next: EntryInput | null): Promise<void>;
-  /** Drops cached data (after an import or "delete all"). */
+  /** Drops cached data (after an import, a sync pull or "delete all"). */
   reset(): void;
 }
 
 const EMPTY: DayEntries = {};
+/** Ranges kept in memory (the oldest loaded is dropped first). */
+const MAX_RANGES = 12;
+
+const rangeKey = (from: LocalDate, to: LocalDate) => `${from}|${to}`;
+
+/** Loads in flight, so concurrent requests for the same data share one query. */
+const inflightRanges = new Map<string, Promise<void>>();
+const inflightDays = new Map<LocalDate, Promise<void>>();
+
+/** `entries` with the entry of (habitId, date) replaced (or removed with `undefined`). */
+function patchRange(
+  entries: HabitEntry[],
+  habitId: string,
+  date: LocalDate,
+  entry: HabitEntry | undefined,
+): HabitEntry[] {
+  const kept = entries.filter((e) => !(e.habitId === habitId && e.date === date));
+  if (!entry) return kept;
+  const index = kept.findIndex((e) => e.date > date);
+  kept.splice(index === -1 ? kept.length : index, 0, entry);
+  return kept;
+}
 
 export const useEntriesStore = create<EntriesState>()((set, get) => {
+  /** Updates the day cache and every loaded range containing that day. */
   const setEntry = (date: LocalDate, habitId: string, entry: HabitEntry | undefined) =>
-    set((state) => ({
-      byDate: { ...state.byDate, [date]: { ...state.byDate[date], [habitId]: entry } },
-    }));
+    set((state) => {
+      const ranges = { ...state.ranges };
+      for (const [key, entries] of Object.entries(state.ranges)) {
+        const [from = '', to = ''] = key.split('|');
+        if (entries && date >= from && date <= to) {
+          ranges[key] = patchRange(entries, habitId, date, entry);
+        }
+      }
+      return {
+        byDate: { ...state.byDate, [date]: { ...state.byDate[date], [habitId]: entry } },
+        ranges,
+      };
+    });
 
   return {
     byDate: {},
+    ranges: {},
     version: 0,
 
-    async loadDate(date) {
-      const entries = await getRepositories().entries.listByDate(date);
-      const day: DayEntries = {};
-      for (const entry of entries) day[entry.habitId] = entry;
-      set((state) => ({ byDate: { ...state.byDate, [date]: day } }));
+    loadDate(date) {
+      const pending = inflightDays.get(date);
+      if (pending) return pending;
+      const version = get().version;
+      const load = (async () => {
+        const entries = await getRepositories().entries.listByDate(date);
+        // A save or reset happened meanwhile: this result may be stale, load again.
+        if (get().version !== version) {
+          inflightDays.delete(date);
+          return get().loadDate(date);
+        }
+        const day: DayEntries = {};
+        for (const entry of entries) day[entry.habitId] = entry;
+        set((state) => ({ byDate: { ...state.byDate, [date]: day } }));
+      })().finally(() => {
+        if (inflightDays.get(date) === load) inflightDays.delete(date);
+      });
+      inflightDays.set(date, load);
+      return load;
+    },
+
+    loadRange(from, to) {
+      const key = rangeKey(from, to);
+      const pending = inflightRanges.get(key);
+      if (pending) return pending;
+      const load = (async () => {
+        // The database handles one query at a time: let the day on screen load first instead
+        // of queueing it behind a history of tens of thousands of rows.
+        await Promise.allSettled([...inflightDays.values()]);
+        const version = get().version;
+        const entries = await getRepositories().entries.listByRange(from, to);
+        // A save or reset happened meanwhile: this result may be stale, load again.
+        if (get().version !== version) {
+          inflightRanges.delete(key);
+          return get().loadRange(from, to);
+        }
+        set((state) => {
+          const ranges = { ...state.ranges, [key]: entries };
+          const keys = Object.keys(ranges);
+          for (const old of keys.slice(0, Math.max(0, keys.length - MAX_RANGES))) {
+            delete ranges[old];
+          }
+          return { ranges };
+        });
+      })().finally(() => {
+        if (inflightRanges.get(key) === load) inflightRanges.delete(key);
+      });
+      inflightRanges.set(key, load);
+      return load;
     },
 
     async save(habitId, date, next) {
@@ -75,7 +160,7 @@ export const useEntriesStore = create<EntriesState>()((set, get) => {
     },
 
     reset() {
-      set((state) => ({ byDate: {}, version: state.version + 1 }));
+      set((state) => ({ byDate: {}, ranges: {}, version: state.version + 1 }));
     },
   };
 });
@@ -101,28 +186,19 @@ export function useDayEntries(date: LocalDate): { entries: DayEntries; loaded: b
 }
 
 /**
- * Entries in an inclusive date range, refetched whenever entries change.
- * `null` while loading the first time.
+ * Entries in an inclusive date range (ordered by date), shared between screens and kept in
+ * sync with saves. `null` while loading the first time.
  */
 export function useEntriesInRange(from: LocalDate, to: LocalDate): HabitEntry[] | null {
-  const version = useEntriesStore((state) => state.version);
-  const [result, setResult] = useState<{ key: string; entries: HabitEntry[] } | null>(null);
-  const key = `${from}|${to}`;
-
+  const entries = useEntriesStore((state) => state.ranges[rangeKey(from, to)]);
+  const loadRange = useEntriesStore((state) => state.loadRange);
+  const loaded = entries !== undefined;
   useEffect(() => {
-    let cancelled = false;
-    getRepositories()
-      .entries.listByRange(from, to)
-      .then((entries) => {
-        if (!cancelled) setResult({ key, entries });
-      })
-      .catch((error: unknown) => console.error('Failed to load entries', error));
-    return () => {
-      cancelled = true;
-    };
-  }, [from, to, key, version]);
-
-  return result?.key === key ? result.entries : null;
+    if (!loaded) {
+      loadRange(from, to).catch((error: unknown) => console.error('Failed to load entries', error));
+    }
+  }, [from, to, loaded, loadRange]);
+  return entries ?? null;
 }
 
 /** Full history of one habit, refetched whenever entries change. */
