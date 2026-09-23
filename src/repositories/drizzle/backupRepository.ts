@@ -1,4 +1,4 @@
-import { eq, getTableColumns, gt } from 'drizzle-orm';
+import { eq, getTableColumns, inArray, lte } from 'drizzle-orm';
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core';
 
 import {
@@ -17,8 +17,11 @@ import {
   habitReminders,
   habits,
   settings,
+  syncOutbox,
+  syncPause,
   tasks,
 } from '@/db/schema';
+import { LOCAL_ONLY_SETTINGS, planRemoteApply } from '@/core/sync/sync';
 
 import type { BackupRepository } from '../types';
 
@@ -65,17 +68,111 @@ export function createDrizzleBackupRepository(db: Database): BackupRepository {
       return result;
     },
 
-    async exportChangedSince(since) {
-      const result = {} as Record<BackupTable, BackupRow[]>;
-      for (const name of IMPORT_ORDER) {
-        const table = TABLES[name];
-        const updatedAt = getTableColumns(table).updatedAt as SQLiteColumn;
-        const query = db.select().from(table);
-        result[name] = (await (since === null
-          ? query
-          : query.where(gt(updatedAt, since)))) as BackupRow[];
+    async pendingChanges() {
+      const queued = await db.select().from(syncOutbox);
+      const tables = Object.fromEntries(
+        IMPORT_ORDER.map((name) => [name, []]),
+      ) as unknown as Record<BackupTable, BackupRow[]>;
+      let upTo = 0;
+      const keysByTable = new Map<BackupTable, string[]>();
+      for (const { seq, tableName, rowKey } of queued) {
+        upTo = Math.max(upTo, seq);
+        if (!(tableName in TABLES)) continue;
+        const name = tableName as BackupTable;
+        keysByTable.set(name, [...(keysByTable.get(name) ?? []), rowKey]);
       }
-      return result;
+      for (const [name, keys] of keysByTable) {
+        const table = TABLES[name];
+        const idColumn = getTableColumns(table)[identity(name).column] as SQLiteColumn;
+        for (let i = 0; i < keys.length; i += 500) {
+          const rows = (await db
+            .select()
+            .from(table)
+            .where(inArray(idColumn, keys.slice(i, i + 500)))) as BackupRow[];
+          tables[name].push(...rows);
+        }
+      }
+      return { upTo, tables };
+    },
+
+    async markPushed(upTo) {
+      await db.delete(syncOutbox).where(lte(syncOutbox.seq, upTo));
+    },
+
+    async enqueueAll() {
+      await db.transaction(async (tx) => {
+        for (const name of IMPORT_ORDER) {
+          const table = TABLES[name];
+          const idColumn = getTableColumns(table)[identity(name).column] as SQLiteColumn;
+          const rows = (await tx.select({ key: idColumn }).from(table)) as { key: string }[];
+          const keys = rows
+            .map((row) => String(row.key))
+            .filter((key) => name !== 'settings' || !LOCAL_ONLY_SETTINGS.has(key));
+          for (let i = 0; i < keys.length; i += 500) {
+            await tx
+              .insert(syncOutbox)
+              .values(keys.slice(i, i + 500).map((rowKey) => ({ tableName: name, rowKey })))
+              .onConflictDoNothing();
+          }
+        }
+      });
+    },
+
+    async applyRemote(tables) {
+      const summary: ImportSummary = { inserted: 0, updated: 0, skipped: 0 };
+      await db.transaction(async (tx) => {
+        // Rows written here came from the cloud: the outbox triggers must not queue them back.
+        await tx.insert(syncPause).values({ id: 1 }).onConflictDoNothing();
+        const pending = new Set(
+          (await tx.select().from(syncOutbox)).map((row) => `${row.tableName}|${row.rowKey}`),
+        );
+        let habitIds: Set<string> | null = null;
+        for (const name of IMPORT_ORDER) {
+          let incoming = tables[name];
+          if (incoming.length === 0) continue;
+          const table = TABLES[name];
+          const id = identity(name).column;
+          const idColumn = getTableColumns(table)[id] as SQLiteColumn;
+          // Children of habits that are not in the database would violate the foreign key.
+          if (name === 'habitEntries' || name === 'habitReminders') {
+            habitIds ??= new Set(
+              ((await tx.select({ id: habits.id }).from(habits)) as { id: string }[]).map(
+                (row) => row.id,
+              ),
+            );
+            const known = habitIds;
+            const before = incoming.length;
+            incoming = incoming.filter((row) => known.has(String(row.habitId)));
+            summary.skipped += before - incoming.length;
+          }
+          const existing = (await tx.select().from(table)) as BackupRow[];
+          const plan = planRemoteApply(
+            existing,
+            incoming,
+            mergeKey(name),
+            (row) => pending.has(`${name}|${String(row[id])}`),
+            id,
+          );
+          summary.skipped += plan.skipped;
+          for (const row of plan.toInsert) {
+            await tx.insert(table).values(sanitize(table, row) as never);
+            summary.inserted += 1;
+          }
+          for (const { existing: current, incoming: row } of plan.toUpdate) {
+            // Keep the local identity (ids may differ when matched by a natural key).
+            const values = sanitize(table, row);
+            delete values[id];
+            await tx
+              .update(table)
+              .set(values as never)
+              .where(eq(idColumn, current[id] as string));
+            summary.updated += 1;
+          }
+          if (name === 'habits') habitIds = null;
+        }
+        await tx.delete(syncPause);
+      });
+      return summary;
     },
 
     async importMerge(tables) {
@@ -126,6 +223,7 @@ export function createDrizzleBackupRepository(db: Database): BackupRepository {
         for (const name of [...IMPORT_ORDER].reverse()) {
           await tx.delete(TABLES[name]);
         }
+        await tx.delete(syncOutbox);
       });
     },
   };

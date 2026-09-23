@@ -5,16 +5,15 @@
 --   user_id            owner (Row Level Security: each user only sees their rows)
 --   server_updated_at  set by the server on every write; clients pull rows changed after
 --                      their last cursor, so device clocks never decide what to download.
--- Conflicts are resolved last-write-wins by the client `updated_at` (see lww_guard).
+-- Conflicts are resolved last-write-wins by the SERVER clock: the last write to reach the
+-- server wins (see lww_guard). Device clocks can be wrong (a phone set to 2030 would win
+-- every conflict forever), so the client `updated_at` is informative only. Clients keep their
+-- unsent local changes over pulled rows and push them next, so every device converges.
 
 create or replace function public.lww_guard() returns trigger
 language plpgsql as $$
 begin
   if tg_op = 'UPDATE' then
-    -- Keep the stored row when the incoming change is not newer.
-    if new.updated_at <= old.updated_at then
-      return null;
-    end if;
     new.user_id := old.user_id;
   end if;
   new.server_updated_at := clock_timestamp();

@@ -273,12 +273,8 @@ function BackupActions() {
     try {
       const summary = await importBackup();
       if (summary) {
-        // Imported rows may be older than the last push: send everything on the next sync.
-        const sync = useSyncStore.getState();
-        if (sync.userId) {
-          await sync.requestFullSync();
-          void sync.syncNow();
-        }
+        // Imported rows were queued for the cloud by the database (sync outbox).
+        void useSyncStore.getState().syncNow();
         setResult(
           t('Importação concluída: {inserted} novos, {updated} atualizados, {skipped} ignorados.', {
             inserted: summary.inserted,

@@ -56,13 +56,66 @@ export function pushableRows(table: BackupTable, rows: readonly BackupRow[]): Ba
 }
 
 export interface SyncState {
-  /** Local instant when the last successful push started (rows updated after it are pushed). */
-  lastPushedAt: string | null;
+  /** Account these cursors belong to (another account on this device pushes everything). */
+  userId?: string | null;
   /** Per table: highest `server_updated_at` already pulled. */
   cursors: Partial<Record<BackupTable, string>>;
 }
 
-export const INITIAL_SYNC_STATE: SyncState = { lastPushedAt: null, cursors: {} };
+export const INITIAL_SYNC_STATE: SyncState = { cursors: {} };
+
+export interface RemoteApplyPlan<T> {
+  toInsert: T[];
+  /** Local rows to overwrite (the local identity is kept when matched by a natural key). */
+  toUpdate: { existing: T; incoming: T }[];
+  skipped: number;
+}
+
+/**
+ * Conflict rule of the cloud sync: the server's order decides (last write to *reach the
+ * server* wins, by `server_updated_at`), never the device clocks, which can be wrong.
+ *
+ * `incoming` are rows pulled for one table, in server order; for the same key the later one
+ * wins. A local row with a change still waiting to be pushed (`isPending`) is kept: it goes up
+ * on the next push and, arriving later, wins on every device. Rows identical to the local one
+ * (e.g. our own push coming back) are skipped.
+ */
+export function planRemoteApply<T extends Record<string, unknown>>(
+  existing: readonly T[],
+  incoming: readonly T[],
+  keyOf: (row: T) => string,
+  isPending: (row: T) => boolean,
+  identity: string,
+): RemoteApplyPlan<T> {
+  const local = new Map(existing.map((row) => [keyOf(row), row]));
+  const latest = new Map<string, T>();
+  for (const row of incoming) latest.set(keyOf(row), row);
+  const plan: RemoteApplyPlan<T> = {
+    toInsert: [],
+    toUpdate: [],
+    skipped: incoming.length - latest.size,
+  };
+  for (const [key, row] of latest) {
+    const current = local.get(key);
+    if (!current) plan.toInsert.push(row);
+    else if (isPending(current) || sameContent(current, row, identity)) plan.skipped += 1;
+    else plan.toUpdate.push({ existing: current, incoming: row });
+  }
+  return plan;
+}
+
+function sameContent(a: Record<string, unknown>, b: Record<string, unknown>, identity: string) {
+  return Object.keys(b).every(
+    (column) => column === identity || (a[column] ?? null) === (b[column] ?? null),
+  );
+}
+
+/** Delay before the n-th retry (0-based) of a failed sync: exponential, capped, with jitter. */
+export function retryDelayMs(attempt: number, random: () => number = Math.random): number {
+  const base = Math.min(5 * 60_000, 2_000 * 2 ** Math.max(0, attempt));
+  // ±20% so many devices coming back online at once do not retry in lockstep.
+  return Math.round(base * (0.8 + random() * 0.4));
+}
 
 /** Splits rows into chunks (PostgREST requests should stay small). */
 export function chunk<T>(items: readonly T[], size: number): T[][] {

@@ -179,6 +179,29 @@ export const goals = sqliteTable(
   (t) => [index('goals_scope_period_idx').on(t.scope, t.period)],
 );
 
+/**
+ * Local changes not pushed to the cloud yet: one row per changed row, filled by SQLite triggers
+ * in the same transaction as the change (migration 0005), so it survives the app being closed
+ * and never depends on the device clock. `seq` grows with every change (a row changed again
+ * gets a new `seq`), so a push only clears what it actually sent.
+ */
+export const syncOutbox = sqliteTable(
+  'sync_outbox',
+  {
+    seq: integer('seq').primaryKey({ autoIncrement: true }),
+    /** Backup table name (`habitEntries`…). */
+    tableName: text('table_name').notNull(),
+    /** `id`, or `key` for settings. */
+    rowKey: text('row_key').notNull(),
+  },
+  (t) => [uniqueIndex('sync_outbox_row_uq').on(t.tableName, t.rowKey)],
+);
+
+/** While it has a row, the outbox triggers are off (applying rows pulled from the cloud). */
+export const syncPause = sqliteTable('sync_pause', {
+  id: integer('id').primaryKey(),
+});
+
 export type HabitRow = typeof habits.$inferSelect;
 export type HabitEntryRow = typeof habitEntries.$inferSelect;
 export type TaskRow = typeof tasks.$inferSelect;

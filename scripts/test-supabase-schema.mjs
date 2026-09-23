@@ -43,15 +43,13 @@ const upsert = `
     '2026-09-01T00:00:00.000Z', $2)
   on conflict (user_id, id) do update set name = excluded.name, updated_at = excluded.updated_at`;
 
-// Insert, then an older write is ignored and a newer one wins.
-await as(A, upsert, ['Ler', '2026-09-10T10:00:00.000Z']);
-await as(A, upsert, ['Velho', '2026-09-09T10:00:00.000Z']);
+// Last write to reach the server wins, whatever the client clocks say.
+await as(A, upsert, ['Ler', '2030-01-01T00:00:00.000Z']); // device clock years ahead
 let rows = (await as(A, 'select name, server_updated_at from public.habits')).rows;
-assert.equal(rows[0].name, 'Ler', 'older update must not overwrite');
 const firstServerTime = rows[0].server_updated_at;
 await as(A, upsert, ['Ler 20 páginas', '2026-09-11T10:00:00.000Z']);
 rows = (await as(A, 'select name, server_updated_at from public.habits')).rows;
-assert.equal(rows[0].name, 'Ler 20 páginas', 'newer update must win');
+assert.equal(rows[0].name, 'Ler 20 páginas', 'the later write must win, not the later clock');
 assert.ok(rows[0].server_updated_at > firstServerTime, 'server_updated_at must advance');
 
 // Isolation: user B does not see A's rows and has an independent row with the same id.
@@ -95,4 +93,6 @@ const left = await db.query(`select
   (select count(*) from public.habits where user_id = '${B}')::int as other`);
 assert.deepEqual(left.rows[0], { habits: 0, settings: 0, backups: 0, users: 0, other: 1 });
 
-console.log('supabase/schema.sql OK: LWW, RLS isolation, cloud backups and account deletion');
+console.log(
+  'supabase/schema.sql OK: server-time LWW, RLS isolation, cloud backups and account deletion',
+);

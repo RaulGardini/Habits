@@ -91,8 +91,20 @@ export interface GoalRepository {
 export interface BackupRepository {
   /** Every row of every table, including soft-deleted rows. */
   exportAll(): Promise<Record<BackupTable, BackupRow[]>>;
-  /** Rows (incl. soft-deleted) with `updatedAt` after `since` — or every row when null. */
-  exportChangedSince(since: string | null): Promise<Record<BackupTable, BackupRow[]>>;
+  /**
+   * Current state of every row changed locally and not pushed yet (the sync outbox, filled by
+   * database triggers). `upTo` identifies what was read, for `markPushed`.
+   */
+  pendingChanges(): Promise<{ upTo: number; tables: Record<BackupTable, BackupRow[]> }>;
+  /** Clears the outbox up to `upTo` (changes made after `pendingChanges` stay queued). */
+  markPushed(upTo: number): Promise<void>;
+  /** Queues every row for the next push (first sync of this device with an account). */
+  enqueueAll(): Promise<void>;
+  /**
+   * Applies rows pulled from the cloud, in server order (see `planRemoteApply`): the server
+   * wins except over local changes still waiting to be pushed. Not queued for push again.
+   */
+  applyRemote(tables: Record<BackupTable, BackupRow[]>): Promise<ImportSummary>;
   /** Merges a backup into the database (last write wins by `updatedAt`). */
   importMerge(tables: Record<BackupTable, BackupRow[]>): Promise<ImportSummary>;
   /** Permanently deletes all data (user-initiated "delete all data"). */

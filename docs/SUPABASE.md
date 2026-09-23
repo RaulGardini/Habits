@@ -10,9 +10,13 @@ A sincronização é **opcional**. Sem configurar nada, o app funciona 100% offl
   **Row Level Security**: cada usuário só enxerga e altera as próprias linhas.
 - O app sincroniza ao abrir, ao voltar para o primeiro plano, alguns segundos após qualquer
   alteração e pelo botão "Sincronizar agora".
-- Conflitos: **vence a alteração mais recente** (`updated_at`). O servidor recusa escritas mais
-  antigas (gatilho `lww_guard`); o download usa `server_updated_at`, então relógios errados nos
-  aparelhos não fazem perder alterações.
+- Conflitos: **vence a última alteração a chegar ao servidor** (`server_updated_at`, relógio do
+  servidor). O relógio do celular não decide nada: um aparelho com a hora errada não "ganha"
+  para sempre nem perde alterações. Alterações locais ainda não enviadas ficam numa fila no
+  próprio banco (`sync_outbox`), sobrevivem ao app ser fechado e são enviadas na próxima rodada.
+- Falhas de rede: nova tentativa com espera exponencial (2 s, 4 s, 8 s… até 5 min).
+- **Depois de atualizar o app**, rode de novo o `supabase/schema.sql` no SQL Editor (o gatilho
+  `lww_guard` mudou para a regra acima).
 - Exclusões são sincronizadas (soft delete). "Apagar todos os dados" com conta conectada apaga
   também a nuvem. "Excluir conta" apaga a conta e todos os dados da nuvem (exigência da App Store).
 

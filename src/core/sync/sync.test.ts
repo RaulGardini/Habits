@@ -7,6 +7,8 @@ import {
   toRemoteRow,
   toSnakeCase,
   validateCredentials,
+  planRemoteApply,
+  retryDelayMs,
 } from './sync';
 
 describe('case conversion', () => {
@@ -54,5 +56,72 @@ describe('credentials and errors', () => {
     expect(authErrorMessage('Invalid login credentials')).toBe('E-mail ou senha incorretos.');
     expect(authErrorMessage('User already registered')).toContain('Já existe');
     expect(authErrorMessage('something else')).toContain('Tente novamente');
+  });
+});
+
+describe('planRemoteApply', () => {
+  type Row = { id: string; name: string; updatedAt: string };
+  const row = (id: string, name: string, updatedAt = '2026-01-01'): Row => ({
+    id,
+    name,
+    updatedAt,
+  });
+  const byId = (r: Row) => r.id;
+  const never = () => false;
+
+  it('lets the server order win, whatever the device clocks say', () => {
+    // The incoming row has an OLDER client timestamp but reached the server later.
+    const plan = planRemoteApply(
+      [row('a', 'local', '2030-01-01')],
+      [row('a', 'server', '2020-01-01')],
+      byId,
+      never,
+      'id',
+    );
+    expect(plan.toUpdate).toEqual([
+      { existing: row('a', 'local', '2030-01-01'), incoming: row('a', 'server', '2020-01-01') },
+    ]);
+  });
+
+  it('keeps the last of several versions of the same row', () => {
+    const plan = planRemoteApply(
+      [],
+      [row('a', 'first'), row('b', 'b'), row('a', 'second')],
+      byId,
+      never,
+      'id',
+    );
+    expect(plan.toInsert.map((r) => r.name)).toEqual(['second', 'b']);
+    expect(plan.skipped).toBe(1);
+  });
+
+  it('keeps local rows with changes waiting to be pushed', () => {
+    const plan = planRemoteApply(
+      [row('a', 'offline edit')],
+      [row('a', 'server')],
+      byId,
+      (r) => r.id === 'a',
+      'id',
+    );
+    expect(plan).toEqual({ toInsert: [], toUpdate: [], skipped: 1 });
+  });
+
+  it('skips rows that did not change (our own push coming back)', () => {
+    const plan = planRemoteApply([row('a', 'same')], [row('a', 'same')], byId, never, 'id');
+    expect(plan).toEqual({ toInsert: [], toUpdate: [], skipped: 1 });
+  });
+});
+
+describe('retryDelayMs', () => {
+  it('doubles from 2 s up to 5 min', () => {
+    const middle = () => 0.5;
+    expect([0, 1, 2, 3, 10, 50].map((n) => retryDelayMs(n, middle))).toEqual([
+      2_000, 4_000, 8_000, 16_000, 300_000, 300_000,
+    ]);
+  });
+
+  it('adds ±20% jitter', () => {
+    expect(retryDelayMs(0, () => 0)).toBe(1_600);
+    expect(retryDelayMs(0, () => 1)).toBe(2_400);
   });
 });

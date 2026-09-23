@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 
-import { INITIAL_SYNC_STATE, authErrorMessage, type SyncState } from '@/core/sync/sync';
-import { getRepositories } from '@/repositories';
+import {
+  INITIAL_SYNC_STATE,
+  authErrorMessage,
+  retryDelayMs,
+  type SyncState,
+} from '@/core/sync/sync';
+import { getRepositories, type BackupRepository } from '@/repositories';
 import { supabase, syncConfigured } from '@/sync/client';
 import { runSync } from '@/sync/engine';
 import { createSupabaseRemote } from '@/sync/supabaseRemote';
@@ -28,8 +33,6 @@ interface SyncStoreState {
   signOut(): Promise<void>;
   /** Pushes local changes and pulls remote ones. Safe to call often (runs one at a time). */
   syncNow(): Promise<void>;
-  /** Next sync pushes every local row (after a backup import brought in old rows). */
-  requestFullSync(): Promise<void>;
   /** Deletes the user's rows in the cloud (used by "delete all data"). */
   deleteCloudData(): Promise<void>;
   /** Deletes the account and its cloud data. Local data stays on the device. */
@@ -45,6 +48,32 @@ async function saveSyncState(state: SyncState | null): Promise<void> {
 }
 
 let running: Promise<void> | null = null;
+let again = false;
+let failures = 0;
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+function stopRetrying(): void {
+  if (retryTimer) clearTimeout(retryTimer);
+  retryTimer = null;
+  failures = 0;
+}
+
+/**
+ * Sync state for the signed-in account. The first sync of this device with an account (or with
+ * another account than last time) queues every local row, so that account gets all of it.
+ * States saved by the previous engine (cursors but no account) keep going as they were: their
+ * unsent changes were queued by migration 0005.
+ */
+async function accountState(backup: BackupRepository, userId: string): Promise<SyncState> {
+  const state = await loadSyncState();
+  if (state.userId === userId) return state;
+  const legacy = state.userId === undefined && Object.keys(state.cursors).length > 0;
+  if (legacy) return { ...state, userId };
+  await backup.enqueueAll();
+  const fresh: SyncState = { userId, cursors: {} };
+  await saveSyncState(fresh);
+  return fresh;
+}
 
 export const useSyncStore = create<SyncStoreState>()((set, get) => {
   const remote = () => {
@@ -78,8 +107,6 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
       });
       if (error) return authErrorMessage(error.message);
       set({ userId: data.user.id, email: data.user.email ?? email.trim() });
-      // A different account may have been used before on this device: push everything.
-      await saveSyncState(null);
       await get().syncNow();
       return null;
     },
@@ -90,25 +117,33 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
       if (error) return authErrorMessage(error.message);
       if (!data.session) return 'confirm';
       set({ userId: data.session.user.id, email: data.session.user.email ?? email.trim() });
-      await saveSyncState(null);
       await get().syncNow();
       return null;
     },
 
     async signOut() {
+      stopRetrying();
       await supabase?.auth.signOut();
-      await saveSyncState(null);
       set({ userId: null, email: null, status: 'idle', lastSyncAt: null, error: null });
     },
 
     syncNow() {
-      if (!supabase || !get().userId) return Promise.resolve();
-      running ??= (async () => {
+      const userId = get().userId;
+      if (!supabase || !userId) return Promise.resolve();
+      if (running) {
+        // Changes made during this round are pushed by another one right after it.
+        again = true;
+        return running;
+      }
+      running = (async () => {
         set({ status: 'syncing', error: null });
         try {
-          const result = await runSync(getRepositories().backup, remote(), await loadSyncState());
+          const { backup } = getRepositories();
+          const state = await accountState(backup, userId);
+          const result = await runSync(backup, remote(), state);
           await saveSyncState(result.state);
           if (result.applied.inserted + result.applied.updated > 0) await reloadAll();
+          stopRetrying();
           set({ status: 'idle', lastSyncAt: new Date().toISOString() });
         } catch (error) {
           console.error('Sync failed', error);
@@ -116,16 +151,18 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
             status: 'error',
             error: authErrorMessage(error instanceof Error ? error.message : String(error)),
           });
+          // Offline, server down…: try again later, backing off (2 s, 4 s, 8 s… up to 5 min).
+          retryTimer = setTimeout(() => void get().syncNow(), retryDelayMs(failures));
+          failures += 1;
         } finally {
           running = null;
+          if (again) {
+            again = false;
+            void get().syncNow();
+          }
         }
       })();
       return running;
-    },
-
-    async requestFullSync() {
-      const state = await loadSyncState();
-      await saveSyncState({ ...state, lastPushedAt: null });
     },
 
     async deleteCloudData() {

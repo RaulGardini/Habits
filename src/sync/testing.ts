@@ -2,8 +2,8 @@ import type { RemoteStore } from './engine';
 
 /**
  * In-memory stand-in for the Supabase tables of ONE user, with the same rules as
- * supabase/schema.sql: last-write-wins guard on `updated_at` and a monotonic
- * `server_updated_at` set on every accepted write. Test-only.
+ * supabase/schema.sql: every write is accepted (the last to arrive wins, whatever the client
+ * `updated_at` says) and gets a monotonic `server_updated_at`. Test-only.
  */
 export function createFakeRemote(): RemoteStore & {
   rows(table: string): Record<string, unknown>[];
@@ -32,10 +32,7 @@ export function createFakeRemote(): RemoteStore & {
       check();
       const table = tableOf(name);
       for (const row of rows) {
-        const key = keyOf(name, row);
-        const existing = table.get(key);
-        if (existing && String(row.updated_at) <= String(existing.updated_at)) continue;
-        table.set(key, { ...row, user_id: 'user', server_updated_at: serverTime() });
+        table.set(keyOf(name, row), { ...row, user_id: 'user', server_updated_at: serverTime() });
       }
     },
     async pull(name, since, inclusive, limit) {

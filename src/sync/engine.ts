@@ -78,28 +78,28 @@ async function pullTable(
 }
 
 /**
- * One sync round: push local changes since the last push, then pull remote changes since the
- * per-table cursors and merge them locally (last-write-wins by `updatedAt`, same rules as the
- * JSON backup import). Idempotent: running it twice in a row pushes/pulls nothing new.
+ * One sync round: push the local changes waiting in the outbox, then pull remote changes since
+ * the per-table cursors and apply them (the server's order wins, see `planRemoteApply`).
+ * Idempotent: running it twice in a row pushes/pulls nothing new, and a round interrupted at
+ * any point (network, app closed) is simply redone by the next one — the outbox is only cleared
+ * once the server accepted the rows, and cursors only move with applied rows.
  */
 export async function runSync(
   local: BackupRepository,
   remote: RemoteStore,
   state: SyncState,
-  now: () => string = () => new Date().toISOString(),
   pageSize = PULL_PAGE,
 ): Promise<SyncResult> {
-  const startedAt = now();
-
-  const changed = await local.exportChangedSince(state.lastPushedAt);
+  const pending = await local.pendingChanges();
   let pushed = 0;
   for (const table of SYNC_ORDER) {
-    const rows = pushableRows(table, changed[table]);
+    const rows = pushableRows(table, pending.tables[table]);
     for (const part of chunk(rows, PUSH_CHUNK)) {
       await remote.upsert(REMOTE_TABLES[table], part.map(toRemoteRow));
       pushed += part.length;
     }
   }
+  await local.markPushed(pending.upTo);
 
   const incoming = Object.fromEntries(BACKUP_TABLES.map((t) => [t, []])) as unknown as Record<
     BackupTable,
@@ -114,7 +114,7 @@ export async function runSync(
     if (result.cursor !== null) cursors[table] = result.cursor;
   }
   const applied =
-    pulled > 0 ? await local.importMerge(incoming) : { inserted: 0, updated: 0, skipped: 0 };
+    pulled > 0 ? await local.applyRemote(incoming) : { inserted: 0, updated: 0, skipped: 0 };
 
-  return { state: { lastPushedAt: startedAt, cursors }, pushed, pulled, applied };
+  return { state: { ...state, cursors }, pushed, pulled, applied };
 }
