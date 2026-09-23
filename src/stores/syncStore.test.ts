@@ -12,6 +12,7 @@ jest.mock('expo-crypto', () => {
   return { randomUUID: () => `uuid-${++n}` };
 });
 jest.mock('@/sync/client', () => ({ supabase: { auth: {} }, syncConfigured: true }));
+jest.mock('@/lib/authStorage', () => ({ authStorage: { removeItem: async () => undefined } }));
 let mockRemote: ReturnType<typeof createFakeRemote>;
 const mockNet = { failures: 0, calls: 0 };
 jest.mock('@/sync/supabaseRemote', () => ({

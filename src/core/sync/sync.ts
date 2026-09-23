@@ -124,23 +124,27 @@ export function chunk<T>(items: readonly T[], size: number): T[][] {
   return chunks;
 }
 
-/** Friendly pt-BR message for Supabase auth errors. */
+/** Friendly pt-BR message for Supabase auth/sync errors. */
 export function authErrorMessage(message: string): string {
   const text = message.toLowerCase();
   if (text.includes('invalid login credentials')) return t('E-mail ou senha incorretos.');
   if (text.includes('email not confirmed')) return t('Confirme seu e-mail antes de entrar.');
   if (text.includes('already registered')) return t('Já existe uma conta com este e-mail.');
-  if (text.includes('password should be at least'))
-    return t('A senha precisa ter pelo menos 6 caracteres.');
-  if (text.includes('rate limit')) return t('Muitas tentativas. Aguarde alguns minutos.');
+  if (text.includes('should be different'))
+    return t('A nova senha precisa ser diferente da atual.');
+  if (text.includes('password') && /weak|pwned|leaked|known|at least/.test(text)) {
+    return t('Senha fraca. Use pelo menos 8 caracteres e evite senhas comuns.');
+  }
+  if (
+    text.includes('rate limit') ||
+    text.includes('too many') ||
+    text.includes('security purposes')
+  ) {
+    return t('Muitas tentativas. Aguarde alguns minutos.');
+  }
+  if (text.includes('jwt') || text.includes('refresh token')) {
+    return t('Sua sessão expirou. Entre de novo para voltar a sincronizar.');
+  }
   if (text.includes('network') || text.includes('fetch')) return t('Sem conexão com o servidor.');
   return t('Não foi possível concluir. Tente novamente.');
-}
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-export function validateCredentials(email: string, password: string): string | null {
-  if (!EMAIL_PATTERN.test(email.trim())) return t('Informe um e-mail válido.');
-  if (password.length < 6) return t('A senha precisa ter pelo menos 6 caracteres.');
-  return null;
 }

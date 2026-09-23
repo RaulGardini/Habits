@@ -6,7 +6,6 @@ import {
   toLocalRow,
   toRemoteRow,
   toSnakeCase,
-  validateCredentials,
   planRemoteApply,
   retryDelayMs,
 } from './sync';
@@ -46,12 +45,6 @@ describe('chunk', () => {
 });
 
 describe('credentials and errors', () => {
-  it('validates e-mail and password', () => {
-    expect(validateCredentials('a@b.co', '123456')).toBeNull();
-    expect(validateCredentials('nope', '123456')).toBeDefined();
-    expect(validateCredentials('a@b.co', '123')).toContain('6 caracteres');
-  });
-
   it('translates common Supabase auth errors', () => {
     expect(authErrorMessage('Invalid login credentials')).toBe('E-mail ou senha incorretos.');
     expect(authErrorMessage('User already registered')).toContain('Já existe');

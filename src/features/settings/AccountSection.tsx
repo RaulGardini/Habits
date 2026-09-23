@@ -1,9 +1,10 @@
 import { parseISO } from 'date-fns';
 import { formatWith, t } from '@/i18n/i18n';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { validateCredentials } from '@/core/sync/sync';
+import { MIN_PASSWORD_LENGTH, validateEmail, validateSignIn } from '@/core/auth/auth';
 import { useSyncStore } from '@/stores/syncStore';
 import { useTheme } from '@/theme/ThemeProvider';
 import { spacing } from '@/theme/tokens';
@@ -33,13 +34,16 @@ function SignInForm() {
   const { colors } = useTheme();
   const signIn = useSyncStore((state) => state.signIn);
   const signUp = useSyncStore((state) => state.signUp);
+  const requestPasswordReset = useSyncStore((state) => state.requestPasswordReset);
+  const notice = useSyncStore((state) => state.notice);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
 
   const run = async (mode: 'signIn' | 'signUp') => {
-    const invalid = validateCredentials(email, password);
+    // New passwords are checked by the store (rules + known leaks).
+    const invalid = mode === 'signIn' ? validateSignIn(email, password) : validateEmail(email);
     if (invalid) {
       setMessage({ text: invalid, error: true });
       return;
@@ -56,6 +60,17 @@ function SignInForm() {
     } else if (result) {
       setMessage({ text: result, error: true });
     }
+  };
+
+  const forgotPassword = async () => {
+    const invalid = validateEmail(email);
+    if (invalid) {
+      setMessage({ text: t('Digite seu e-mail acima para receber o link.'), error: true });
+      return;
+    }
+    setBusy(true);
+    setMessage(await requestPasswordReset(email));
+    setBusy(false);
   };
 
   return (
@@ -82,6 +97,14 @@ function SignInForm() {
         autoComplete="password"
         textContentType="password"
       />
+      <AppText variant="caption" tone="muted">
+        {t('Para criar conta: mínimo de {count} caracteres.', { count: MIN_PASSWORD_LENGTH })}
+      </AppText>
+      {notice && !message ? (
+        <AppText variant="caption" tone={colors.danger} accessibilityLiveRegion="polite">
+          {notice}
+        </AppText>
+      ) : null}
       {message ? (
         <AppText
           variant="caption"
@@ -98,6 +121,13 @@ function SignInForm() {
           icon="account-plus-outline"
           label={t('Criar conta')}
           onPress={() => run('signUp')}
+          disabled={busy}
+        />
+        <Button
+          variant="ghost"
+          icon="lock-question"
+          label={t('Esqueci minha senha')}
+          onPress={forgotPassword}
           disabled={busy}
         />
       </View>
@@ -128,10 +158,29 @@ function SignedIn({ email }: { email: string }) {
   const handleSignOut = async () => {
     const ok = await confirm({
       title: t('Sair da conta?'),
-      message: t('Seus dados continuam neste aparelho, mas deixam de sincronizar.'),
+      message: t(
+        'Os dados desta conta serão apagados deste aparelho. Eles continuam na nuvem e voltam quando você entrar de novo.',
+      ),
       confirmLabel: t('Sair'),
     });
-    if (ok) await signOut();
+    if (!ok) return;
+    try {
+      const result = await signOut();
+      if (!result) return;
+      // Some changes could not be sent (offline?): losing them needs a second yes.
+      const discard = await confirm({
+        title: t('Alterações não enviadas'),
+        message: t(
+          '{count} alterações ainda não chegaram à nuvem e serão perdidas se você sair agora. Conecte-se à internet e tente de novo, ou saia mesmo assim.',
+          { count: result.pending },
+        ),
+        confirmLabel: t('Sair e perder'),
+        destructive: true,
+      });
+      if (discard) await signOut({ discardPending: true });
+    } catch (err) {
+      showError(t('Não foi possível sair da conta.'), err);
+    }
   };
 
   const handleDelete = async () => {
@@ -168,6 +217,12 @@ function SignedIn({ email }: { email: string }) {
           label={t('Sincronizar agora')}
           onPress={() => void syncNow()}
           disabled={status === 'syncing'}
+        />
+        <Button
+          variant="secondary"
+          icon="lock-reset"
+          label={t('Alterar senha')}
+          onPress={() => router.push('/auth/new-password')}
         />
         <Button variant="secondary" icon="logout" label={t('Sair')} onPress={handleSignOut} />
         <Button

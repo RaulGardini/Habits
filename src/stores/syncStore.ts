@@ -1,17 +1,31 @@
 import { create } from 'zustand';
 
 import {
+  EMAIL_COOLDOWN_MS,
+  authLinkError,
+  formatWait,
+  parseAuthCallback,
+  signInCooldownMs,
+  validateNewPassword,
+} from '@/core/auth/auth';
+import { BACKUP_TABLES } from '@/core/backup/backup';
+import {
   INITIAL_SYNC_STATE,
   authErrorMessage,
+  pushableRows,
   retryDelayMs,
   type SyncState,
 } from '@/core/sync/sync';
+import { t } from '@/i18n/i18n';
+import { authRedirectUrl } from '@/lib/authLinks';
+import { authStorage } from '@/lib/authStorage';
+import { isPwnedPassword } from '@/lib/pwnedPasswords';
 import { getRepositories, type BackupRepository } from '@/repositories';
 import { supabase, syncConfigured } from '@/sync/client';
 import { runSync } from '@/sync/engine';
 import { createSupabaseRemote } from '@/sync/supabaseRemote';
 
-import { reloadAll } from './dataActions';
+import { deleteAllData, reloadAll } from './dataActions';
 
 const SYNC_STATE_KEY = 'syncState';
 
@@ -25,12 +39,25 @@ interface SyncStoreState {
   status: SyncStatus;
   lastSyncAt: string | null;
   error: string | null;
+  /** Shown on the sign-in form, e.g. when the session expired. */
+  notice: string | null;
   init(): Promise<void>;
-  /** Returns an error message, or null on success. */
+  /** Returns an error message, or null on success. Throttled after wrong passwords. */
   signIn(email: string, password: string): Promise<string | null>;
   /** Returns an error message, 'confirm' when the e-mail must be confirmed, or null. */
   signUp(email: string, password: string): Promise<string | null>;
-  signOut(): Promise<void>;
+  /** Sends a password reset link. Never reveals whether the account exists. */
+  requestPasswordReset(email: string): Promise<{ text: string; error: boolean }>;
+  /** Finishes an e-mail link (/auth/callback): an error message, or what the link was for. */
+  completeAuthLink(url: string): Promise<{ error: string } | { next: 'confirm' | 'reset' }>;
+  /** Sets a new password for the signed-in user. Returns an error message, or null. */
+  updatePassword(password: string): Promise<string | null>;
+  /**
+   * Signs out and clears this device: tokens and every local row (they stay in the cloud).
+   * Syncs first; when changes still could not be sent, returns their count and does nothing
+   * unless `discardPending` (the user accepted losing them).
+   */
+  signOut(options?: { discardPending?: boolean }): Promise<{ pending: number } | null>;
   /** Pushes local changes and pulls remote ones. Safe to call often (runs one at a time). */
   syncNow(): Promise<void>;
   /** Deletes the user's rows in the cloud (used by "delete all data"). */
@@ -48,6 +75,43 @@ async function saveSyncState(state: SyncState | null): Promise<void> {
 }
 
 let running: Promise<void> | null = null;
+/** Wrong passwords in a row, and until when sign-in is blocked (client-side throttling). */
+let signInFailures = 0;
+let signInBlockedUntil = 0;
+let lastEmailSentAt = 0;
+/** Set while the user signs out, so that SIGNED_OUT is not taken for an expired session. */
+let signingOut = false;
+
+/** Removes the persisted session even when the sign-out request cannot reach the server. */
+async function forgetSession(): Promise<void> {
+  if (!supabase) return;
+  signingOut = true;
+  try {
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    // supabase-js keeps the stored session when that request fails (offline): drop it here.
+    const key = (supabase.auth as unknown as { storageKey: string }).storageKey;
+    for (const suffix of ['', '-code-verifier', '-user'])
+      await authStorage.removeItem(key + suffix);
+  } finally {
+    signingOut = false;
+  }
+}
+
+/** Checks a new password: the rules first, then known data breaches (skipped offline). */
+async function newPasswordProblem(password: string, email: string): Promise<string | null> {
+  const invalid = validateNewPassword(password, email);
+  if (invalid) return invalid;
+  if (await isPwnedPassword(password)) {
+    return t('Esta senha apareceu em vazamentos de dados. Escolha outra.');
+  }
+  return null;
+}
+
+/** Message while the app must wait before asking the server for another e-mail. */
+function emailWait(): string | null {
+  const wait = lastEmailSentAt + EMAIL_COOLDOWN_MS - Date.now();
+  return wait > 0 ? formatWait(wait) : null;
+}
 let again = false;
 let failures = 0;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -89,42 +153,129 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
     status: 'idle',
     lastSyncAt: null,
     error: null,
+    notice: null,
 
     async init() {
       if (!supabase) return;
       const { data } = await supabase.auth.getSession();
       set({ userId: data.session?.user.id ?? null, email: data.session?.user.email ?? null });
-      supabase.auth.onAuthStateChange((_event, session) => {
+      supabase.auth.onAuthStateChange((event, session) => {
+        // The session ended by itself (refresh token expired or revoked): stop syncing and say
+        // so. Local data is untouched; signing in again resumes, pending changes included.
+        const expired = event === 'SIGNED_OUT' && !signingOut && get().userId !== null;
+        if (expired) stopRetrying();
         set({ userId: session?.user.id ?? null, email: session?.user.email ?? null });
+        if (expired) {
+          set({
+            status: 'idle',
+            error: null,
+            notice: t(
+              'Sua sessão expirou. Entre de novo para voltar a sincronizar — seus dados continuam neste aparelho.',
+            ),
+          });
+        }
       });
     },
 
     async signIn(email, password) {
-      if (!supabase) return 'Sincronização indisponível.';
+      if (!supabase) return t('Sincronização indisponível.');
+      const wait = signInBlockedUntil - Date.now();
+      if (wait > 0) return formatWait(wait);
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
-      if (error) return authErrorMessage(error.message);
-      set({ userId: data.user.id, email: data.user.email ?? email.trim() });
+      if (error) {
+        if (/invalid login credentials/i.test(error.message)) {
+          signInFailures += 1;
+          signInBlockedUntil = Date.now() + signInCooldownMs(signInFailures);
+        }
+        return authErrorMessage(error.message);
+      }
+      signInFailures = 0;
+      signInBlockedUntil = 0;
+      set({ userId: data.user.id, email: data.user.email ?? email.trim(), notice: null });
       await get().syncNow();
       return null;
     },
 
     async signUp(email, password) {
-      if (!supabase) return 'Sincronização indisponível.';
-      const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
+      if (!supabase) return t('Sincronização indisponível.');
+      const problem = emailWait() ?? (await newPasswordProblem(password, email));
+      if (problem) return problem;
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { emailRedirectTo: authRedirectUrl('confirm') },
+      });
       if (error) return authErrorMessage(error.message);
+      lastEmailSentAt = Date.now();
       if (!data.session) return 'confirm';
       set({ userId: data.session.user.id, email: data.session.user.email ?? email.trim() });
       await get().syncNow();
       return null;
     },
 
-    async signOut() {
+    async requestPasswordReset(email) {
+      if (!supabase) return { text: t('Sincronização indisponível.'), error: true };
+      const wait = emailWait();
+      if (wait) return { text: wait, error: true };
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: authRedirectUrl('reset'),
+      });
+      if (error) return { text: authErrorMessage(error.message), error: true };
+      lastEmailSentAt = Date.now();
+      return {
+        text: t(
+          'Se existir uma conta com este e-mail, enviamos um link para criar uma nova senha. Abra-o neste aparelho.',
+        ),
+        error: false,
+      };
+    },
+
+    async completeAuthLink(url) {
+      if (!supabase) return { error: t('Sincronização indisponível.') };
+      const link = parseAuthCallback(url);
+      if (link.error) return { error: link.error };
+      if (!link.code) return { error: authLinkError('missing') };
+      const { data, error } = await supabase.auth.exchangeCodeForSession(link.code);
+      if (error) return { error: authLinkError(error.code ?? error.message) };
+      set({ userId: data.user.id, email: data.user.email ?? null, notice: null });
+      void get().syncNow();
+      return { next: link.next };
+    },
+
+    async updatePassword(password) {
+      if (!supabase) return t('Sincronização indisponível.');
+      const problem = await newPasswordProblem(password, get().email ?? '');
+      if (problem) return problem;
+      const { error } = await supabase.auth.updateUser({ password });
+      return error ? authErrorMessage(error.message) : null;
+    },
+
+    async signOut(options = {}) {
+      if (get().userId) {
+        await get().syncNow();
+        const { tables } = await getRepositories().backup.pendingChanges();
+        const pending = BACKUP_TABLES.reduce(
+          (sum, table) => sum + pushableRows(table, tables[table]).length,
+          0,
+        );
+        if (pending > 0 && !options.discardPending) return { pending };
+      }
       stopRetrying();
-      await supabase?.auth.signOut();
-      set({ userId: null, email: null, status: 'idle', lastSyncAt: null, error: null });
+      await forgetSession();
+      set({
+        userId: null,
+        email: null,
+        status: 'idle',
+        lastSyncAt: null,
+        error: null,
+        notice: null,
+      });
+      // The account's data leaves this device (it stays in the cloud).
+      await deleteAllData();
+      return null;
     },
 
     syncNow() {
@@ -174,7 +325,18 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
       if (!supabase) return;
       const { error } = await supabase.rpc('delete_my_account');
       if (error) throw new Error(error.message);
-      await get().signOut();
+      // The account is gone from the server; local data stays on this device (as the UI says).
+      stopRetrying();
+      await forgetSession();
+      await saveSyncState(null);
+      set({
+        userId: null,
+        email: null,
+        status: 'idle',
+        lastSyncAt: null,
+        error: null,
+        notice: null,
+      });
     },
   };
 });

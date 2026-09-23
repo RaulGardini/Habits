@@ -718,4 +718,63 @@ export const EN: Record<string, string> = {
   Jejum: 'Fasting',
   'Sem gastos': 'No spending',
   Agora: 'Now',
+
+  // Account security
+  Conta: 'Account',
+  'Nova senha': 'New password',
+  'Informe a senha.': 'Enter your password.',
+  'A senha precisa ter pelo menos {count} caracteres.':
+    'The password needs at least {count} characters.',
+  'A senha pode ter no máximo {count} caracteres.':
+    'The password can have at most {count} characters.',
+  'Use uma senha menos repetitiva.': 'Use a less repetitive password.',
+  'A senha não pode conter o seu e-mail.': 'The password cannot contain your e-mail.',
+  'Muitas tentativas. Tente de novo em {time}.': 'Too many attempts. Try again in {time}.',
+  'Este link expirou ou já foi usado. Peça um novo.':
+    'This link has expired or was already used. Ask for a new one.',
+  'Abra o link no mesmo aparelho em que você fez o pedido.':
+    'Open the link on the same device where you asked for it.',
+  'Não foi possível validar o link. Peça um novo.':
+    'Could not validate the link. Ask for a new one.',
+  'A nova senha precisa ser diferente da atual.':
+    'The new password must be different from the current one.',
+  'Senha fraca. Use pelo menos 8 caracteres e evite senhas comuns.':
+    'Weak password. Use at least 8 characters and avoid common passwords.',
+  'Sua sessão expirou. Entre de novo para voltar a sincronizar.':
+    'Your session expired. Sign in again to resume syncing.',
+  'Validando o link…': 'Checking the link…',
+  'Link inválido': 'Invalid link',
+  'Ir para os ajustes': 'Go to settings',
+  'E-mail confirmado!': 'E-mail confirmed!',
+  'Você já está conectado e seus dados vão sincronizar.':
+    'You are signed in and your data will sync.',
+  'O link expirou ou você não está conectado. Peça um novo link em Ajustes.':
+    'The link expired or you are not signed in. Ask for a new link in Settings.',
+  'As senhas não são iguais.': 'The passwords do not match.',
+  'Senha alterada': 'Password changed',
+  'Use a nova senha da próxima vez que entrar.': 'Use the new password next time you sign in.',
+  'Conta: {email}': 'Account: {email}',
+  'Repita a nova senha': 'Repeat the new password',
+  'Mínimo de {count} caracteres. Senhas que já vazaram na internet não são aceitas.':
+    'At least {count} characters. Passwords that leaked online are not accepted.',
+  'Salvar nova senha': 'Save new password',
+  'Digite seu e-mail acima para receber o link.': 'Type your e-mail above to get the link.',
+  'Para criar conta: mínimo de {count} caracteres.':
+    'To create an account: at least {count} characters.',
+  'Esqueci minha senha': 'I forgot my password',
+  'Os dados desta conta serão apagados deste aparelho. Eles continuam na nuvem e voltam quando você entrar de novo.':
+    "This account's data will be removed from this device. It stays in the cloud and comes back when you sign in again.",
+  'Alterações não enviadas': 'Unsent changes',
+  '{count} alterações ainda não chegaram à nuvem e serão perdidas se você sair agora. Conecte-se à internet e tente de novo, ou saia mesmo assim.':
+    '{count} changes have not reached the cloud yet and will be lost if you sign out now. Connect to the internet and try again, or sign out anyway.',
+  'Sair e perder': 'Sign out and lose them',
+  'Não foi possível sair da conta.': 'Could not sign out.',
+  'Alterar senha': 'Change password',
+  'Esta senha apareceu em vazamentos de dados. Escolha outra.':
+    'This password has appeared in data breaches. Choose another one.',
+  'Sua sessão expirou. Entre de novo para voltar a sincronizar — seus dados continuam neste aparelho.':
+    'Your session expired. Sign in again to resume syncing — your data is still on this device.',
+  'Sincronização indisponível.': 'Sync is not available.',
+  'Se existir uma conta com este e-mail, enviamos um link para criar uma nova senha. Abra-o neste aparelho.':
+    'If an account exists for this e-mail, we sent a link to create a new password. Open it on this device.',
 };

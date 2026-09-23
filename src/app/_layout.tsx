@@ -112,6 +112,8 @@ function App() {
         <Stack.Screen name="goal/[id]" options={{ title: t('Editar meta') }} />
         <Stack.Screen name="stats/[id]" options={{ title: t('Estatísticas do hábito') }} />
         <Stack.Screen name="privacy" options={{ title: t('Política de privacidade') }} />
+        <Stack.Screen name="auth/callback" options={{ title: t('Conta') }} />
+        <Stack.Screen name="auth/new-password" options={{ title: t('Nova senha') }} />
         <Stack.Screen
           name="entry"
           options={{ title: t('Registro do dia'), presentation: 'modal' }}
