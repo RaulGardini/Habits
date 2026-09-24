@@ -43,5 +43,6 @@ export async function seedLoadTestDatabase(db: Database): Promise<void> {
   if ((row?.value ?? 0) > 0) return;
   const started = performance.now();
   await insertSeedData(db, generateSeedData({ today: todayLocal() }));
+  // eslint-disable-next-line no-console -- dev-only load test mode
   console.log(`Load test database seeded in ${Math.round(performance.now() - started)} ms`);
 }

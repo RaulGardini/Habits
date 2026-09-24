@@ -2,6 +2,7 @@ import { isExpoGo } from '@/lib/runtime';
 import { getRepositories } from '@/repositories';
 
 import { loadWidgetSnapshot } from './data';
+import { logError } from '@/lib/log';
 
 let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -11,7 +12,7 @@ export function updateWidgets(): void {
   if (isExpoGo) return;
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => {
-    redraw().catch((error: unknown) => console.error('Widget update failed', error));
+    redraw().catch((error: unknown) => logError('Widget update failed', error));
   }, 300);
 }
 

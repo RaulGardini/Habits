@@ -10,6 +10,7 @@ import {
   parsePendingActions,
   toIosPayload,
 } from './iosPayload';
+import { logError } from '@/lib/log';
 
 // In Expo Go the native module is missing and ExtensionStorage silently does nothing.
 const storage = new ExtensionStorage(APP_GROUP);
@@ -24,7 +25,7 @@ export function updateWidgets(): void {
         storage.set(SNAPSHOT_KEY, JSON.stringify(toIosPayload(snapshot)));
         ExtensionStorage.reloadWidget();
       })
-      .catch((error: unknown) => console.error('Widget update failed', error));
+      .catch((error: unknown) => logError('Widget update failed', error));
   }, 300);
 }
 

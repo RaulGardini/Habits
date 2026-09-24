@@ -26,6 +26,7 @@ import { runSync } from '@/sync/engine';
 import { createSupabaseRemote } from '@/sync/supabaseRemote';
 
 import { deleteAllData, reloadAll } from './dataActions';
+import { logError } from '@/lib/log';
 
 const SYNC_STATE_KEY = 'syncState';
 
@@ -304,7 +305,7 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
           stopRetrying();
           set({ status: 'idle', lastSyncAt: new Date().toISOString() });
         } catch (error) {
-          console.error('Sync failed', error);
+          logError('Sync failed', error);
           set({
             status: 'error',
             error: authErrorMessage(error instanceof Error ? error.message : String(error)),

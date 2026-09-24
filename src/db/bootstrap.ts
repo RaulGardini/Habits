@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { configureNotifications } from '@/lib/notifications';
+import { useAppLockStore } from '@/stores/appLockStore';
 import { useCloudBackupStore } from '@/stores/cloudBackupStore';
 import { useEntriesStore } from '@/stores/entriesStore';
 import { useHabitsStore } from '@/stores/habitsStore';
@@ -13,6 +14,7 @@ import { useTimerStore } from '@/stores/timerStore';
 import { consumePendingWidgetActions, updateWidgets } from '@/widgets/sync';
 
 import { initRepositories } from './init';
+import { logError } from '@/lib/log';
 
 export type BootstrapState =
   { status: 'loading' } | { status: 'ready' } | { status: 'error'; error: Error };
@@ -23,7 +25,11 @@ async function bootstrap(): Promise<void> {
     useSettingsStore.getState().load(),
     useHabitsStore.getState().load(),
     useTimerStore.getState().load(),
+    useAppLockStore.getState().load(),
   ]);
+  AppState.addEventListener('change', (status) =>
+    useAppLockStore.getState().onAppStateChange(status),
+  );
   startReminderSync();
   startWidgetSync();
   startCloudSync();
@@ -39,7 +45,7 @@ function startCloudSync(): void {
   sync
     .init()
     .then(() => useSyncStore.getState().syncNow())
-    .catch((error: unknown) => console.error('Sync init failed', error));
+    .catch((error: unknown) => logError('Sync init failed', error));
 
   let timer: ReturnType<typeof setTimeout> | null = null;
   const schedule = () => {
@@ -71,7 +77,7 @@ function startWidgetSync(): void {
     if (await consumePendingWidgetActions()) useEntriesStore.getState().reset();
     updateWidgets();
   };
-  const run = () => refresh().catch((error: unknown) => console.error('Widget sync failed', error));
+  const run = () => refresh().catch((error: unknown) => logError('Widget sync failed', error));
 
   run();
   useHabitsStore.subscribe(
@@ -92,11 +98,11 @@ function startWidgetSync(): void {
  */
 function startReminderSync(): void {
   const sync = () =>
-    rescheduleReminders().catch((error: unknown) => console.error('Reminder sync failed', error));
+    rescheduleReminders().catch((error: unknown) => logError('Reminder sync failed', error));
 
   configureNotifications()
     .then(sync)
-    .catch((error: unknown) => console.error('Notification setup failed', error));
+    .catch((error: unknown) => logError('Notification setup failed', error));
 
   let timer: ReturnType<typeof setTimeout> | null = null;
   const later = () => {

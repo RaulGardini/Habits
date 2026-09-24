@@ -1,5 +1,6 @@
 import { Alert } from 'react-native';
 import { hapticError, hapticWarning } from '@/lib/haptics';
+import { logError } from '@/lib/log';
 
 interface ConfirmOptions {
   title: string;
@@ -35,6 +36,6 @@ export function confirm({
 
 export function showError(message: string, error?: unknown): void {
   hapticError();
-  if (error !== undefined) console.error(message, error);
+  if (error !== undefined) logError(message, error);
   Alert.alert('Algo deu errado', message);
 }

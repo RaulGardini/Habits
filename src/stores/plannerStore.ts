@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import type { LocalDate } from '@/core/dates/localDate';
 import type { EventDraft, GoalDraft, GoalScope } from '@/core/planner/types';
 import { getRepositories } from '@/repositories';
+import { logError } from '@/lib/log';
 
 interface PlannerState {
   /** Incremented after every agenda/goal change; queries refetch when it changes. */
@@ -35,7 +36,7 @@ function useRepoQuery<A extends unknown[], T>(
       .then((value) => {
         if (!cancelled) setState({ key, value });
       })
-      .catch((error: unknown) => console.error('Planner query failed', error));
+      .catch((error: unknown) => logError('Planner query failed', error));
     return () => {
       cancelled = true;
     };

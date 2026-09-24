@@ -1,4 +1,5 @@
 import { hapticError, hapticWarning } from '@/lib/haptics';
+import { logError } from '@/lib/log';
 
 // react-native-web's Alert is a no-op, so the web uses the browser dialogs.
 
@@ -16,6 +17,6 @@ export function confirm({ title, message, destructive }: ConfirmOptions): Promis
 
 export function showError(message: string, error?: unknown): void {
   hapticError();
-  if (error !== undefined) console.error(message, error);
+  if (error !== undefined) logError(message, error);
   window.alert(`Algo deu errado\n\n${message}`);
 }

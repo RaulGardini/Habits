@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import type { LocalDate } from '@/core/dates/localDate';
 import type { EntryInput, HabitEntry } from '@/core/habits/types';
 import { getRepositories } from '@/repositories';
+import { logError } from '@/lib/log';
 
 /** Entries of one day, keyed by habit id. */
 export type DayEntries = Record<string, HabitEntry | undefined>;
@@ -201,7 +202,7 @@ export function useDayEntries(date: LocalDate): { entries: DayEntries; loaded: b
   const loaded = day !== undefined;
   useEffect(() => {
     if (!loaded) {
-      loadDate(date).catch((error: unknown) => console.error('Failed to load entries', error));
+      loadDate(date).catch((error: unknown) => logError('Failed to load entries', error));
     }
   }, [date, loaded, loadDate]);
   return { entries: day ?? EMPTY, loaded };
@@ -217,7 +218,7 @@ export function useEntriesInRange(from: LocalDate, to: LocalDate): HabitEntry[] 
   const loaded = entries !== undefined;
   useEffect(() => {
     if (!loaded) {
-      loadRange(from, to).catch((error: unknown) => console.error('Failed to load entries', error));
+      loadRange(from, to).catch((error: unknown) => logError('Failed to load entries', error));
     }
   }, [from, to, loaded, loadRange]);
   return entries ?? null;
@@ -235,7 +236,7 @@ export function useHabitHistory(habitId: string): HabitEntry[] | null {
       .then((entries) => {
         if (!cancelled) setResult({ habitId, entries });
       })
-      .catch((error: unknown) => console.error('Failed to load habit history', error));
+      .catch((error: unknown) => logError('Failed to load habit history', error));
     return () => {
       cancelled = true;
     };
