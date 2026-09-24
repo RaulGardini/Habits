@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 import { todayLocal } from '@/core/dates/localDate';
 import type { Habit } from '@/core/habits/types';
 import type { PlannerEvent } from '@/core/planner/types';
+import { scheduleChanges } from '@/core/reminders/diff';
 import { planReminders, type ReminderTrigger } from '@/core/reminders/plan';
 import { reminderData, reminderRoute } from '@/core/reminders/route';
 import { t } from '@/i18n/i18n';
@@ -79,8 +80,10 @@ function toTrigger(trigger: ReminderTrigger): Notifications.SchedulableNotificat
 let syncing: Promise<void> = Promise.resolve();
 
 /**
- * Replaces every scheduled notification with the current plan. Runs sequentially so quick
- * successive changes cannot interleave. Does nothing without permission.
+ * Brings the scheduled notifications in line with the current plan, touching only what changed
+ * (cancellations first): checking a habit is one quick call, done before iOS suspends an app
+ * that is left right away. Runs sequentially so quick successive changes cannot interleave.
+ * Does nothing without permission.
  */
 export function syncReminders(
   habits: readonly Habit[],
@@ -91,10 +94,17 @@ export function syncReminders(
     .catch(() => {})
     .then(async () => {
       if ((await getPermission()) !== 'granted') return;
-      await Notifications.cancelAllScheduledNotificationsAsync();
       const now = new Date();
-      for (const reminder of planReminders(habits, todayLocal(now), now, events, settled)) {
+      const planned = planReminders(habits, todayLocal(now), now, events, settled);
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      const { cancel, add } = scheduleChanges(
+        scheduled.map((notification) => notification.identifier),
+        planned,
+      );
+      for (const id of cancel) await Notifications.cancelScheduledNotificationAsync(id);
+      for (const { id, reminder } of add) {
         await Notifications.scheduleNotificationAsync({
+          identifier: id,
           content: { title: reminder.title, body: reminder.body, data: reminderData(reminder) },
           trigger: toTrigger(reminder.trigger),
         });

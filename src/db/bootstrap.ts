@@ -1,3 +1,4 @@
+import { addNetworkStateListener } from 'expo-network';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
@@ -40,7 +41,7 @@ async function bootstrap(): Promise<void> {
 
 /**
  * Optional cloud sync (only when configured and signed in): on start, when the app returns to
- * the foreground, and a few seconds after local changes.
+ * the foreground, as soon as the connection comes back, and a few seconds after local changes.
  */
 function startCloudSync(): void {
   const sync = useSyncStore.getState();
@@ -64,6 +65,14 @@ function startCloudSync(): void {
     'change',
     (status) => status === 'active' && void useSyncStore.getState().syncNow(),
   );
+  // Back online: send the offline changes now, not at the next retry (which backs off up to
+  // 5 minutes) — otherwise another device reconnecting later could get there first.
+  let online = true;
+  addNetworkStateListener(({ isConnected, isInternetReachable }) => {
+    const nowOnline = isConnected === true && isInternetReachable !== false;
+    if (nowOnline && !online) void useSyncStore.getState().syncNow();
+    online = nowOnline;
+  });
   // Weekly cloud snapshot, checked after successful syncs.
   useSyncStore.subscribe(
     (state, previous) =>
@@ -119,16 +128,26 @@ function startReminderSync(): void {
   let timer: ReturnType<typeof setTimeout> | null = null;
   const later = () => {
     if (timer) clearTimeout(timer);
-    timer = setTimeout(sync, 500);
+    timer = setTimeout(() => {
+      timer = null;
+      void sync();
+    }, 500);
   };
   useHabitsStore.subscribe((state, previous) => state.habits !== previous.habits && later());
   useEntriesStore.subscribe((state, previous) => state.version !== previous.version && later());
   // Agenda writes bump the planner version (events may have reminders).
   usePlannerStore.subscribe((state, previous) => state.version !== previous.version && later());
-  AppState.addEventListener(
-    'change',
-    (status) => status === 'active' && planKey() !== plannedFor && void sync(),
-  );
+  AppState.addEventListener('change', (status) => {
+    if (status === 'active') {
+      if (planKey() !== plannedFor) void sync();
+    } else if (timer) {
+      // Leaving right after a check: iOS freezes timers in the background, so re-plan now,
+      // in the few seconds the app still runs (otherwise today's reminder would still fire).
+      clearTimeout(timer);
+      timer = null;
+      void sync();
+    }
+  });
 }
 
 // Module-level so it runs once even if the root layout re-mounts (e.g. fast refresh).

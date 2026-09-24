@@ -34,6 +34,9 @@ npm run legal        # rebuild the public policy + account deletion pages (src/f
 ```
 
 Always add Expo packages with `npx expo install <pkg>` (SDK-compatible versions).
+After any install on Windows, npm drops Linux-only optional packages (`@emnapi/*`) from
+`package-lock.json` and CI's `npm ci` fails: regenerate the lockfile on Linux (e.g. Docker
+`node:24`: `npm install --package-lock-only --ignore-scripts` on a copy of package*.json).
 
 ## Architecture (dependency direction: top → bottom only)
 
@@ -186,7 +189,9 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   for "every X days" (21-day horizon), capped at 60 (iOS limit is 64).
 - A habit settled today (`settledToday`: done, skipped, or period quota met) gets no more
   reminders today: its daily trigger becomes 6 weekly ones + a one-off next week (falls back to
-  the plain plan if that would exceed the cap). Reboots/app updates: expo-notifications restores
+  the plain plan if that would exceed the cap). Scheduling is a diff (`scheduleChanges`, stable
+  `reminderId` identifiers; cancellations first) and a pending re-plan runs at once when the app
+  leaves the foreground: iOS freezes timers in the background. Reboots/app updates: expo-notifications restores
   the schedule (Android `BOOT_COMPLETED`/`MY_PACKAGE_REPLACED`).
 - Permission is asked when the first reminder is added (habit form) or an event with a reminder
   is saved — never on first launch. Tapping a reminder opens `/entry` (habit, that day) or
@@ -242,8 +247,8 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   `src/core/auth/auth.ts` (8+ chars, sign-in throttling, link errors); leaked passwords via
   `isPwnedPassword` (HIBP k-anonymity). Sign-out syncs, then deletes tokens and local data
   (asks first when changes could not be sent); an expired session only stops sync (`notice`).
-- `useSyncStore` owns auth + sync status; bootstrap triggers sync on start, foreground and
-  4 s after local changes. One round at a time (a request during a round runs another after);
+- `useSyncStore` owns auth + sync status; bootstrap triggers sync on start, foreground, when
+  the network comes back (`expo-network`) and 4 s after local changes. One round at a time (a request during a round runs another after);
   failures retry with exponential backoff (`retryDelayMs`). The first sync of the device with an
   account (`SyncState.userId`) queues every row (`enqueueAll`).
 
