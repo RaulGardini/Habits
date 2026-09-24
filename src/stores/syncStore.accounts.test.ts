@@ -92,3 +92,21 @@ it('brings every habit back after switching accounts on the same device', async 
       .sort(),
   ).toEqual(['Correr', 'Ler']);
 });
+
+it('a device updated from an older version sends, once, what the cloud never got', async () => {
+  await signIn('phone-owner');
+  await getRepositories().habits.create(draft('Ler'));
+  await getRepositories().habits.create(draft('Correr'));
+  // As before this version: rows marked as pushed that never reached the cloud, and a sync
+  // state without the one-time check.
+  const { upTo } = await getRepositories().backup.pendingChanges();
+  await getRepositories().backup.markPushed(upTo);
+  await getRepositories().settings.set('syncState', { userId: 'phone-owner', cursors: {} });
+
+  await useSyncStore.getState().syncNow();
+  const cloud = mockClouds.get('phone-owner')!;
+  expect((await cloud.keys('habits')).length).toBe(2);
+  expect(
+    (await getRepositories().settings.get<{ verified?: boolean }>('syncState'))?.verified,
+  ).toBe(true);
+});

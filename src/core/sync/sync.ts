@@ -60,6 +60,11 @@ export interface SyncState {
   userId?: string | null;
   /** Per table: highest `server_updated_at` already pulled. */
   cursors: Partial<Record<BackupTable, string>>;
+  /**
+   * This device already checked that the cloud has every local row (`queueMissing`), once per
+   * account: rows lost before the outbox existed (clock-based pushes) are sent again.
+   */
+  verified?: boolean;
 }
 
 export const INITIAL_SYNC_STATE: SyncState = { cursors: {} };

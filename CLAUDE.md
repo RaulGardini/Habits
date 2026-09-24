@@ -250,7 +250,10 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - `useSyncStore` owns auth + sync status; bootstrap triggers sync on start, foreground, when
   the network comes back (`expo-network`) and 4 s after local changes. One round at a time (a request during a round runs another after);
   failures retry with exponential backoff (`retryDelayMs`). The first sync of the device with an
-  account (`SyncState.userId`) queues every row (`enqueueAll`).
+  account (`SyncState.userId`) queues every row (`enqueueAll`). Once per device and account
+  (`SyncState.verified`), `queueMissing` compares keys with the cloud and queues the local rows
+  it never got (rows lost by the clock-based pushes before the outbox) — never overwriting rows
+  the cloud has.
 
 ## Testing
 

@@ -101,6 +101,11 @@ export interface BackupRepository {
   /** Queues every row for the next push (first sync of this device with an account). */
   enqueueAll(): Promise<void>;
   /**
+   * Queues the local rows the cloud does not have (`remoteKeys`: every key per table in the
+   * cloud) and returns how many. Rows the cloud has are left alone.
+   */
+  enqueueMissing(remoteKeys: Record<BackupTable, ReadonlySet<string>>): Promise<number>;
+  /**
    * Applies rows pulled from the cloud, in server order (see `planRemoteApply`): the server
    * wins except over local changes still waiting to be pushed. Not queued for push again.
    */

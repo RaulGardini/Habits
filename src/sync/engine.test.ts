@@ -3,7 +3,7 @@ import type { HabitDraft } from '@/core/habits/types';
 import { openTestDatabase, wrapSqlJs } from '@/db/testing';
 import { createDrizzleRepositories } from '@/repositories/drizzle';
 
-import { runSync, type RemoteStore } from './engine';
+import { queueMissing, runSync, type RemoteStore } from './engine';
 import { createFakeRemote } from './testing';
 
 jest.mock('expo-crypto', () => {
@@ -137,6 +137,38 @@ describe('runSync', () => {
     await b.sync(remote);
     expect(await b.repos.settings.get('theme')).toBe('dark');
     expect(await b.repos.settings.get('activeTimer')).toBeNull();
+  });
+
+  it('sends rows the cloud never got, without overwriting what the cloud has', async () => {
+    // "Inglês" reaches the cloud normally and is renamed on the web afterwards.
+    const english = await a.repos.habits.create(draft({ name: 'Inglês' }));
+    await a.sync(remote);
+    await b.sync(remote);
+    await b.repos.habits.update(english.id, draft({ name: 'Inglês (web)' }));
+    await b.sync(remote);
+    // "Ler" and its entry never reached the cloud, but the phone believes they did (like the
+    // clock-based pushes before the outbox).
+    const read = await a.repos.habits.create(draft({ name: 'Ler' }));
+    await a.repos.entries.upsert(read.id, today, { status: 'done', value: null });
+    const { upTo } = await a.repos.backup.pendingChanges();
+    await a.repos.backup.markPushed(upTo);
+    expect((await a.sync(remote)).pushed).toBe(0);
+
+    expect(await queueMissing(a.repos.backup, remote)).toBe(3); // habit, its reminder and entry
+    await a.sync(remote);
+    await b.sync(remote);
+    expect((await b.repos.habits.list()).map((h) => h.name).sort()).toEqual([
+      'Inglês (web)',
+      'Ler',
+    ]);
+    expect(await b.repos.entries.listByDate(today)).toHaveLength(1);
+    // The web's rename was not overwritten by the phone's older copy.
+    expect((await a.repos.habits.list()).map((h) => h.name).sort()).toEqual([
+      'Inglês (web)',
+      'Ler',
+    ]);
+    // Once everything is there, checking again finds nothing to send.
+    expect(await queueMissing(a.repos.backup, remote)).toBe(0);
   });
 
   it('pulls everything across several pages', async () => {

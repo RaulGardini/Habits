@@ -22,7 +22,7 @@ import { authStorage } from '@/lib/authStorage';
 import { isPwnedPassword } from '@/lib/pwnedPasswords';
 import { getRepositories, type BackupRepository } from '@/repositories';
 import { supabase, syncConfigured } from '@/sync/client';
-import { runSync } from '@/sync/engine';
+import { queueMissing, runSync } from '@/sync/engine';
 import { createSupabaseRemote } from '@/sync/supabaseRemote';
 
 import { deleteAllData, reloadAll } from './dataActions';
@@ -300,6 +300,11 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
           const { backup } = getRepositories();
           const state = await accountState(backup, userId);
           const result = await runSync(backup, remote(), state);
+          if (!result.state.verified) {
+            // Once per device and account: send what the cloud never got (see queueMissing).
+            if ((await queueMissing(backup, remote())) > 0) again = true;
+            result.state.verified = true;
+          }
           await saveSyncState(result.state);
           if (result.applied.inserted + result.applied.updated > 0) await reloadAll();
           stopRetrying();

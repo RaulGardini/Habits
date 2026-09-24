@@ -31,6 +31,8 @@ export interface RemoteStore {
   ): Promise<Record<string, unknown>[]>;
   /** Deletes every row of the signed-in user. */
   deleteAll(): Promise<void>;
+  /** Every key (`id`, or `key` for settings) the signed-in user has in `table`. */
+  keys(table: string): Promise<string[]>;
 }
 
 export interface SyncResult {
@@ -75,6 +77,18 @@ async function pullTable(
     inclusive = true;
   }
   return { rows: pushableRows(table, rows), cursor: since };
+}
+
+/**
+ * Queues the local rows the cloud does not have at all, for the next push, and returns how
+ * many. Heals devices whose rows never reached the cloud (clock-based pushes before the
+ * outbox). Only keys are read; rows the cloud has — maybe newer — are never overwritten.
+ */
+export async function queueMissing(local: BackupRepository, remote: RemoteStore): Promise<number> {
+  const remoteKeys = {} as Record<BackupTable, ReadonlySet<string>>;
+  for (const table of SYNC_ORDER)
+    remoteKeys[table] = new Set(await remote.keys(REMOTE_TABLES[table]));
+  return local.enqueueMissing(remoteKeys);
 }
 
 /**

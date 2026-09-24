@@ -54,6 +54,7 @@ jest.mock('@/sync/supabaseRemote', () => ({
       return mockNet.remote!.pull(...args);
     },
     deleteAll: () => mockNet.remote!.deleteAll(),
+    keys: (table) => mockNet.remote!.keys(table),
   }),
 }));
 

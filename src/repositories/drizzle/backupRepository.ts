@@ -59,6 +59,30 @@ function identity(name: BackupTable): { column: string } {
 }
 
 export function createDrizzleBackupRepository(db: Database): BackupRepository {
+  /** Queues the local rows that pass `keep` (settings: never the device-only ones). */
+  async function enqueue(keep: (table: BackupTable, key: string) => boolean): Promise<number> {
+    let queued = 0;
+    await db.transaction(async (tx) => {
+      for (const name of IMPORT_ORDER) {
+        const table = TABLES[name];
+        const idColumn = getTableColumns(table)[identity(name).column] as SQLiteColumn;
+        const rows = (await tx.select({ key: idColumn }).from(table)) as { key: string }[];
+        const keys = rows
+          .map((row) => String(row.key))
+          .filter((key) => name !== 'settings' || !LOCAL_ONLY_SETTINGS.has(key))
+          .filter((key) => keep(name, key));
+        queued += keys.length;
+        for (let i = 0; i < keys.length; i += 500) {
+          await tx
+            .insert(syncOutbox)
+            .values(keys.slice(i, i + 500).map((rowKey) => ({ tableName: name, rowKey })))
+            .onConflictDoNothing();
+        }
+      }
+    });
+    return queued;
+  }
+
   return {
     async exportAll() {
       const result = {} as Record<BackupTable, BackupRow[]>;
@@ -100,22 +124,11 @@ export function createDrizzleBackupRepository(db: Database): BackupRepository {
     },
 
     async enqueueAll() {
-      await db.transaction(async (tx) => {
-        for (const name of IMPORT_ORDER) {
-          const table = TABLES[name];
-          const idColumn = getTableColumns(table)[identity(name).column] as SQLiteColumn;
-          const rows = (await tx.select({ key: idColumn }).from(table)) as { key: string }[];
-          const keys = rows
-            .map((row) => String(row.key))
-            .filter((key) => name !== 'settings' || !LOCAL_ONLY_SETTINGS.has(key));
-          for (let i = 0; i < keys.length; i += 500) {
-            await tx
-              .insert(syncOutbox)
-              .values(keys.slice(i, i + 500).map((rowKey) => ({ tableName: name, rowKey })))
-              .onConflictDoNothing();
-          }
-        }
-      });
+      await enqueue(() => true);
+    },
+
+    async enqueueMissing(remoteKeys) {
+      return enqueue((name, key) => !remoteKeys[name].has(key));
     },
 
     async applyRemote(tables) {
