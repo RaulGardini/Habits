@@ -186,8 +186,9 @@ function SignedIn({ email }: { email: string }) {
   const handleDelete = async () => {
     const ok = await confirm({
       title: t('Excluir conta?'),
-      message:
+      message: t(
         'Sua conta e todos os dados guardados na nuvem serão apagados permanentemente. Os dados deste aparelho continuam aqui.',
+      ),
       confirmLabel: t('Excluir conta'),
       destructive: true,
     });
