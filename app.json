@@ -17,7 +17,11 @@
       },
       "supportsTablet": false,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSAllowsLocalNetworking": true
+        }
       }
     },
     "android": {
@@ -100,7 +104,18 @@
       ],
       "expo-font",
       "expo-localization",
-      "expo-secure-store"
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "O Habits usa o Face ID para desbloquear o app quando o bloqueio está ligado nos Ajustes."
+        }
+      ],
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ]
     ],
     "experiments": {
       "reactCompiler": true

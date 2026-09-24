@@ -22,7 +22,7 @@ export const REMOTE_TABLES: Record<BackupTable, string> = {
 export const SYNC_ORDER: readonly BackupTable[] = BACKUP_TABLES;
 
 /** Settings that describe this device only and must never leave it. */
-export const LOCAL_ONLY_SETTINGS = new Set(['activeTimer', 'syncState']);
+export const LOCAL_ONLY_SETTINGS = new Set(['activeTimer', 'syncState', 'appLock']);
 
 /** Columns added by the server; never written by clients nor stored locally. */
 const SERVER_COLUMNS = new Set(['user_id', 'server_updated_at']);

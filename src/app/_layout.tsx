@@ -17,6 +17,7 @@ import { useEffect, useMemo } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 
 import { useBootstrap } from '@/db/bootstrap';
+import { AppLockGate } from '@/features/security/AppLockGate';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { spacing } from '@/theme/tokens';
@@ -86,40 +87,46 @@ function App() {
 
   return (
     // Remounting on a language change re-renders every screen with the new strings.
-    <NavigationThemeProvider value={navigationTheme} key={language}>
-      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <Stack
-        screenOptions={{
-          headerBackButtonDisplayMode: 'minimal',
-          // iOS: the content scrolls under a translucent header (Liquid Glass on iOS 26).
-          headerTransparent: Platform.OS === 'ios',
-          headerBlurEffect: scheme === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterial',
-          headerShadowVisible: false,
-        }}
-      >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="habit/new"
-          options={{ title: t('Novo hábito'), presentation: 'modal' }}
-        />
-        <Stack.Screen name="habit/[id]" options={{ title: t('Editar hábito') }} />
-        <Stack.Screen
-          name="event/new"
-          options={{ title: t('Novo evento'), presentation: 'modal' }}
-        />
-        <Stack.Screen name="event/[id]" options={{ title: t('Editar evento') }} />
-        <Stack.Screen name="goal/new" options={{ title: t('Nova meta'), presentation: 'modal' }} />
-        <Stack.Screen name="goal/[id]" options={{ title: t('Editar meta') }} />
-        <Stack.Screen name="stats/[id]" options={{ title: t('Estatísticas do hábito') }} />
-        <Stack.Screen name="privacy" options={{ title: t('Política de privacidade') }} />
-        <Stack.Screen name="auth/callback" options={{ title: t('Conta') }} />
-        <Stack.Screen name="auth/new-password" options={{ title: t('Nova senha') }} />
-        <Stack.Screen
-          name="entry"
-          options={{ title: t('Registro do dia'), presentation: 'modal' }}
-        />
-      </Stack>
-    </NavigationThemeProvider>
+    <AppLockGate>
+      <NavigationThemeProvider value={navigationTheme} key={language}>
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+        <Stack
+          screenOptions={{
+            headerBackButtonDisplayMode: 'minimal',
+            // iOS: the content scrolls under a translucent header (Liquid Glass on iOS 26).
+            headerTransparent: Platform.OS === 'ios',
+            headerBlurEffect:
+              scheme === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterial',
+            headerShadowVisible: false,
+          }}
+        >
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="habit/new"
+            options={{ title: t('Novo hábito'), presentation: 'modal' }}
+          />
+          <Stack.Screen name="habit/[id]" options={{ title: t('Editar hábito') }} />
+          <Stack.Screen
+            name="event/new"
+            options={{ title: t('Novo evento'), presentation: 'modal' }}
+          />
+          <Stack.Screen name="event/[id]" options={{ title: t('Editar evento') }} />
+          <Stack.Screen
+            name="goal/new"
+            options={{ title: t('Nova meta'), presentation: 'modal' }}
+          />
+          <Stack.Screen name="goal/[id]" options={{ title: t('Editar meta') }} />
+          <Stack.Screen name="stats/[id]" options={{ title: t('Estatísticas do hábito') }} />
+          <Stack.Screen name="privacy" options={{ title: t('Política de privacidade') }} />
+          <Stack.Screen name="auth/callback" options={{ title: t('Conta') }} />
+          <Stack.Screen name="auth/new-password" options={{ title: t('Nova senha') }} />
+          <Stack.Screen
+            name="entry"
+            options={{ title: t('Registro do dia'), presentation: 'modal' }}
+          />
+        </Stack>
+      </NavigationThemeProvider>
+    </AppLockGate>
   );
 }
 

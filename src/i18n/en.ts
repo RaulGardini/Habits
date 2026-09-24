@@ -781,4 +781,21 @@ export const EN: Record<string, string> = {
   'Aguarde um minuto para pedir outro e-mail.': 'Wait a minute to ask for another e-mail.',
   'O servidor atingiu o limite de e-mails por hora. Tente de novo mais tarde.':
     'The server reached its hourly e-mail limit. Try again later.',
+  'Arquivo de backup inválido: "{table}" #{index} com "{column}" inválido.':
+    'Invalid backup file: "{table}" #{index} has an invalid "{column}".',
+  'Exportar backup?': 'Export backup?',
+  'O arquivo não é criptografado: quem tiver acesso a ele consegue ler seus hábitos, registros e anotações. Guarde-o em um lugar privado e não o envie para outras pessoas.':
+    'The file is not encrypted: anyone with access to it can read your habits, records and notes. Keep it somewhere private and do not send it to other people.',
+  Exportar: 'Export',
+  'Sem conta, seus dados ficam só neste aparelho. Exporte um backup em JSON regularmente e guarde-o em um lugar privado (Drive, computador) — o arquivo não é criptografado.':
+    'Without an account, your data stays only on this device. Export a JSON backup regularly and keep it somewhere private (Drive, computer) — the file is not encrypted.',
+  Privacidade: 'Privacy',
+  'Bloquear o app': 'Lock the app',
+  'Não foi possível mudar o bloqueio.': 'Could not change the lock.',
+  'Pede Face ID, digital ou o código do aparelho ao abrir o app e ao voltar depois de 30 s fora dele. Os widgets continuam mostrando seus hábitos na tela inicial.':
+    'Asks for Face ID, fingerprint or the device passcode when opening the app and when coming back after 30 s away. Widgets still show your habits on the home screen.',
+  'Confirme para ligar o bloqueio': 'Confirm to turn on the lock',
+  'Desbloquear o Habits': 'Unlock Habits',
+  'O app está bloqueado.': 'The app is locked.',
+  Desbloquear: 'Unlock',
 };

@@ -13,6 +13,7 @@ import {
 } from '@/lib/notifications';
 import { deleteAllData, exportBackup, importBackup } from '@/stores/dataActions';
 import type { Language } from '@/i18n/i18n';
+import { useAppLockStore } from '@/stores/appLockStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { rescheduleReminders } from '@/stores/reminders';
 import { useSyncStore } from '@/stores/syncStore';
@@ -25,6 +26,7 @@ import { confirm, showError } from '@/ui/dialogs';
 import { Screen } from '@/ui/Screen';
 import { SegmentedControl } from '@/ui/SegmentedControl';
 import { TextField } from '@/ui/TextField';
+import { ToggleRow } from '@/ui/ToggleRow';
 
 import { AccountSection } from './AccountSection';
 import { CloudBackupSection } from './CloudBackupSection';
@@ -140,6 +142,8 @@ export function SettingsScreen() {
         <NotificationsStatus />
       </Section>
 
+      <AppLockSection />
+
       <Section title={t('Backup')}>
         <BackupActions />
       </Section>
@@ -242,11 +246,46 @@ function NotificationsStatus() {
   );
 }
 
+/** Optional lock with Face ID / fingerprint / passcode (hidden where the device cannot do it). */
+function AppLockSection() {
+  const available = useAppLockStore((state) => state.available);
+  const enabled = useAppLockStore((state) => state.enabled);
+  const setEnabled = useAppLockStore((state) => state.setEnabled);
+  if (!available) return null;
+  return (
+    <Section title={t('Privacidade')}>
+      <ToggleRow
+        label={t('Bloquear o app')}
+        icon="shield-lock-outline"
+        value={enabled}
+        onChange={(next) => {
+          setEnabled(next).catch((error: unknown) =>
+            showError(t('Não foi possível mudar o bloqueio.'), error),
+          );
+        }}
+      />
+      <AppText variant="caption" tone="muted">
+        {t(
+          'Pede Face ID, digital ou o código do aparelho ao abrir o app e ao voltar depois de 30 s fora dele. Os widgets continuam mostrando seus hábitos na tela inicial.',
+        )}
+      </AppText>
+    </Section>
+  );
+}
+
 function BackupActions() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
   const doExport = async () => {
+    const ok = await confirm({
+      title: t('Exportar backup?'),
+      message: t(
+        'O arquivo não é criptografado: quem tiver acesso a ele consegue ler seus hábitos, registros e anotações. Guarde-o em um lugar privado e não o envie para outras pessoas.',
+      ),
+      confirmLabel: t('Exportar'),
+    });
+    if (!ok) return;
     setBusy(true);
     setResult(null);
     try {
@@ -295,7 +334,7 @@ function BackupActions() {
     <>
       <AppText tone="muted">
         {t(
-          'Sem conta, seus dados ficam só neste aparelho. Exporte um backup em JSON regularmente e guarde-o em um lugar seguro (Drive, e-mail, computador).',
+          'Sem conta, seus dados ficam só neste aparelho. Exporte um backup em JSON regularmente e guarde-o em um lugar privado (Drive, computador) — o arquivo não é criptografado.',
         )}
       </AppText>
       <View style={styles.buttons}>
