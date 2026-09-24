@@ -25,7 +25,7 @@ Built in phases; see "Roadmap". **Do not start a new phase without the owner's a
 ```bash
 npm run web          # dev server (web) — http://localhost:8081
 npm start            # dev server (Expo Go / dev build)
-npm run check        # lint + typecheck + tests (+ time zones, SQL) — run before every commit
+npm run check        # lint + typecheck + tests (+ time zones, SQL, crash) — run before every commit (CI runs it too)
 npm run test:tz      # date tests once per device time zone (Jest cannot switch zones in a run)
 npm run db:generate  # generate a migration after editing src/db/schema.ts
 npm run format       # prettier
@@ -121,6 +121,11 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   `hapticLight` for value changes, `hapticSuccess` on save/complete, and `hapticWarning` /
   `hapticError` fired by `confirm({ destructive })` / `showError`.
 - Checkable rows use `accessibilityRole="checkbox"` + `accessibilityState`.
+- Errors: a screen that throws while rendering is replaced by `ScreenErrorFallback`
+  ("Tentar de novo"; `screenErrorBoundary` in the root layout), the rest of the app keeps
+  working. Data hooks never spin forever on a failed read: they pass it to `useAsyncError`
+  (`src/lib`), which rethrows it into that boundary. Single-item queries return `undefined`
+  while loading and `null` when the row does not exist (deleted on another device).
 - Reanimated shared values: use `.get()` / `.set()` (React Compiler is enabled).
 - Charts use `react-native-svg`. Don't put `onPress` on SVG shapes (leaks responder props to the
   DOM on web); wrap the SVG in one `Pressable` and hit-test the position (see `stats/Heatmap.tsx`).
@@ -245,6 +250,9 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   sync is disabled in that mode.
 - Sync: `src/sync/engine.test.ts` (two sql.js devices + `createFakeRemote()`), and
   `npm run test:sql` (runs `supabase/schema.sql` on PGlite). `npm run check` runs both.
+- `npm run test:crash`: SIGKILLs a process halfway through a write transaction on a real SQLite
+  file (app migrations, DELETE and WAL journals) and checks the file, commits and outbox.
+- CI: `.github/workflows/ci.yml` runs `npm run check` on every push to `main` and on PRs.
 
 ## Data on the device
 

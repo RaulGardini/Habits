@@ -72,10 +72,11 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
-    "check": "npm run lint && npm run typecheck && npm test && npm run test:tz && npm run test:sql",
+    "check": "npm run lint && npm run typecheck && npm test && npm run test:tz && npm run test:sql && npm run test:crash",
     "db:generate": "drizzle-kit generate",
     "test:sql": "node scripts/test-supabase-schema.mjs",
     "test:tz": "node scripts/test-timezones.mjs",
+    "test:crash": "node --no-warnings scripts/test-crash.mjs",
     "assets": "node scripts/generate-assets.mjs",
     "legal": "node scripts/generate-privacy.mjs",
     "publish:go": "npx eas-cli@latest update --channel production --environment production --platform ios --non-interactive --message \"Nova versão\""
@@ -92,7 +93,7 @@
       "<rootDir>/.claude/"
     ],
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|drizzle-orm)"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|standard-navigation|drizzle-orm)"
     ]
   }
 }

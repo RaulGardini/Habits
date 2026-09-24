@@ -7,6 +7,8 @@ import { createFakeRemote } from '@/sync/testing';
 
 import { useSyncStore } from './syncStore';
 
+// Sign-out cancels reminders; the real module warns about Expo Go push on import.
+jest.mock('@/lib/notifications', () => ({ cancelAllReminders: jest.fn(async () => undefined) }));
 jest.mock('expo-crypto', () => {
   let n = 0;
   return { randomUUID: () => `uuid-${++n}` };
