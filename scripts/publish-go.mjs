@@ -17,7 +17,8 @@ const result = spawnSync(
     'ios',
     '--non-interactive',
     '--message',
-    process.argv[2] ?? 'Nova versão',
+    // Quoted: the shell (needed for npx on Windows) would split a message with spaces.
+    JSON.stringify(process.argv[2] ?? 'Nova versão'),
   ],
   { stdio: 'inherit', shell: true, env: { ...process.env, EXPO_GO_RUNTIME: '1' } },
 );
