@@ -10,8 +10,11 @@ import {
 
 /** An automatic cloud backup is taken when the newest one is at least this old. */
 export const CLOUD_BACKUP_INTERVAL_DAYS = 7;
-/** How many cloud backups are kept (older ones are deleted). */
-export const CLOUD_BACKUPS_KEPT = 8;
+/**
+ * How many cloud backups are kept (older ones are deleted): three weeks to undo a mistake. Each
+ * copy is a full snapshot, so this is the main factor in cloud storage per user.
+ */
+export const CLOUD_BACKUPS_KEPT = 3;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

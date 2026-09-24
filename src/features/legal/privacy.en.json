@@ -1,6 +1,6 @@
 {
   "title": "Privacy policy",
-  "updatedAt": "September 23, 2026",
+  "updatedAt": "September 24, 2026",
   "sections": [
     {
       "title": "Summary",
@@ -55,7 +55,7 @@
       "title": "How long we keep it",
       "paragraphs": [
         "On the device: until you delete the data, sign out or uninstall the app.",
-        "In the cloud: while the account exists. The app also keeps the 8 most recent weekly backups in your account, which you can see and restore in Settings. When you delete the account, all of this is erased at once; only the encrypted database backups (GitHub) last up to 90 days, until they are deleted automatically, and are not used for anything else."
+        "In the cloud: while the account exists. The app also keeps the 3 most recent weekly backups in your account, which you can see and restore in Settings. When you delete the account, all of this is erased at once; only the encrypted database backups (GitHub) last up to 90 days, until they are deleted automatically, and are not used for anything else."
       ]
     },
     {

@@ -1,0 +1,43 @@
+{
+  "title": "Support",
+  "updatedAt": "September 24, 2026",
+  "sections": [
+    {
+      "title": "Get in touch",
+      "paragraphs": [
+        "Questions, ideas or something that did not work? Write to rap.gardini@gmail.com. We reply within 3 business days.",
+        "For a problem, tell us what you did, what you expected and what happened, and which device you use (iPhone, Android or browser)."
+      ]
+    },
+    {
+      "title": "Where is my data?",
+      "paragraphs": [
+        "On your device. The whole app works without an account and offline. The account is optional: it syncs between devices and keeps a copy in the cloud."
+      ]
+    },
+    {
+      "title": "Reminders do not arrive",
+      "paragraphs": [
+        "Check that notifications are allowed for Habits in the device settings (in the app: Settings > Reminders > Allow notifications). A habit already done or skipped that day gets no more reminders that day. Reminders do not work in the browser."
+      ]
+    },
+    {
+      "title": "I forgot my password",
+      "paragraphs": [
+        "In the app, go to Settings > Account and sync, type your e-mail and tap \"I forgot my password\". The link arrives by e-mail; check the spam folder too."
+      ]
+    },
+    {
+      "title": "How do I move my data to another device?",
+      "paragraphs": [
+        "With an account: sign in with the same e-mail on the other device. Without one: use Settings > Backup > Export backup and, on the other device, Import backup."
+      ]
+    },
+    {
+      "title": "How do I delete my account?",
+      "paragraphs": [
+        "In the app: Settings > Account and sync > Delete account. All the details are on the account deletion page and in the privacy policy."
+      ]
+    }
+  ]
+}

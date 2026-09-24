@@ -59,23 +59,62 @@ Perfis (`eas.json`):
 6. Ficha da loja: textos da seção 6, ícone 512×512 (use `assets/images/icon.png`), imagem de
    destaque 1024×500 e pelo menos 2 capturas de tela do celular.
 
-## 4. App Store
+## 4. App Store (passo a passo)
 
-1. Assine o Apple Developer Program (US$ 99/ano) e crie o app no
-   [App Store Connect](https://appstoreconnect.apple.com) com o mesmo bundle id.
-2. `npx eas-cli@latest build -p ios --profile production` (o EAS cria certificados, perfis e o
-   App Group do widget automaticamente).
-3. `npx eas-cli@latest submit -p ios` → o build aparece no **TestFlight**. Teste no iPhone,
-   incluindo os widgets (primeira compilação do widget iOS — espere ajustes).
-4. **Privacidade do app** (App Privacy) e **classificação etária**: respostas prontas na seção 9.
-5. Revisão:
-   - Exclusão de conta dentro do app: ✅ (Ajustes → Excluir conta).
-   - "Sign in with Apple" **não** é exigido (o login é por e-mail, não por redes sociais).
-   - Criptografia: `ITSAppUsesNonExemptEncryption = false` já está no `app.json`.
-   - Notas para o revisor: "Todas as funções funcionam sem conta. A conta é opcional e serve só
-     para sincronizar entre aparelhos."
-6. Capturas: iPhone 6,9" (1320×2868 ou 1290×2796). iPad não é necessário
-   (`supportsTablet: false` na primeira versão).
+Já pronto no projeto: manifesto de privacidade do app e do widget (`ios.privacyManifests`,
+`targets/widget/PrivacyInfo.xcprivacy`), texto do Face ID em pt/en,
+`ITSAppUsesNonExemptEncryption` = false, HTTPS only, versão de runtime de loja
+(`app.config.js`: `appVersion` nos builds, `sdkVersion` só no `npm run publish:go`), exclusão de
+conta no app, página de suporte, política e página de exclusão de conta publicadas.
+
+1. **App Store Connect → Business**: aceite o **Free Apps Agreement** (se ainda estiver
+   pendente) e declare o **status de comerciante (DSA)** — pessoa física que não vende nada pode
+   se declarar "não comerciante". Conta bancária e impostos não são necessários (app gratuito).
+2. **Team ID** (developer.apple.com → Account → Membership details, 10 caracteres) em
+   `ios.appleTeamId` no `app.json`.
+3. **Build de produção** (no terminal do projeto; pede o login da Apple com 2FA):
+   ```bash
+   npx eas-cli@latest build -p ios --profile production
+   ```
+   Responda **sim** para: entrar na conta Apple, gerar o certificado de distribuição e os perfis
+   do app **e** do widget (`com.raulgardini.habits.widget`). O EAS registra os bundle ids e o
+   App Group `group.com.raulgardini.habits`. No plano grátis a fila pode levar ~30 min. Confira
+   no log: Xcode 26+ e os dois alvos (Habits e HabitsWidget) assinados.
+4. **Criar o app** no [App Store Connect](https://appstoreconnect.apple.com) → Apps → **+** →
+   Novo app: iOS, nome (seção 6), idioma principal **Português (Brasil)**, bundle id
+   **com.raulgardini.habits** (aparece na lista depois do passo 3), SKU `habits`.
+5. **Enviar o build**:
+   ```bash
+   npx eas-cli@latest submit -p ios --latest
+   ```
+   Deixe o EAS criar a chave da API do App Store Connect. O build aparece no **TestFlight** após
+   ~15 min de processamento. Adicione você como testador interno e instale pelo app TestFlight.
+   Teste a seção 8 inteira, com atenção a: Face ID, widgets (adicionar os dois, marcar pelo
+   widget com o app fechado), lembretes, instalação limpa com e sem conta, modo avião.
+6. **Ficha** (App Store Connect → o app → versão 1.0):
+   - Textos: seção 6 (pt-BR) e seção 6.1 (inglês — adicione o idioma "English (U.S.)").
+   - **URL de suporte**: https://habits-raul.expo.app/suporte.html
+   - **URL da política de privacidade**: https://habits-raul.expo.app/privacidade.html
+   - **Categoria**: Produtividade (secundária: Saúde e fitness). **Copyright**: 2026 Raul Passos Gardini.
+   - **Classificação etária** e **Privacidade do app**: respostas prontas na seção 9.
+   - **Preço**: grátis; disponibilidade nos países desejados.
+   - Capturas: iPhone 6,9" (1320×2868 ou 1290×2796). iPad não (`supportsTablet: false`).
+7. **Informações para a revisão**: nome, telefone, e-mail, **conta de demonstração** (e-mail e
+   senha de uma conta de teste já confirmada, com alguns hábitos e eventos) e as notas abaixo.
+8. **Enviar para revisão** (liberação manual recomendada na primeira versão).
+
+**Notas para o revisor** (em inglês — os revisores leem inglês):
+
+> Habits is a free habit tracker and agenda with no ads and no tracking. Everything works
+> without an account and offline; the account (e-mail + password) is optional and only syncs
+> data between the user's devices. A demo account with sample data is provided above.
+> Account deletion: Settings > Account and sync > Delete account (deletes the account and all
+> cloud data). Home screen widgets: "Today" (tap a habit to check it) and "Heatmap".
+> Reminders are local notifications; Face ID is only used for the optional app lock
+> (Settings > Privacy). The app is available in Portuguese and English (Settings > Language).
+
+**Depois de publicado**: correções de JS vão por EAS Update (seção 11); o `npm run publish:go`
+continua servindo só o Expo Go e não atinge o app da loja (versões de runtime diferentes).
 
 ## 5. Web
 
@@ -121,6 +160,41 @@ https://habits-raul.expo.app/privacidade.html — é essa URL que vai nas lojas.
 > entre aparelhos.
 >
 > Tema claro e escuro, feito com acessibilidade em mente. 100% gratuito.
+
+## 6.1 Textos da ficha (English)
+
+**Name (30):** Habits: Habit Tracker & Agenda
+
+**Subtitle (30):** Routines, goals and agenda
+
+**Keywords (100):** habits,routine,tracker,agenda,goals,calendar,streak,reminder,planner,productivity
+
+**Promotional text (170):** Build habits that stick — free, no ads, no account needed. Check off
+your day, see your streaks and plan your week, all on your device.
+
+**Description:**
+
+> Build habits that stick — no ads, no subscription and no account required.
+>
+> ✅ Habits your way: every day, on chosen weekdays, X times a week or month, or every X days.
+> Check them with one tap, count amounts (like liters of water) or use the timer.
+>
+> 📅 A Today screen organized by morning, afternoon and evening, with your daily progress.
+>
+> 🔥 Streaks that respect your frequency, completion rates, totals and your best weekday.
+> Heatmaps by week, month and year in each habit's color.
+>
+> 🗓️ A complete agenda: day, week, month and upcoming views, repeating events, all-day events,
+> location, reminders and conflict warnings. Monthly and yearly goals — linked to your habits,
+> too.
+>
+> 🔔 Reminders at the time you choose. Home screen widgets to check habits without opening the
+> app.
+>
+> 🔒 Your data stays on your device, with an optional app lock (Face ID). Backups whenever you
+> want and optional sync between your devices.
+>
+> Light and dark themes, built with accessibility in mind. 100% free.
 
 ## 7. Capturas de tela sugeridas
 
@@ -214,3 +288,41 @@ terror, jogos de azar, concursos, temas médicos ou de tratamento, acesso irrest
 conteúdo gerado pelo usuário visível a outros, mensagens/chat, controles parentais, verificação
 de idade → **4+**. Hábitos de bem-estar (beber água, exercício) não contam como informação médica.
 Não marcar "Feito para crianças" (Kids Category).
+
+## 10. Capacidade (muitos usuários)
+
+O app é **local primeiro**: cada aparelho tem o próprio banco, então o número de usuários só pesa
+no Supabase (sync e contas). Verificado:
+
+- **As consultas do sync usam índice** mesmo com 90 mil linhas de 300 usuários
+  (`npm run test:sql`, `EXPLAIN` com RLS): o custo por usuário não cresce com o total de usuários.
+- **Tráfego**: uma rodada de sync = 8 consultas pequenas (só o que mudou) + os envios; ao abrir o
+  app, ao voltar, ao reconectar e 4 s depois de mudanças. Falhas esperam 2 s, 4 s… até 5 min com
+  variação aleatória (sem "manada" de pedidos quando o servidor volta).
+- **Espaço** (o limite real do plano grátis, 500 MB): ~1,5 MB por usuário típico por ano (dados +
+  3 backups internos) → **~350 usuários-ano no plano grátis**, ~5 mil no Pro (US$ 25/mês, 8 GB).
+  Consulta para acompanhar em docs/SUPABASE.md; migre ao Pro ao passar de ~70%.
+- **E-mails** (cadastro e senha): Brevo grátis = 300/dia; acima disso, plano pago do Brevo ou
+  domínio próprio + outro provedor.
+- **Se um limite estourar**, o app continua funcionando no aparelho; só o sync fica com erro e
+  tenta de novo mais tarde. Nenhum dado local é perdido.
+- **EAS**: o plano grátis do Expo tem limites de builds por mês e de usuários ativos por mês no
+  EAS Update — confira em expo.dev/pricing antes de mandar atualizações para muitos usuários.
+
+## 11. Plano de rollback
+
+- **Bug de JS** (tela, regra, texto): corrija, rode `npm run check` e publique uma atualização para
+  os apps da loja (chega na próxima abertura, sem revisão da Apple):
+  ```bash
+  npx eas-cli@latest update --channel production --environment production --platform ios --message "Correção"
+  ```
+  Voltar a uma versão anterior: `npx eas-cli@latest update:rollback` (ou republicar o commit
+  anterior). Não use EAS Update para mudanças grandes de funcionalidade (regra da Apple).
+- **Bug nativo** (biblioteca nativa, permissões, widget, `app.json`): aumente `version` no
+  `app.json` (ex.: 1.0.1 — muda a versão de runtime), gere um build novo e envie para revisão
+  (costuma levar 1–2 dias). Enquanto isso, se o bug for grave, desligue a função com uma
+  atualização de JS.
+- **Servidor** (Supabase): o app funciona offline; restaure o banco com `scripts/db-restore.sh` a
+  partir do backup semanal criptografado (docs/SUPABASE.md).
+- **Primeira semana**: acompanhe App Store Connect (TestFlight → Crashes, Avaliações) e o e-mail
+  de suporte.

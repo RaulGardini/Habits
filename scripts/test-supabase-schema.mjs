@@ -114,6 +114,41 @@ const left = await db.query(`select
   (select count(*) from public.habits where user_id = '${B}')::int as other`);
 assert.deepEqual(left.rows[0], { habits: 0, settings: 0, backups: 0, users: 0, other: 1 });
 
+// Many users: every query the sync makes must use an index for the signed-in user's rows, never
+// scan the whole table (it grows with every account). 300 users × 300 entries.
+const USERS = 300;
+const PER_USER = 300;
+await db.exec(`
+  insert into auth.users
+    select ('00000000-0000-0000-0000-' || lpad(to_hex(n), 12, '0'))::uuid
+    from generate_series(1000, 999 + ${USERS}) as n;
+  insert into public.habit_entries (user_id, id, habit_id, date, status, created_at, updated_at)
+    select u.id, 'e' || i, 'h' || (i % 8), '2026-01-01', 'done', '2026-01-01', '2026-01-01'
+    from auth.users u, generate_series(1, ${PER_USER}) as i
+    where u.id not in ('${A}', '${B}');
+  analyze public.habit_entries;
+`);
+const someone = `00000000-0000-0000-0000-${(1150).toString(16).padStart(12, '0')}`;
+const syncQueries = {
+  // RemoteStore.pull: changes after the cursor, oldest first.
+  pull: `select * from public.habit_entries where server_updated_at > '2000-01-01'
+         order by server_updated_at limit 500`,
+  // RemoteStore.keys: every id, page by page.
+  keys: 'select id from public.habit_entries order by id limit 1000 offset 0',
+  // RemoteStore.hasData: does the account have anything?
+  hasData: 'select id from public.habit_entries where deleted_at is null limit 1',
+};
+for (const [name, sql] of Object.entries(syncQueries)) {
+  const plan = (await as(someone, `explain ${sql}`)).rows.map((row) => row['QUERY PLAN']);
+  assert.ok(
+    !plan.some((line) => /Seq Scan on habit_entries/.test(line)),
+    `${name} scans the whole table:\n${plan.join('\n')}`,
+  );
+  const rows = (await as(someone, sql)).rows;
+  assert.ok(rows.length > 0 && rows.length <= PER_USER, `${name} returned ${rows.length} rows`);
+}
+
 console.log(
-  'supabase/schema.sql OK: server-time LWW, RLS isolation, cloud backups and account deletion',
+  `supabase/schema.sql OK: server-time LWW, RLS isolation, cloud backups, account deletion; ` +
+    `sync queries use indexes with ${USERS * PER_USER} rows`,
 );

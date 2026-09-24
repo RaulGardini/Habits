@@ -1,0 +1,43 @@
+{
+  "title": "Suporte",
+  "updatedAt": "24 de setembro de 2026",
+  "sections": [
+    {
+      "title": "Fale com a gente",
+      "paragraphs": [
+        "Dúvidas, sugestões ou algo que não funcionou? Escreva para rap.gardini@gmail.com. Respondemos em até 3 dias úteis.",
+        "Se for um problema, conte o que você fez, o que esperava e o que aconteceu, e qual aparelho usa (iPhone, Android ou navegador)."
+      ]
+    },
+    {
+      "title": "Onde ficam meus dados?",
+      "paragraphs": [
+        "No seu aparelho. O app funciona inteiro sem conta e sem internet. A conta é opcional e serve para sincronizar entre aparelhos e guardar uma cópia na nuvem."
+      ]
+    },
+    {
+      "title": "Os lembretes não chegam",
+      "paragraphs": [
+        "Confira se as notificações do Habits estão permitidas nos ajustes do aparelho (no app: Ajustes > Lembretes > Permitir notificações). Um hábito já feito ou pulado no dia não recebe mais lembretes naquele dia. No navegador os lembretes não funcionam."
+      ]
+    },
+    {
+      "title": "Esqueci minha senha",
+      "paragraphs": [
+        "No app, em Ajustes > Conta e sincronização, digite seu e-mail e toque em \"Esqueci minha senha\". O link chega por e-mail; confira também o spam."
+      ]
+    },
+    {
+      "title": "Como levar meus dados para outro aparelho?",
+      "paragraphs": [
+        "Com conta: entre com o mesmo e-mail no outro aparelho. Sem conta: use Ajustes > Backup > Exportar backup e, no outro aparelho, Importar backup."
+      ]
+    },
+    {
+      "title": "Como excluir minha conta?",
+      "paragraphs": [
+        "No app: Ajustes > Conta e sincronização > Excluir conta. Veja todos os detalhes na página de exclusão de conta e na política de privacidade."
+      ]
+    }
+  ]
+}

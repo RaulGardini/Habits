@@ -455,6 +455,10 @@ export const EN: Record<string, string> = {
   'Esta tela teve um problema. Seus dados continuam salvos.':
     'This screen ran into a problem. Your data is still saved.',
   'Tentar de novo': 'Try again',
+  'Ajuda e contato': 'Help and contact',
+  'Abre a página de suporte no navegador': 'Opens the support page in the browser',
+  'Não foi possível abrir a página de suporte.': 'The support page could not be opened.',
+  'Habits {version} · gratuito e sem anúncios.': 'Habits {version} · free and ad-free.',
   'Sincronizando…': 'Syncing…',
   'Falha na sincronização.': 'Sync failed.',
   'Conectado como': 'Signed in as',

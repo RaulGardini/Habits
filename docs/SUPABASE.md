@@ -130,11 +130,13 @@ tudo de volta.
 
 **Estimativa de espaço** (medida com a massa de teste do app): um usuário que usa muito
 (40 hábitos) gera ~15 mil linhas por ano, e cada cópia do backup interno (`cloud_backups`) tem
-~3 MB por ano de histórico (9,3 MB com 3 anos). Como o app guarda **8 cópias por usuário**, o
-backup interno ocupa bem mais que os próprios dados: ~25–40 MB por usuário intenso com alguns
-anos (o Postgres comprime parte disso). Com 500 MB, isso dá dezenas de usuários intensos ou
-algumas centenas de usuários leves. Antes de crescer: guardar menos cópias (ex.: 3), comprimir
-o JSON, ou passar ao plano Pro.
+~3 MB por ano de histórico (9,3 MB com 3 anos). O app guarda **3 cópias por usuário** (eram 8;
+as antigas somem no próximo backup de cada usuário). Um usuário típico (8 hábitos, 1 ano,
+~2,5 mil registros) ocupa ~0,75 MB de dados sincronizados + ~0,7 MB de backups internos (o
+Postgres comprime parte do JSON). Com os 500 MB do plano grátis isso dá **~350 usuários-ano**;
+o plano Pro (US$ 25/mês, 8 GB inclusos) dá ~5 mil. Acompanhe com a consulta abaixo e migre
+quando passar de ~70% do espaço. Se o limite for atingido, o app continua funcionando no
+aparelho (é local primeiro): só o sync para até liberar espaço.
 
 Para ver o tamanho atual (SQL Editor):
 

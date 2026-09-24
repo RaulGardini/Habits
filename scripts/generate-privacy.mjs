@@ -84,3 +84,41 @@ for (const { file, deletionFile, source, lang, updated, fullPolicy } of policies
     }),
   );
 }
+
+// Support page (the App Store requires a support URL): contact + common questions.
+const supportPages = [
+  {
+    file: 'suporte.html',
+    source: 'support.pt.json',
+    lang: 'pt-BR',
+    updated: 'Atualizada em',
+    links: [
+      ['privacidade.html', 'Política de privacidade'],
+      ['excluir-conta.html', 'Excluir conta'],
+    ],
+  },
+  {
+    file: 'support.html',
+    source: 'support.en.json',
+    lang: 'en',
+    updated: 'Last updated',
+    links: [
+      ['privacy.html', 'Privacy policy'],
+      ['delete-account.html', 'Delete account'],
+    ],
+  },
+];
+for (const { file, source, lang, updated, links } of supportPages) {
+  const support = JSON.parse(
+    readFileSync(new URL(`../src/features/legal/${source}`, import.meta.url), 'utf8'),
+  );
+  const footer = links.map(([href, label]) => `<a href="${href}">${label}</a>`).join(' · ');
+  write(
+    file,
+    page({
+      lang,
+      title: support.title,
+      body: `<h1>Habits — ${escape(support.title)}</h1>\n<p class="muted">${updated} ${escape(support.updatedAt)}</p>\n${support.sections.map(renderSection).join('\n')}\n<p>${footer}</p>`,
+    }),
+  );
+}

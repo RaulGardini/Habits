@@ -48,18 +48,33 @@ function png(name, markup, width) {
 // iOS / generic icon: full-bleed, no transparency (iOS applies its own mask).
 png(
   'icon.png',
-  svg(1024, `${gradient}<rect width="1024" height="1024" fill="url(#bg)"/>${logo({ size: 1024, grid: 600, cell: '#ffffff', check: INDIGO })}`),
+  svg(
+    1024,
+    `${gradient}<rect width="1024" height="1024" fill="url(#bg)"/>${logo({ size: 1024, grid: 600, cell: '#ffffff', check: INDIGO })}`,
+  ),
 );
 // Android adaptive icon: logo inside the 66% safe zone on a separate background layer.
-png('android-icon-foreground.png', svg(1024, logo({ size: 1024, grid: 520, cell: '#ffffff', check: INDIGO })));
-png('android-icon-background.png', svg(1024, `${gradient}<rect width="1024" height="1024" fill="url(#bg)"/>`));
-png('android-icon-monochrome.png', svg(1024, logo({ size: 1024, grid: 520, cell: '#ffffff', mask: true })));
+png(
+  'android-icon-foreground.png',
+  svg(1024, logo({ size: 1024, grid: 520, cell: '#ffffff', check: INDIGO })),
+);
+png(
+  'android-icon-background.png',
+  svg(1024, `${gradient}<rect width="1024" height="1024" fill="url(#bg)"/>`),
+);
+png(
+  'android-icon-monochrome.png',
+  svg(1024, logo({ size: 1024, grid: 520, cell: '#ffffff', mask: true })),
+);
 // Splash: logo on transparent (background color comes from app.json, light and dark).
 png('splash-icon.png', svg(1024, logo({ size: 1024, grid: 1024, cell: INDIGO, check: '#ffffff' })));
 // Web favicon.
 png(
   'favicon.png',
-  svg(1024, `${gradient}<rect width="1024" height="1024" rx="220" fill="url(#bg)"/>${logo({ size: 1024, grid: 680, cell: '#ffffff', check: INDIGO })}`),
+  svg(
+    1024,
+    `${gradient}<rect width="1024" height="1024" rx="220" fill="url(#bg)"/>${logo({ size: 1024, grid: 680, cell: '#ffffff', check: INDIGO })}`,
+  ),
   64,
 );
 

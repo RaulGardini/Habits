@@ -30,7 +30,8 @@ npm run test:tz      # date tests once per device time zone (Jest cannot switch 
 npm run db:generate  # generate a migration after editing src/db/schema.ts
 npm run format       # prettier
 npm run assets       # regenerate icon/splash/favicon/widget previews (scripts/generate-assets.mjs)
-npm run legal        # rebuild the public policy + account deletion pages (src/features/legal)
+npm run legal        # rebuild the public policy, account deletion and support pages (src/features/legal)
+npm run publish:go   # publish the iOS JS bundle for Expo Go (owner's iPhone)
 ```
 
 Always add Expo packages with `npx expo install <pkg>` (SDK-compatible versions).
@@ -174,7 +175,7 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 ## Cloud backups (`src/core/backup/cloudBackup.ts`, `src/stores/cloudBackupStore.ts`)
 
 - The free Supabase plan has no restorable backups, so the app keeps its own: a full snapshot in
-  `public.cloud_backups` every 7 days (checked after each successful sync), keeping the latest 8.
+  `public.cloud_backups` every 7 days (checked after each successful sync), keeping the latest 3 (`CLOUD_BACKUPS_KEPT`; each copy is a full snapshot, the main cost in cloud storage).
 - Device-only settings are stripped (`pushableRows`). A restore stamps every row with the restore
   time so it wins the LWW merge everywhere, then syncs; the current state is snapshotted first.
 - Settings shows the list with "Fazer backup agora" / "Restaurar" while signed in.
@@ -323,12 +324,19 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   `jjmgidotiujptltxpfls`; URL + publishable key in `.env.local` (local/web export) and in EAS env
   (development/preview/production, used by `eas update --environment production`).
 - `public/_redirects` makes SPA routes work on Netlify/Cloudflare Pages.
-- The owner uses the app on iPhone through **Expo Go + EAS Update** (no paid Apple account):
-  `npm run publish:go` publishes the iOS JS bundle to channel `production`; Expo Go opens
-  `exp://u.expo.dev/<projectId>?channel-name=production&runtime-version=exposdk:57.0.0`.
-  That requires `runtimeVersion.policy = "sdkVersion"` (Expo Go only loads `exposdk:*` runtimes)
-  and only Expo Go-compatible native modules. After an SDK upgrade, republish. Switch the policy
-  to `fingerprint`/`appVersion` if real store builds start using EAS Update.
+- Runtime version (`app.config.js`): store builds and store updates use `appVersion` (bump
+  `version` in app.json whenever native code changes); `npm run publish:go`
+  (`scripts/publish-go.mjs`) sets `EXPO_GO_RUNTIME=1` → `sdkVersion`, the only runtime Expo Go
+  loads (`exposdk:57.0.0`). Both share channel `production`; runtimes keep them apart.
+- The owner also uses the app on iPhone through **Expo Go + EAS Update**: Expo Go opens
+  `exp://u.expo.dev/<projectId>?channel-name=production&runtime-version=exposdk:57.0.0`. Only
+  Expo Go-compatible native modules; after an SDK upgrade, republish.
+- iOS privacy manifests: `ios.privacyManifests` in app.json aggregates the required-reason APIs
+  of React Native + Expo modules (Apple does not read the pods' own files) plus App Group
+  UserDefaults (`1C8F.1`); the widget has `targets/widget/PrivacyInfo.xcprivacy`. After adding a
+  native library, check its `PrivacyInfo.xcprivacy` and merge new reasons.
+- Support page (App Store support URL): `src/features/legal/support.{pt,en}.json` →
+  `public/suporte.html` / `support.html` (`npm run legal`), linked in Settings ("Ajuda e contato").
 
 ## Roadmap
 

@@ -1,9 +1,10 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 
 import { BackupError } from '@/core/backup/backup';
+import { supportUrl } from '@/lib/links';
 import type { WeekStartsOn } from '@/core/habits/types';
 import {
   ensurePermission,
@@ -154,12 +155,25 @@ export function SettingsScreen() {
 
       <Button
         variant="ghost"
+        icon="lifebuoy"
+        label={t('Ajuda e contato')}
+        accessibilityHint={t('Abre a página de suporte no navegador')}
+        onPress={() => {
+          Linking.openURL(supportUrl()).catch((error: unknown) =>
+            showError(t('Não foi possível abrir a página de suporte.'), error),
+          );
+        }}
+      />
+      <Button
+        variant="ghost"
         icon="shield-lock-outline"
         label={t('Política de privacidade')}
         onPress={() => router.push('/privacy')}
       />
       <AppText variant="caption" tone="muted" style={styles.about}>
-        Habits {Constants.expoConfig?.version ?? ''} · gratuito e sem anúncios.
+        {t('Habits {version} · gratuito e sem anúncios.', {
+          version: Constants.expoConfig?.version ?? '',
+        })}
       </AppText>
     </Screen>
   );

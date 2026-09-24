@@ -1,6 +1,6 @@
 {
   "title": "Política de privacidade",
-  "updatedAt": "23 de setembro de 2026",
+  "updatedAt": "24 de setembro de 2026",
   "sections": [
     {
       "title": "Resumo",
@@ -55,7 +55,7 @@
       "title": "Por quanto tempo guardamos",
       "paragraphs": [
         "No aparelho: até você apagar os dados, sair da conta ou desinstalar o app.",
-        "Na nuvem: enquanto a conta existir. O app também guarda na sua conta as 8 cópias de segurança semanais mais recentes, que você vê e restaura em Ajustes. Ao excluir a conta, tudo isso é apagado na hora; só as cópias de segurança criptografadas do banco (GitHub) duram até 90 dias, até serem apagadas automaticamente, e não são usadas para mais nada."
+        "Na nuvem: enquanto a conta existir. O app também guarda na sua conta as 3 cópias de segurança semanais mais recentes, que você vê e restaura em Ajustes. Ao excluir a conta, tudo isso é apagado na hora; só as cópias de segurança criptografadas do banco (GitHub) duram até 90 dias, até serem apagadas automaticamente, e não são usadas para mais nada."
       ]
     },
     {
