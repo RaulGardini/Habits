@@ -10,6 +10,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
 import { Button } from '@/ui/Button';
+import { Card } from '@/ui/Card';
 import { confirm, showError } from '@/ui/dialogs';
 import { TextField } from '@/ui/TextField';
 
@@ -54,7 +55,7 @@ function SignInForm() {
     setBusy(false);
     if (result === 'confirm') {
       setMessage({
-        text: 'Conta criada! Abra o link enviado para o seu e-mail e depois entre aqui.',
+        text: t('Conta criada! Abra o link enviado para o seu e-mail e depois entre aqui.'),
         error: false,
       });
     } else if (result) {
@@ -144,11 +145,13 @@ function SignedIn({ email }: { email: string }) {
   const signOut = useSyncStore((state) => state.signOut);
   const deleteAccount = useSyncStore((state) => state.deleteAccount);
 
+  const firstSync = useSyncStore((state) => state.firstSync);
+
   const statusText =
     status === 'syncing'
-      ? 'Sincronizando…'
+      ? t('Sincronizando…')
       : status === 'error'
-        ? (error ?? 'Falha na sincronização.')
+        ? (error ?? t('Falha na sincronização.'))
         : lastSyncAt
           ? t('Última sincronização: {date}', {
               date: formatWith(parseISO(lastSyncAt), "d 'de' MMM, HH:mm", 'MMM d, HH:mm'),
@@ -203,8 +206,9 @@ function SignedIn({ email }: { email: string }) {
   return (
     <View style={styles.container}>
       <AppText>
-        Conectado como <AppText variant="bodyStrong">{email}</AppText>
+        {t('Conectado como')} <AppText variant="bodyStrong">{email}</AppText>
       </AppText>
+      {firstSync ? <FirstSyncChoice {...firstSync} /> : null}
       <AppText
         variant="caption"
         tone={status === 'error' ? colors.danger : 'muted'}
@@ -237,7 +241,64 @@ function SignedIn({ email }: { email: string }) {
   );
 }
 
+/**
+ * Signed in to an account that already has data, on a device with data of its own: keep only
+ * the account's (usual: "I forgot I had an account") or add this device's to it.
+ */
+function FirstSyncChoice({ habits, other }: { habits: number; other: number }) {
+  const resolveFirstSync = useSyncStore((state) => state.resolveFirstSync);
+  const [busy, setBusy] = useState(false);
+
+  const choose = async (choice: 'account' | 'merge') => {
+    if (choice === 'account') {
+      const ok = await confirm({
+        title: t('Apagar os dados deste aparelho?'),
+        message: t(
+          'O que foi criado neste aparelho antes de entrar será apagado, e os dados da sua conta aparecem no lugar. Isso não pode ser desfeito.',
+        ),
+        confirmLabel: t('Usar os da conta'),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    setBusy(true);
+    try {
+      await resolveFirstSync(choice);
+    } catch (err) {
+      showError(t('Não foi possível sincronizar.'), err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card style={styles.choice}>
+      <AppText variant="bodyStrong">{t('Esta conta já tem dados')}</AppText>
+      <AppText tone="muted">
+        {t(
+          'Antes de entrar, este aparelho já tinha {habits} hábitos e {other} outros itens (dias marcados, agenda, metas). O que fazer com eles?',
+          { habits, other },
+        )}
+      </AppText>
+      <Button
+        icon="account-check-outline"
+        label={t('Usar só os da conta')}
+        onPress={() => void choose('account')}
+        disabled={busy}
+      />
+      <Button
+        variant="secondary"
+        icon="call-merge"
+        label={t('Juntar com a conta')}
+        onPress={() => void choose('merge')}
+        disabled={busy}
+      />
+    </Card>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { gap: spacing.md },
+  choice: { gap: spacing.sm },
   buttons: { gap: spacing.sm },
 });

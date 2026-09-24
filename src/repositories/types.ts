@@ -105,6 +105,8 @@ export interface BackupRepository {
    * cloud) and returns how many. Rows the cloud has are left alone.
    */
   enqueueMissing(remoteKeys: Record<BackupTable, ReadonlySet<string>>): Promise<number>;
+  /** What the user created on this device (not deleted): habits, and everything else. */
+  countItems(): Promise<{ habits: number; other: number }>;
   /**
    * Applies rows pulled from the cloud, in server order (see `planRemoteApply`): the server
    * wins except over local changes still waiting to be pushed. Not queued for push again.

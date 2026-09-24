@@ -249,8 +249,12 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   (asks first when changes could not be sent); an expired session only stops sync (`notice`).
 - `useSyncStore` owns auth + sync status; bootstrap triggers sync on start, foreground, when
   the network comes back (`expo-network`) and 4 s after local changes. One round at a time (a request during a round runs another after);
-  failures retry with exponential backoff (`retryDelayMs`). The first sync of the device with an
-  account (`SyncState.userId`) queues every row (`enqueueAll`). Once per device and account
+  failures retry with exponential backoff (`retryDelayMs`). First sync of the device with an
+  account (`SyncState.userId`, `accountState`): empty account → every local row is queued
+  (`enqueueAll`, "create habits, then an account"); account with data and nothing created on
+  the device → the account's data comes down and the outbox is dropped (local preferences never
+  override it); both have data → `firstSync` is set, sync waits, and Settings asks "Usar só os
+  da conta" (deletes the device's data) or "Juntar com a conta" (`resolveFirstSync`). Once per device and account
   (`SyncState.verified`), `queueMissing` compares keys with the cloud and queues the local rows
   it never got (rows lost by the clock-based pushes before the outbox) — never overwriting rows
   the cloud has.

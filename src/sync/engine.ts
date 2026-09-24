@@ -33,6 +33,8 @@ export interface RemoteStore {
   deleteAll(): Promise<void>;
   /** Every key (`id`, or `key` for settings) the signed-in user has in `table`. */
   keys(table: string): Promise<string[]>;
+  /** The account already has something of its own in the cloud (settings aside). */
+  hasData(): Promise<boolean>;
 }
 
 export interface SyncResult {

@@ -50,6 +50,12 @@ export function createFakeRemote(): RemoteStore & {
       check();
       tables.clear();
     },
+    async hasData() {
+      check();
+      return [...tables].some(
+        ([name, rows]) => name !== 'settings' && [...rows.values()].some((row) => !row.deleted_at),
+      );
+    },
     async keys(name) {
       check();
       return [...tableOf(name).keys()];

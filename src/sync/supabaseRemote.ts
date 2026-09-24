@@ -37,6 +37,20 @@ export function createSupabaseRemote(client: SupabaseClient, userId: string): Re
       return (data ?? []) as Record<string, unknown>[];
     },
 
+    async hasData() {
+      for (const table of Object.values(REMOTE_TABLES)) {
+        if (table === 'settings') continue;
+        const { data, error } = await client
+          .from(table)
+          .select('id')
+          .is('deleted_at', null)
+          .limit(1);
+        if (error) throw new Error(error.message);
+        if ((data ?? []).length > 0) return true;
+      }
+      return false;
+    },
+
     async keys(table) {
       const column = table === 'settings' ? 'key' : 'id';
       const keys: string[] = [];

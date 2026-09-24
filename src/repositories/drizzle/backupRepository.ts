@@ -1,4 +1,4 @@
-import { eq, getTableColumns, inArray, lte } from 'drizzle-orm';
+import { count, eq, getTableColumns, inArray, isNull, lte } from 'drizzle-orm';
 import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core';
 
 import {
@@ -129,6 +129,21 @@ export function createDrizzleBackupRepository(db: Database): BackupRepository {
 
     async enqueueMissing(remoteKeys) {
       return enqueue((name, key) => !remoteKeys[name].has(key));
+    },
+
+    async countItems() {
+      const active = async (name: Exclude<BackupTable, 'settings'>) => {
+        const table = TABLES[name];
+        const deletedAt = getTableColumns(table).deletedAt as SQLiteColumn;
+        const [row] = await db.select({ n: count() }).from(table).where(isNull(deletedAt));
+        return row?.n ?? 0;
+      };
+      const habits = await active('habits');
+      let other = 0;
+      for (const name of ['habitEntries', 'events', 'goals', 'tasks', 'dayNotes'] as const) {
+        other += await active(name);
+      }
+      return { habits, other };
     },
 
     async applyRemote(tables) {

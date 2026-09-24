@@ -455,6 +455,19 @@ export const EN: Record<string, string> = {
   'Esta tela teve um problema. Seus dados continuam salvos.':
     'This screen ran into a problem. Your data is still saved.',
   'Tentar de novo': 'Try again',
+  'Sincronizando…': 'Syncing…',
+  'Falha na sincronização.': 'Sync failed.',
+  'Conectado como': 'Signed in as',
+  'Esta conta já tem dados': 'This account already has data',
+  'Antes de entrar, este aparelho já tinha {habits} hábitos e {other} outros itens (dias marcados, agenda, metas). O que fazer com eles?':
+    'Before you signed in, this device already had {habits} habits and {other} other items (checked days, agenda, goals). What should happen to them?',
+  'Usar só os da conta': "Keep only the account's",
+  'Juntar com a conta': 'Add them to the account',
+  'Apagar os dados deste aparelho?': "Delete this device's data?",
+  'O que foi criado neste aparelho antes de entrar será apagado, e os dados da sua conta aparecem no lugar. Isso não pode ser desfeito.':
+    "What was created on this device before signing in will be deleted, and your account's data takes its place. This cannot be undone.",
+  'Usar os da conta': "Use the account's",
+  'Não foi possível sincronizar.': 'Could not sync.',
   'Evento não encontrado': 'Event not found',
   'Ele pode ter sido apagado em outro aparelho.': 'It may have been deleted on another device.',
   'Meta não encontrada': 'Goal not found',

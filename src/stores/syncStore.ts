@@ -22,7 +22,7 @@ import { authStorage } from '@/lib/authStorage';
 import { isPwnedPassword } from '@/lib/pwnedPasswords';
 import { getRepositories, type BackupRepository } from '@/repositories';
 import { supabase, syncConfigured } from '@/sync/client';
-import { queueMissing, runSync } from '@/sync/engine';
+import { queueMissing, runSync, type RemoteStore } from '@/sync/engine';
 import { createSupabaseRemote } from '@/sync/supabaseRemote';
 
 import { deleteAllData, reloadAll } from './dataActions';
@@ -42,6 +42,13 @@ interface SyncStoreState {
   error: string | null;
   /** Shown on the sign-in form, e.g. when the session expired. */
   notice: string | null;
+  /**
+   * First sync of this device with an account that already has data, while this device has
+   * data of its own: sync waits until the user picks (`resolveFirstSync`).
+   */
+  firstSync: { habits: number; other: number } | null;
+  /** 'account': delete this device's data and keep the account's. 'merge': send it too. */
+  resolveFirstSync(choice: 'account' | 'merge'): Promise<void>;
   init(): Promise<void>;
   /** Returns an error message, or null on success. Throttled after wrong passwords. */
   signIn(email: string, password: string): Promise<string | null>;
@@ -131,20 +138,44 @@ function stopRetrying(): void {
 }
 
 /**
- * Sync state for the signed-in account. The first sync of this device with an account (or with
- * another account than last time) queues every local row, so that account gets all of it.
+ * Sync state for the signed-in account. On the first sync of this device with an account (or
+ * with another account than last time):
+ * - the account is new/empty: every local row is queued, so it gets what was created offline;
+ * - the account has data and this device has none of its own: the account's data comes down,
+ *   and nothing local (preferences changed while signed out) overrides it;
+ * - both have data: the user decides (`ask`).
  * States saved by the previous engine (cursors but no account) keep going as they were: their
  * unsent changes were queued by migration 0005.
  */
-async function accountState(backup: BackupRepository, userId: string): Promise<SyncState> {
+async function accountState(
+  backup: BackupRepository,
+  remote: RemoteStore,
+  userId: string,
+): Promise<SyncState | { ask: { habits: number; other: number } }> {
   const state = await loadSyncState();
   if (state.userId === userId) return state;
   const legacy = state.userId === undefined && Object.keys(state.cursors).length > 0;
   if (legacy) return { ...state, userId };
-  await backup.enqueueAll();
+  if (await remote.hasData()) {
+    const local = await backup.countItems();
+    if (local.habits + local.other > 0) return { ask: local };
+    await discardOutbox(backup);
+  } else {
+    await backup.enqueueAll();
+  }
+  return startAccount(userId);
+}
+
+async function startAccount(userId: string): Promise<SyncState> {
   const fresh: SyncState = { userId, cursors: {} };
   await saveSyncState(fresh);
   return fresh;
+}
+
+/** Local changes queued while signed out must not override an existing account. */
+async function discardOutbox(backup: BackupRepository): Promise<void> {
+  const { upTo } = await backup.pendingChanges();
+  await backup.markPushed(upTo);
 }
 
 export const useSyncStore = create<SyncStoreState>()((set, get) => {
@@ -162,6 +193,7 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
     lastSyncAt: null,
     error: null,
     notice: null,
+    firstSync: null,
 
     async init() {
       if (!supabase) return;
@@ -177,6 +209,7 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
           set({
             status: 'idle',
             error: null,
+            firstSync: null,
             notice: t(
               'Sua sessão expirou. Entre de novo para voltar a sincronizar — seus dados continuam neste aparelho.',
             ),
@@ -280,15 +313,31 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
         lastSyncAt: null,
         error: null,
         notice: null,
+        firstSync: null,
       });
       // The account's data leaves this device (it stays in the cloud).
       await deleteAllData();
       return null;
     },
 
+    async resolveFirstSync(choice) {
+      const userId = get().userId;
+      if (!userId || !get().firstSync) return;
+      const { backup } = getRepositories();
+      if (choice === 'account') {
+        await deleteAllData(); // the account's data replaces this device's
+      } else {
+        await backup.enqueueAll();
+      }
+      await startAccount(userId);
+      set({ firstSync: null });
+      await get().syncNow();
+    },
+
     syncNow() {
       const userId = get().userId;
-      if (!supabase || !userId) return Promise.resolve();
+      // Waiting for the user's choice (first sync, see accountState): nothing moves meanwhile.
+      if (!supabase || !userId || get().firstSync) return Promise.resolve();
       if (running) {
         // Changes made during this round are pushed by another one right after it.
         again = true;
@@ -298,7 +347,11 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
         set({ status: 'syncing', error: null });
         try {
           const { backup } = getRepositories();
-          const state = await accountState(backup, userId);
+          const state = await accountState(backup, remote(), userId);
+          if ('ask' in state) {
+            set({ status: 'idle', firstSync: state.ask });
+            return;
+          }
           const result = await runSync(backup, remote(), state);
           if (!result.state.verified) {
             // Once per device and account: send what the cloud never got (see queueMissing).
@@ -349,6 +402,7 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
         lastSyncAt: null,
         error: null,
         notice: null,
+        firstSync: null,
       });
     },
   };
