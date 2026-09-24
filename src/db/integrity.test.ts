@@ -1,9 +1,12 @@
 import { sql } from 'drizzle-orm';
 
+import { createBackup, parseBackup } from '@/core/backup/backup';
 import type { HabitDraft } from '@/core/habits/types';
 import { createDrizzleRepositories } from '@/repositories/drizzle';
 
+import { insertSeedData } from './loadTest';
 import { bundledMigrations, prepareDatabase, type MigrationBundle } from './migrate';
+import { generateSeedData } from './seed';
 import { migrationAdapter, openTestDatabase, wrapSqlJs } from './testing';
 
 jest.mock('expo-crypto', () => {
@@ -285,5 +288,53 @@ describe('integrity', () => {
       repos.entries.upsert(habit.id, '2026-03-01', { status: 'skipped' }),
     ]);
     expect((await repos.entries.listByDate('2026-03-01'))[0]?.status).toBe('skipped');
+  });
+});
+
+describe('backup import', () => {
+  it('accepts a real export (a year of data) through the file validation', async () => {
+    const { db } = await openTestDatabase();
+    const repos = createDrizzleRepositories(db);
+    await insertSeedData(db, generateSeedData({ today: '2026-09-23', habits: 10, years: 1 }));
+    await repos.habits.create(draft());
+    await repos.settings.set('displayName', 'Raul');
+    const exported = await repos.backup.exportAll();
+    const file = parseBackup(JSON.stringify(createBackup(exported, new Date())));
+    expect(file.tables.habitEntries.length).toBe(exported.habitEntries.length);
+
+    const fresh = createDrizzleRepositories((await openTestDatabase()).db);
+    const summary = await fresh.backup.importMerge(file.tables);
+    expect(summary.inserted).toBe(Object.values(exported).reduce((n, rows) => n + rows.length, 0));
+  });
+
+  it('imports all or nothing: a bad row halfway leaves the database untouched', async () => {
+    const { sqlite, db } = await openTestDatabase();
+    const repos = createDrizzleRepositories(db);
+    const habit = await repos.habits.create(draft({ name: 'Existente' }));
+    await repos.entries.upsert(habit.id, '2026-01-01', { status: 'done' });
+    const count = (table: string) => Number(scalar(sqlite, `SELECT count(*) FROM ${table}`));
+    const before = ['habits', 'habit_entries', 'tasks', 'goals', 'settings'].map(count);
+
+    const source = createDrizzleRepositories((await openTestDatabase()).db);
+    const other = await source.habits.create(draft({ name: 'Do backup' }));
+    await source.entries.upsert(other.id, '2026-01-02', { status: 'done' });
+    await source.tasks.create({ title: 'Tarefa', date: '2026-01-02', priority: 'normal' });
+    const tables = await source.backup.exportAll();
+    // A goal without its target (NOT NULL): it comes after habits, entries and tasks.
+    tables.goals = [
+      {
+        id: 'g1',
+        title: 'Meta',
+        scope: 'month',
+        period: '2026-01',
+        target: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    ];
+
+    expect(await sqliteError(repos.backup.importMerge(tables))).toMatch(/NOT NULL/);
+    expect(['habits', 'habit_entries', 'tasks', 'goals', 'settings'].map(count)).toEqual(before);
+    expect((await repos.habits.list()).map((h) => h.name)).toEqual(['Existente']);
   });
 });

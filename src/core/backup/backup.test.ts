@@ -59,6 +59,49 @@ describe('createBackup / parseBackup', () => {
     expect(() => parseBackup(json)).toThrow(message);
   });
 
+  it.each([
+    ['habits', habitRow({ timeOfDay: 'midnight' }), 'timeOfDay'],
+    ['habits', habitRow({ startDate: '01/09/2026' }), 'startDate'],
+    ['habits', habitRow({ targetValue: 'muito' }), 'targetValue'],
+    ['habits', habitRow({ updatedAt: 'ontem' }), 'updatedAt'],
+    [
+      'habitEntries',
+      {
+        id: 'e',
+        habitId: 'h1',
+        date: '2026-09-01',
+        status: 'hacked',
+        createdAt: 'x',
+        updatedAt: '2026-09-01T00:00:00Z',
+      },
+      'status',
+    ],
+    [
+      'habitReminders',
+      { id: 'r', habitId: 'h1', time: '25:00', createdAt: 'x', updatedAt: '2026-09-01T00:00:00Z' },
+      'time',
+    ],
+    ['settings', { key: 'theme', value: '{not json', updatedAt: '2026-09-01T00:00:00Z' }, 'value'],
+  ])('rejects invalid values in %s (%s)', (table, row, column) => {
+    const json = JSON.stringify({ app: 'habits', version: 1, tables: { [table]: [row] } });
+    expect(() => parseBackup(json)).toThrow(`"${column}" inválido`);
+  });
+
+  it.each([0, -1, 1.5, '1'])('rejects version %p', (version) => {
+    expect(() => parseBackup(JSON.stringify({ app: 'habits', version, tables: {} }))).toThrow(
+      BackupError,
+    );
+  });
+
+  it('accepts optional columns left empty', () => {
+    const json = JSON.stringify({
+      app: 'habits',
+      version: 1,
+      tables: { habits: [habitRow({ frequencyPeriod: null, targetValue: null, deletedAt: null })] },
+    });
+    expect(parseBackup(json).tables.habits).toHaveLength(1);
+  });
+
   it('rejects rows without required columns', () => {
     const json = JSON.stringify({
       app: 'habits',

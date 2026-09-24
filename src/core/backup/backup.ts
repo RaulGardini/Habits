@@ -50,6 +50,118 @@ const REQUIRED_STRINGS: Record<BackupTable, readonly string[]> = {
   settings: ['key', 'value'],
 };
 
+/**
+ * Value rules per column (besides the required strings): a damaged or tampered file must not
+ * store values the app cannot read back — e.g. a setting that is not JSON would break startup.
+ * `?` = null/absent allowed.
+ */
+type Rule =
+  | { type: 'enum'; values: readonly string[]; optional?: boolean }
+  | { type: 'localDate' | 'time' | 'instant' | 'json'; optional?: boolean }
+  | { type: 'number'; optional?: boolean; integer?: boolean };
+
+const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+const RULES: Record<BackupTable, Record<string, Rule>> = {
+  habits: {
+    timeOfDay: { type: 'enum', values: ['morning', 'afternoon', 'evening', 'anytime'] },
+    frequencyType: { type: 'enum', values: ['daily', 'weekdays', 'per_period', 'interval'] },
+    frequencyPeriod: { type: 'enum', values: ['week', 'month'], optional: true },
+    frequencyWeekdays: { type: 'number', integer: true, optional: true },
+    frequencyCount: { type: 'number', integer: true, optional: true },
+    frequencyInterval: { type: 'number', integer: true, optional: true },
+    trackingType: { type: 'enum', values: ['boolean', 'quantity', 'timer'] },
+    targetValue: { type: 'number', optional: true },
+    quantityStep: { type: 'number', optional: true },
+    startDate: { type: 'localDate' },
+    archivedAt: { type: 'instant', optional: true },
+    sortOrder: { type: 'number', integer: true, optional: true },
+    deletedAt: { type: 'instant', optional: true },
+  },
+  habitEntries: {
+    date: { type: 'localDate' },
+    status: { type: 'enum', values: ['done', 'partial', 'skipped', 'missed'] },
+    value: { type: 'number', optional: true },
+    deletedAt: { type: 'instant', optional: true },
+  },
+  habitReminders: {
+    time: { type: 'time' },
+    weekdays: { type: 'number', integer: true, optional: true },
+    deletedAt: { type: 'instant', optional: true },
+  },
+  tasks: {
+    date: { type: 'localDate' },
+    priority: { type: 'enum', values: ['low', 'normal', 'high'] },
+    sortOrder: { type: 'number', integer: true, optional: true },
+    deletedAt: { type: 'instant', optional: true },
+  },
+  events: {
+    date: { type: 'localDate' },
+    startTime: { type: 'time' },
+    endTime: { type: 'time', optional: true },
+    allDay: { type: 'number', integer: true, optional: true },
+    repeat: {
+      type: 'enum',
+      values: ['none', 'daily', 'weekly', 'monthly', 'yearly'],
+      optional: true,
+    },
+    repeatUntil: { type: 'localDate', optional: true },
+    reminderMinutes: { type: 'number', integer: true, optional: true },
+    deletedAt: { type: 'instant', optional: true },
+  },
+  dayNotes: {
+    date: { type: 'localDate' },
+    deletedAt: { type: 'instant', optional: true },
+  },
+  goals: {
+    scope: { type: 'enum', values: ['month', 'year'] },
+    target: { type: 'number' },
+    current: { type: 'number', optional: true },
+    deletedAt: { type: 'instant', optional: true },
+  },
+  settings: {
+    value: { type: 'json' },
+  },
+};
+
+function isValid(rule: Rule, value: unknown): boolean {
+  if (value === null || value === undefined) return rule.optional === true;
+  switch (rule.type) {
+    case 'enum':
+      return typeof value === 'string' && rule.values.includes(value);
+    case 'number':
+      return (
+        typeof value === 'number' &&
+        Number.isFinite(value) &&
+        (!rule.integer || Number.isInteger(value))
+      );
+    case 'localDate':
+      return typeof value === 'string' && LOCAL_DATE.test(value);
+    case 'time':
+      return typeof value === 'string' && TIME.test(value);
+    case 'instant':
+      return typeof value === 'string' && Number.isFinite(Date.parse(value));
+    case 'json':
+      if (typeof value !== 'string') return false;
+      try {
+        JSON.parse(value);
+        return true;
+      } catch {
+        return false;
+      }
+  }
+}
+
+/** First column of the row whose value breaks its rule, or undefined. */
+export function invalidColumn(
+  table: BackupTable,
+  row: Record<string, unknown>,
+): string | undefined {
+  if (!isValid({ type: 'instant' }, row.updatedAt)) return 'updatedAt';
+  return Object.entries(RULES[table]).find(([column, rule]) => !isValid(rule, row[column]))?.[0];
+}
+
 export class BackupError extends Error {}
 
 export function createBackup(tables: Record<BackupTable, BackupRow[]>, now: Date): BackupFile {
@@ -68,7 +180,10 @@ export function parseBackup(json: string): BackupFile {
     throw new BackupError(t('Arquivo de backup inválido.'));
   const file = data as Partial<BackupFile>;
   if (file.app !== BACKUP_APP) throw new BackupError(t('Este arquivo não é um backup deste app.'));
-  if (typeof file.version !== 'number' || file.version > BACKUP_VERSION) {
+  if (typeof file.version !== 'number' || !Number.isInteger(file.version) || file.version < 1) {
+    throw new BackupError(t('Arquivo de backup inválido.'));
+  }
+  if (file.version > BACKUP_VERSION) {
     throw new BackupError(
       t('Este backup foi feito por uma versão mais nova do app. Atualize o app.'),
     );
@@ -87,6 +202,16 @@ export function parseBackup(json: string): BackupFile {
       const missing = [...REQUIRED_STRINGS[table], 'updatedAt'].find(
         (column) => typeof record?.[column] !== 'string',
       );
+      const invalid = missing ? undefined : invalidColumn(table, record);
+      if (invalid) {
+        throw new BackupError(
+          t('Arquivo de backup inválido: "{table}" #{index} com "{column}" inválido.', {
+            table,
+            index: index + 1,
+            column: invalid,
+          }),
+        );
+      }
       if (missing) {
         throw new BackupError(
           t('Arquivo de backup inválido: "{table}" #{index} sem "{missing}".', {
