@@ -20,8 +20,7 @@ const policies = [
     fullPolicy: 'Full privacy policy',
   },
 ];
-const escape = (text) =>
-  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const renderSection = (s) =>
   `<h2${s.id ? ` id="${s.id}"` : ''}>${escape(s.title)}</h2>\n${s.paragraphs
