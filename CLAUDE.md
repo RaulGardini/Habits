@@ -180,8 +180,17 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 
 - Reminders are **local notifications only** (`src/lib/notifications.ts`; no-op `.web.ts`).
   The whole set is re-planned by `planReminders` (pure, `src/core/reminders/plan.ts`) and
-  rescheduled at startup and after any habit change: daily/weekly repeating triggers, one-off
-  date triggers for "every X days" (21-day horizon), capped at 60 (iOS limit is 64).
+  rescheduled by `rescheduleReminders` (reads the repositories, so the Android widget task can
+  call it with the app closed) at startup, after any habit/entry/agenda change, and when the app
+  returns on another day or time zone: daily/weekly repeating triggers, one-off date triggers
+  for "every X days" (21-day horizon), capped at 60 (iOS limit is 64).
+- A habit settled today (`settledToday`: done, skipped, or period quota met) gets no more
+  reminders today: its daily trigger becomes 6 weekly ones + a one-off next week (falls back to
+  the plain plan if that would exceed the cap). Reboots/app updates: expo-notifications restores
+  the schedule (Android `BOOT_COMPLETED`/`MY_PACKAGE_REPLACED`).
+- Permission is asked when the first reminder is added (habit form) or an event with a reminder
+  is saved — never on first launch. Tapping a reminder opens `/entry` (habit, that day) or
+  `/event/[id]` (`reminderRoute`, `useReminderTaps` in the root layout, cold start included).
 - Backup = JSON of every table's raw rows (incl. soft-deleted). Import **merges** with
   last-write-wins by `updatedAt` (`planMerge`), matching entries by (habit, day) and notes by day.
   File I/O is platform-specific (`src/lib/backupFile.ts` / `.web.ts`).

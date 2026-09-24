@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { todayLocal } from '@/core/dates/localDate';
 import { configureNotifications } from '@/lib/notifications';
 import { useAppLockStore } from '@/stores/appLockStore';
 import { useCloudBackupStore } from '@/stores/cloudBackupStore';
@@ -94,13 +95,22 @@ function startWidgetSync(): void {
   AppState.addEventListener('change', (status) => status === 'active' && run());
 }
 
+/** Day + time zone the reminders were planned for: one-off triggers are absolute instants. */
+function planKey(): string {
+  return `${todayLocal()}|${Intl.DateTimeFormat().resolvedOptions().timeZone}|${new Date().getTimezoneOffset()}`;
+}
+
 /**
- * Keeps local notifications in sync with the habits: once at startup (so one-off reminders
- * roll forward) and after every habit change. Failures are logged, never block the app.
+ * Keeps local notifications in sync: at startup (so one-off reminders roll forward), after every
+ * habit, entry or agenda change (a habit checked today stops reminding today), and when the app
+ * returns on another day or in another time zone. Failures are logged, never block the app.
  */
 function startReminderSync(): void {
-  const sync = () =>
-    rescheduleReminders().catch((error: unknown) => logError('Reminder sync failed', error));
+  let plannedFor = '';
+  const sync = () => {
+    plannedFor = planKey();
+    return rescheduleReminders().catch((error: unknown) => logError('Reminder sync failed', error));
+  };
 
   configureNotifications()
     .then(sync)
@@ -112,8 +122,13 @@ function startReminderSync(): void {
     timer = setTimeout(sync, 500);
   };
   useHabitsStore.subscribe((state, previous) => state.habits !== previous.habits && later());
+  useEntriesStore.subscribe((state, previous) => state.version !== previous.version && later());
   // Agenda writes bump the planner version (events may have reminders).
   usePlannerStore.subscribe((state, previous) => state.version !== previous.version && later());
+  AppState.addEventListener(
+    'change',
+    (status) => status === 'active' && planKey() !== plannedFor && void sync(),
+  );
 }
 
 // Module-level so it runs once even if the root layout re-mounts (e.g. fast refresh).

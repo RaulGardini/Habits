@@ -14,6 +14,7 @@ import { minutesOf, TITLE_MAX_LENGTH, validateEventDraft } from '@/core/planner/
 import type { EventDraft, PlannerEvent } from '@/core/planner/types';
 import { ColorPicker } from '@/features/habits/ColorPicker';
 import { goBack } from '@/lib/navigation';
+import { ensurePermission, notificationsSupported } from '@/lib/notifications';
 import { plannerActions, useEvent } from '@/stores/plannerStore';
 import { spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
@@ -98,6 +99,9 @@ function EventForm({
     setErrors(validation);
     if (Object.keys(validation).length > 0) return;
     try {
+      // New events come with a reminder: ask the first time one is saved (before the write, so
+      // the re-plan it triggers can already schedule it). A refusal still saves the event.
+      if (notificationsSupported && next.reminderMinutes !== null) await ensurePermission();
       if (event) await plannerActions.updateEvent(event.id, next);
       else await plannerActions.createEvent(next);
       hapticSuccess();

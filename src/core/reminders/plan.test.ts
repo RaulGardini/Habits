@@ -1,7 +1,13 @@
-import { makeHabit } from '@/core/habits/testing';
+import { makeEntry, makeHabit } from '@/core/habits/testing';
 import { makeEvent } from '@/core/planner/testing';
 
-import { MAX_SCHEDULED, notificationWeekday, planReminders, reminderBody } from './plan';
+import {
+  MAX_SCHEDULED,
+  notificationWeekday,
+  planReminders,
+  reminderBody,
+  settledToday,
+} from './plan';
 
 const today = '2026-09-21'; // Monday
 const now = new Date(2026, 8, 21, 10, 0);
@@ -73,6 +79,90 @@ describe('planReminders', () => {
     const planned = planReminders([interval, daily], today, now);
     expect(planned).toHaveLength(MAX_SCHEDULED);
     expect(planned[0]?.habitId).toBe('d');
+  });
+});
+
+describe('habits already settled today', () => {
+  const settled = new Set(['habit-1']);
+  const byType = (reminders: ReturnType<typeof planReminders>) => reminders.map((r) => r.trigger);
+
+  it('keeps every other day of a daily reminder still to fire today', () => {
+    const habit = makeHabit({ reminders: ['20:00'] }); // today is Monday (weekday 2), 10:00
+    expect(byType(planReminders([habit], today, now, [], settled))).toEqual([
+      ...[1, 3, 4, 5, 6, 7].map((weekday) => ({ type: 'weekly', weekday, hour: 20, minute: 0 })),
+      { type: 'date', date: '2026-09-28', hour: 20, minute: 0 },
+    ]);
+  });
+
+  it('leaves reminders that already fired today alone', () => {
+    const habit = makeHabit({ reminders: ['08:00'] });
+    expect(byType(planReminders([habit], today, now, [], settled))).toEqual([
+      { type: 'daily', hour: 8, minute: 0 },
+    ]);
+  });
+
+  it("drops only today's weekly or one-off reminder", () => {
+    const weekdays = makeHabit({
+      reminders: ['19:00'],
+      frequency: { type: 'weekdays', days: (1 << 1) | (1 << 3) }, // Mon, Wed
+    });
+    expect(byType(planReminders([weekdays], today, now, [], settled))).toEqual([
+      { type: 'weekly', weekday: 4, hour: 19, minute: 0 },
+      { type: 'date', date: '2026-09-28', hour: 19, minute: 0 },
+    ]);
+    const interval = makeHabit({
+      startDate: '2026-09-21',
+      reminders: ['19:00'],
+      frequency: { type: 'interval', every: 3 },
+    });
+    expect(
+      byType(planReminders([interval], today, now, [], settled)).map((t) =>
+        t.type === 'date' ? t.date : t.type,
+      ),
+    ).toEqual([
+      '2026-09-24',
+      '2026-09-27',
+      '2026-09-30',
+      '2026-10-03',
+      '2026-10-06',
+      '2026-10-09',
+      '2026-10-12',
+    ]);
+  });
+
+  it('falls back to plain reminders rather than dropping any when over the cap', () => {
+    // 11 settled daily habits would need 66 weekly triggers: over the cap.
+    const habits = Array.from({ length: 11 }, (_, i) =>
+      makeHabit({ id: `h${i}`, reminders: ['21:00'] }),
+    );
+    const planned = planReminders(habits, today, now, [], new Set(habits.map((h) => h.id)));
+    expect(byType(planned)).toEqual(habits.map(() => ({ type: 'daily', hour: 21, minute: 0 })));
+  });
+
+  it('settles habits done or skipped today and flexible habits with the quota met', () => {
+    const daily = makeHabit({ id: 'daily' });
+    const skipped = makeHabit({ id: 'skipped' });
+    const partial = makeHabit({ id: 'partial' });
+    const weekly = makeHabit({
+      id: 'weekly',
+      frequency: { type: 'per_period', count: 1, period: 'week' },
+    });
+    const entries = [
+      makeEntry({ id: '1', habitId: 'daily', date: today, status: 'done' }),
+      makeEntry({ id: '2', habitId: 'daily', date: '2026-09-20', status: 'done' }),
+      makeEntry({ id: '3', habitId: 'skipped', date: today, status: 'skipped' }),
+      makeEntry({ id: '4', habitId: 'partial', date: today, status: 'partial' }),
+      makeEntry({ id: '5', habitId: 'weekly', date: '2026-09-20', status: 'done' }), // Sunday
+    ];
+    const habits = [daily, skipped, partial, weekly];
+    // Weeks start on Sunday: Sunday's check already met this week's quota.
+    expect([...settledToday(habits, entries, today, 0)].sort()).toEqual([
+      'daily',
+      'skipped',
+      'weekly',
+    ]);
+    // Weeks start on Monday: Sunday belongs to last week.
+    expect(settledToday(habits, entries, today, 1).has('weekly')).toBe(false);
   });
 });
 

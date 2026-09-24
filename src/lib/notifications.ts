@@ -1,10 +1,13 @@
 import * as Notifications from 'expo-notifications';
+import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
 import { todayLocal } from '@/core/dates/localDate';
 import type { Habit } from '@/core/habits/types';
 import type { PlannerEvent } from '@/core/planner/types';
 import { planReminders, type ReminderTrigger } from '@/core/reminders/plan';
+import { reminderData, reminderRoute } from '@/core/reminders/route';
 import { t } from '@/i18n/i18n';
 
 /** Local notifications only (no server). Web has a no-op implementation. */
@@ -82,6 +85,7 @@ let syncing: Promise<void> = Promise.resolve();
 export function syncReminders(
   habits: readonly Habit[],
   events: readonly PlannerEvent[] = [],
+  settled: ReadonlySet<string> = new Set(),
 ): Promise<void> {
   syncing = syncing
     .catch(() => {})
@@ -89,13 +93,9 @@ export function syncReminders(
       if ((await getPermission()) !== 'granted') return;
       await Notifications.cancelAllScheduledNotificationsAsync();
       const now = new Date();
-      for (const reminder of planReminders(habits, todayLocal(now), now, events)) {
+      for (const reminder of planReminders(habits, todayLocal(now), now, events, settled)) {
         await Notifications.scheduleNotificationAsync({
-          content: {
-            title: reminder.title,
-            body: reminder.body,
-            data: reminder.eventId ? { eventId: reminder.eventId } : { habitId: reminder.habitId },
-          },
+          content: { title: reminder.title, body: reminder.body, data: reminderData(reminder) },
           trigger: toTrigger(reminder.trigger),
         });
       }
@@ -105,4 +105,25 @@ export function syncReminders(
 
 export async function cancelAllReminders(): Promise<void> {
   await Notifications.cancelAllScheduledNotificationsAsync();
+}
+
+/**
+ * Opens the habit's entry (or the event) when a reminder is tapped — also when the tap launched
+ * the app. Mount once the navigator is ready. The handled tap is cleared so a remount does not
+ * open it again.
+ */
+export function useReminderTaps(): void {
+  useEffect(() => {
+    const open = (response: Notifications.NotificationResponse | null) => {
+      if (!response || response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) {
+        return;
+      }
+      const route = reminderRoute(response.notification.request.content.data, todayLocal());
+      Notifications.clearLastNotificationResponseAsync().catch(() => {});
+      if (route) router.push(route);
+    };
+    open(Notifications.getLastNotificationResponse());
+    const subscription = Notifications.addNotificationResponseReceivedListener(open);
+    return () => subscription.remove();
+  }, []);
 }

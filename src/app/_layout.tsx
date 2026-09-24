@@ -3,6 +3,7 @@ import {
   DefaultTheme,
   Stack,
   ThemeProvider as NavigationThemeProvider,
+  useRootNavigationState,
 } from 'expo-router';
 import {
   Nunito_400Regular,
@@ -18,6 +19,7 @@ import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 
 import { useBootstrap } from '@/db/bootstrap';
 import { AppLockGate } from '@/features/security/AppLockGate';
+import { useReminderTaps } from '@/lib/notifications';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { spacing } from '@/theme/tokens';
@@ -100,6 +102,7 @@ function App() {
     <AppLockGate>
       <NavigationThemeProvider value={navigationTheme} key={language}>
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+        <ReminderTaps />
         <Stack
           screenOptions={{
             headerBackButtonDisplayMode: 'minimal',
@@ -138,6 +141,17 @@ function App() {
       </NavigationThemeProvider>
     </AppLockGate>
   );
+}
+
+/** Opens the habit or event of a tapped reminder, once the navigator can take a route. */
+function ReminderTaps() {
+  const navigationReady = useRootNavigationState()?.key !== undefined;
+  return navigationReady ? <ReminderTapHandler /> : null;
+}
+
+function ReminderTapHandler() {
+  useReminderTaps();
+  return null;
 }
 
 const styles = StyleSheet.create({

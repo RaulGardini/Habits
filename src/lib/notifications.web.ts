@@ -19,6 +19,9 @@ export async function ensurePermission(): Promise<boolean> {
 export async function syncReminders(
   _habits: readonly Habit[],
   _events: readonly PlannerEvent[] = [],
+  _settled: ReadonlySet<string> = new Set(),
 ): Promise<void> {}
 
 export async function cancelAllReminders(): Promise<void> {}
+
+export function useReminderTaps(): void {}

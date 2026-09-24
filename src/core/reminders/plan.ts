@@ -1,8 +1,9 @@
 import { addDaysLocal, weekdayOf, type LocalDate } from '@/core/dates/localDate';
 import { weekdaysFromMask } from '@/core/dates/weekdays';
 import { formatNumber } from '@/core/format';
+import { periodQuota } from '@/core/habits/quota';
 import { isScheduledOn } from '@/core/habits/schedule';
-import type { Habit } from '@/core/habits/types';
+import type { Habit, HabitEntry, WeekStartsOn } from '@/core/habits/types';
 import { eventTimeLabel, expandOccurrences, reminderMoment } from '@/core/planner/agenda';
 import type { PlannerEvent } from '@/core/planner/types';
 import { t } from '@/i18n/i18n';
@@ -22,6 +23,8 @@ export interface PlannedReminder {
   /** Habit or event the reminder belongs to (sent in the notification data). */
   habitId?: string;
   eventId?: string;
+  /** Event occurrence the reminder is for (a reminder may fire the day before). */
+  occurrence?: LocalDate;
   title: string;
   body: string;
   trigger: ReminderTrigger;
@@ -76,6 +79,56 @@ function triggersFor(habit: Habit, time: string, today: LocalDate, now: Date): R
   }
 }
 
+/**
+ * Triggers of a habit already settled today, without the ones still to fire today. A repeating
+ * daily trigger becomes weekly triggers for the other six weekdays plus a one-off for the same
+ * weekday next week (re-planned long before, whenever the app opens).
+ */
+function withoutToday(triggers: ReminderTrigger[], today: LocalDate): ReminderTrigger[] {
+  const todayWeekday = notificationWeekday(today);
+  const nextWeek = addDaysLocal(today, 7);
+  return triggers.flatMap((trigger): ReminderTrigger[] => {
+    const { hour, minute } = trigger;
+    switch (trigger.type) {
+      case 'date':
+        return trigger.date === today ? [] : [trigger];
+      case 'weekly':
+        return trigger.weekday === todayWeekday
+          ? [{ type: 'date', date: nextWeek, hour, minute }]
+          : [trigger];
+      case 'daily':
+        return [
+          ...[1, 2, 3, 4, 5, 6, 7]
+            .filter((weekday) => weekday !== todayWeekday)
+            .map((weekday): ReminderTrigger => ({ type: 'weekly', weekday, hour, minute })),
+          { type: 'date', date: nextWeek, hour, minute },
+        ];
+    }
+  });
+}
+
+/**
+ * Habits that need no reminder for the rest of today: done or skipped today, or (flexible
+ * habits) with the week's/month's quota already met.
+ */
+export function settledToday(
+  habits: readonly Habit[],
+  entries: readonly HabitEntry[],
+  today: LocalDate,
+  weekStartsOn: WeekStartsOn,
+): Set<string> {
+  const settled = new Set<string>();
+  for (const entry of entries) {
+    if (entry.date === today && (entry.status === 'done' || entry.status === 'skipped')) {
+      settled.add(entry.habitId);
+    }
+  }
+  for (const habit of habits) {
+    if (periodQuota(habit, today, entries, weekStartsOn)?.met) settled.add(habit.id);
+  }
+  return settled;
+}
+
 /** Sort key: repeating triggers first (they never expire), then one-offs by time. */
 function priority(trigger: ReminderTrigger): string {
   if (trigger.type !== 'date') return '0';
@@ -84,19 +137,43 @@ function priority(trigger: ReminderTrigger): string {
 
 /**
  * Every local notification to schedule for the given habits. The whole set is re-planned and
- * re-scheduled whenever habits change and when the app starts (so one-off reminders roll forward).
+ * re-scheduled whenever habits or today's entries change and when the app starts or returns
+ * (so one-off reminders roll forward). Habits in `settled` (see `settledToday`) get no more
+ * reminders today — unless that would push repeating reminders over the cap: an extra reminder
+ * is better than a lost one.
  */
 export function planReminders(
   habits: readonly Habit[],
   today: LocalDate,
   now: Date,
   events: readonly PlannerEvent[] = [],
+  settled: ReadonlySet<string> = new Set(),
+): PlannedReminder[] {
+  const planned = plan(habits, today, now, events, settled);
+  const repeating = planned.filter((reminder) => reminder.trigger.type !== 'date').length;
+  const all = repeating > MAX_SCHEDULED ? plan(habits, today, now, events, new Set()) : planned;
+  return all
+    .sort((a, b) => priority(a.trigger).localeCompare(priority(b.trigger)))
+    .slice(0, MAX_SCHEDULED);
+}
+
+function plan(
+  habits: readonly Habit[],
+  today: LocalDate,
+  now: Date,
+  events: readonly PlannerEvent[],
+  settled: ReadonlySet<string>,
 ): PlannedReminder[] {
   const planned: PlannedReminder[] = [...eventReminders(events, today, now)];
+  const nowMinutes = timeOfDayMinutes(now);
   for (const habit of habits) {
     if (habit.archivedAt !== null) continue;
     for (const time of habit.reminders) {
-      for (const trigger of triggersFor(habit, time, today, now)) {
+      const { hour, minute } = parseTime(time);
+      const stillToFire = hour * 60 + minute > nowMinutes;
+      let triggers = triggersFor(habit, time, today, now);
+      if (stillToFire && settled.has(habit.id)) triggers = withoutToday(triggers, today);
+      for (const trigger of triggers) {
         planned.push({
           habitId: habit.id,
           title: habit.name,
@@ -106,9 +183,7 @@ export function planReminders(
       }
     }
   }
-  return planned
-    .sort((a, b) => priority(a.trigger).localeCompare(priority(b.trigger)))
-    .slice(0, MAX_SCHEDULED);
+  return planned;
 }
 
 /**
@@ -130,6 +205,7 @@ export function eventReminders(
     const when = date === today ? t('Hoje') : date === addDaysLocal(today, 1) ? t('Amanhã') : date;
     planned.push({
       eventId: event.id,
+      occurrence: date,
       title: event.title,
       body: [`${when} · ${eventTimeLabel(event)}`, event.location].filter(Boolean).join(' · '),
       trigger: { type: 'date', ...moment },
