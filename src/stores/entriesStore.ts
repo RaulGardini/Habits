@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import type { LocalDate } from '@/core/dates/localDate';
 import type { EntryInput, HabitEntry } from '@/core/habits/types';
 import { getRepositories } from '@/repositories';
-import { logError } from '@/lib/log';
+import { useAsyncError } from '@/lib/useAsyncError';
 
 /** Entries of one day, keyed by habit id. */
 export type DayEntries = Record<string, HabitEntry | undefined>;
@@ -194,33 +194,32 @@ export function selectDayEntries(date: LocalDate) {
 
 /**
  * Entries of a day, loaded on demand — and reloaded whenever the cache is cleared (after an
- * import, or a check made from a home screen widget).
+ * import, or a check made from a home screen widget). A failure goes to the screen's error boundary.
  */
 export function useDayEntries(date: LocalDate): { entries: DayEntries; loaded: boolean } {
   const day = useEntriesStore((state) => state.byDate[date]);
   const loadDate = useEntriesStore((state) => state.loadDate);
+  const fail = useAsyncError('Failed to load entries');
   const loaded = day !== undefined;
   useEffect(() => {
-    if (!loaded) {
-      loadDate(date).catch((error: unknown) => logError('Failed to load entries', error));
-    }
-  }, [date, loaded, loadDate]);
+    if (!loaded) loadDate(date).catch(fail);
+  }, [date, loaded, loadDate, fail]);
   return { entries: day ?? EMPTY, loaded };
 }
 
 /**
  * Entries in an inclusive date range (ordered by date), shared between screens and kept in
- * sync with saves. `null` while loading the first time.
+ * sync with saves. `null` while loading the first time; a failure goes to the screen's error
+ * boundary.
  */
 export function useEntriesInRange(from: LocalDate, to: LocalDate): HabitEntry[] | null {
   const entries = useEntriesStore((state) => state.ranges[rangeKey(from, to)]);
   const loadRange = useEntriesStore((state) => state.loadRange);
+  const fail = useAsyncError('Failed to load entries');
   const loaded = entries !== undefined;
   useEffect(() => {
-    if (!loaded) {
-      loadRange(from, to).catch((error: unknown) => logError('Failed to load entries', error));
-    }
-  }, [from, to, loaded, loadRange]);
+    if (!loaded) loadRange(from, to).catch(fail);
+  }, [from, to, loaded, loadRange, fail]);
   return entries ?? null;
 }
 
@@ -228,6 +227,7 @@ export function useEntriesInRange(from: LocalDate, to: LocalDate): HabitEntry[] 
 export function useHabitHistory(habitId: string): HabitEntry[] | null {
   const version = useEntriesStore((state) => state.version);
   const [result, setResult] = useState<{ habitId: string; entries: HabitEntry[] } | null>(null);
+  const fail = useAsyncError('Failed to load habit history');
 
   useEffect(() => {
     let cancelled = false;
@@ -236,11 +236,13 @@ export function useHabitHistory(habitId: string): HabitEntry[] | null {
       .then((entries) => {
         if (!cancelled) setResult({ habitId, entries });
       })
-      .catch((error: unknown) => logError('Failed to load habit history', error));
+      .catch((error: unknown) => {
+        if (!cancelled) fail(error);
+      });
     return () => {
       cancelled = true;
     };
-  }, [habitId, version]);
+  }, [habitId, version, fail]);
 
   return result?.habitId === habitId ? result.entries : null;
 }

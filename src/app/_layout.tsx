@@ -22,9 +22,16 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { spacing } from '@/theme/tokens';
 import { AppText } from '@/ui/AppText';
+import { Button } from '@/ui/Button';
+import { AppErrorFallback, ScreenErrorFallback } from '@/ui/ErrorFallback';
 import { t } from '@/i18n/i18n';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// A crash while rendering a screen replaces only that screen (tabs and navigation keep working);
+// anything else falls back to the whole-app error screen.
+export const unstable_settings = { screenErrorBoundary: ScreenErrorFallback };
+export const ErrorBoundary = AppErrorFallback;
 
 export default function RootLayout() {
   return (
@@ -77,8 +84,11 @@ function App() {
           <>
             <AppText variant="heading">{t('Não foi possível abrir seus dados')}</AppText>
             <AppText tone="muted" style={styles.errorText}>
-              {bootstrap.error.message}
+              {__DEV__
+                ? bootstrap.error.message
+                : t('Seus dados não foram apagados. Feche o app e abra de novo, ou tente agora.')}
             </AppText>
+            <Button label={t('Tentar de novo')} icon="refresh" onPress={bootstrap.retry} />
           </>
         )}
       </View>

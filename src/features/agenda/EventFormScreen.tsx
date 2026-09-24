@@ -48,10 +48,16 @@ export function NewEventScreen({ date, hour }: { date: LocalDate; hour?: number 
 /** `date` = the occurrence that was opened (lets a series delete only that day). */
 export function EditEventScreen({ id, date }: { id: string; date?: LocalDate }) {
   const event = useEvent(id);
-  if (event === null) {
+  if (!event) {
     return (
       <Screen edges={['bottom', 'left', 'right']}>
-        <EmptyState icon="calendar-search" title={t('Carregando…')} />
+        <EmptyState
+          icon="calendar-search"
+          title={event === undefined ? t('Carregando…') : t('Evento não encontrado')}
+          description={
+            event === null ? t('Ele pode ter sido apagado em outro aparelho.') : undefined
+          }
+        />
       </Screen>
     );
   }

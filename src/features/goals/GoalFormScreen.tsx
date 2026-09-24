@@ -43,10 +43,16 @@ export function NewGoalScreen({ scope, period }: { scope: GoalScope; period: str
 
 export function EditGoalScreen({ id }: { id: string }) {
   const goal = useGoal(id);
-  if (goal === null) {
+  if (!goal) {
     return (
       <Screen edges={['bottom', 'left', 'right']}>
-        <EmptyState icon="help-circle-outline" title={t('Carregando…')} />
+        <EmptyState
+          icon="help-circle-outline"
+          title={goal === undefined ? t('Carregando…') : t('Meta não encontrada')}
+          description={
+            goal === null ? t('Ela pode ter sido apagada em outro aparelho.') : undefined
+          }
+        />
       </Screen>
     );
   }

@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import type { LocalDate } from '@/core/dates/localDate';
 import type { EventDraft, GoalDraft, GoalScope } from '@/core/planner/types';
 import { getRepositories } from '@/repositories';
-import { logError } from '@/lib/log';
+import { useAsyncError } from '@/lib/useAsyncError';
 
 interface PlannerState {
   /** Incremented after every agenda/goal change; queries refetch when it changes. */
@@ -19,7 +19,8 @@ export const usePlannerStore = create<PlannerState>()((set) => ({
 
 /**
  * Runs a repository read and re-runs it when its arguments or the planner version change.
- * Keeps the previous value while refetching the same query (no flicker). `null` = loading.
+ * Keeps the previous value while refetching the same query (no flicker). `null` = loading; a
+ * failure goes to the screen's error boundary.
  * `fetcher` must be a stable (module-level) function.
  */
 function useRepoQuery<A extends unknown[], T>(
@@ -29,6 +30,7 @@ function useRepoQuery<A extends unknown[], T>(
   const version = usePlannerStore((state) => state.version);
   const key = JSON.stringify(args);
   const [state, setState] = useState<{ key: string; value: T } | null>(null);
+  const fail = useAsyncError('Planner query failed');
 
   useEffect(() => {
     let cancelled = false;
@@ -36,26 +38,31 @@ function useRepoQuery<A extends unknown[], T>(
       .then((value) => {
         if (!cancelled) setState({ key, value });
       })
-      .catch((error: unknown) => logError('Planner query failed', error));
+      .catch((error: unknown) => {
+        if (!cancelled) fail(error);
+      });
     return () => {
       cancelled = true;
     };
-  }, [fetcher, key, version]);
+  }, [fetcher, key, version, fail]);
 
   return state?.key === key ? state.value : null;
 }
 
 const repos = () => getRepositories();
 const fetchEvents = (from: LocalDate, to: LocalDate) => repos().events.listByRange(from, to);
-const fetchEvent = (id: string) => repos().events.getById(id);
+// Boxed, so that "not found" (null) is not mistaken for "loading".
+const fetchEvent = async (id: string) => ({ value: await repos().events.getById(id) });
 const fetchGoals = (scope: GoalScope, period: string) => repos().goals.listByPeriod(scope, period);
-const fetchGoal = (id: string) => repos().goals.getById(id);
+const fetchGoal = async (id: string) => ({ value: await repos().goals.getById(id) });
 
 export const useEvents = (from: LocalDate, to: LocalDate) => useRepoQuery(fetchEvents, from, to);
-export const useEvent = (id: string) => useRepoQuery(fetchEvent, id);
+/** `undefined` while loading, `null` when the event does not exist (e.g. deleted elsewhere). */
+export const useEvent = (id: string) => useRepoQuery(fetchEvent, id)?.value;
 export const useGoals = (scope: GoalScope, period: string) =>
   useRepoQuery(fetchGoals, scope, period);
-export const useGoal = (id: string) => useRepoQuery(fetchGoal, id);
+/** `undefined` while loading, `null` when the goal does not exist (e.g. deleted elsewhere). */
+export const useGoal = (id: string) => useRepoQuery(fetchGoal, id)?.value;
 
 /** Runs a write and refreshes every planner query. */
 async function mutate<T>(write: () => Promise<T>): Promise<T> {

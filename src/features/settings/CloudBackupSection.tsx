@@ -56,12 +56,16 @@ export function CloudBackupSection() {
   return (
     <>
       <AppText tone="muted">
-        Uma cópia completa dos seus dados é salva na nuvem a cada {CLOUD_BACKUP_INTERVAL_DAYS} dias.
-        Guardamos as últimas {CLOUD_BACKUPS_KEPT}.
+        {t(
+          'Uma cópia completa dos seus dados é salva na nuvem a cada {days} dias. Guardamos as últimas {count}.',
+          { days: CLOUD_BACKUP_INTERVAL_DAYS, count: CLOUD_BACKUPS_KEPT },
+        )}
       </AppText>
       <AppText variant="bodyStrong" accessibilityLiveRegion="polite">
         {backups === null
-          ? 'Carregando…'
+          ? error
+            ? t('Não foi possível carregar os backups.')
+            : t('Carregando…')
           : latest
             ? t('Último backup: {date}', { date: when(latest) })
             : t('Nenhum backup ainda.')}

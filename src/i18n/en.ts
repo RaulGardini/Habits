@@ -450,6 +450,16 @@ export const EN: Record<string, string> = {
 
   // Errors
   'Não foi possível abrir seus dados': 'Your data could not be opened',
+  'Seus dados não foram apagados. Feche o app e abra de novo, ou tente agora.':
+    'Your data was not deleted. Close and reopen the app, or try now.',
+  'Esta tela teve um problema. Seus dados continuam salvos.':
+    'This screen ran into a problem. Your data is still saved.',
+  'Tentar de novo': 'Try again',
+  'Evento não encontrado': 'Event not found',
+  'Ele pode ter sido apagado em outro aparelho.': 'It may have been deleted on another device.',
+  'Meta não encontrada': 'Goal not found',
+  'Não foi possível carregar os backups.': 'The backups could not be loaded.',
+  'Ela pode ter sido apagada em outro aparelho.': 'It may have been deleted on another device.',
   'Não foi possível salvar o registro.': 'The entry could not be saved.',
   'Não foi possível salvar o timer.': 'The timer could not be saved.',
   'Não foi possível salvar o tema.': 'The theme could not be saved.',

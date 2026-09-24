@@ -17,7 +17,9 @@ import { initRepositories } from './init';
 import { logError } from '@/lib/log';
 
 export type BootstrapState =
-  { status: 'loading' } | { status: 'ready' } | { status: 'error'; error: Error };
+  | { status: 'loading' }
+  | { status: 'ready' }
+  | { status: 'error'; error: Error; retry: () => void };
 
 async function bootstrap(): Promise<void> {
   await initRepositories();
@@ -117,8 +119,12 @@ function startReminderSync(): void {
 // Module-level so it runs once even if the root layout re-mounts (e.g. fast refresh).
 let pending: Promise<void> | null = null;
 
-/** Opens the database, runs migrations and loads the initial app state. */
+/**
+ * Opens the database, runs migrations and loads the initial app state. A failure (e.g. a full
+ * disk) can be retried: nothing is subscribed until every step succeeded.
+ */
 export function useBootstrap(): BootstrapState {
+  const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<BootstrapState>({ status: 'loading' });
 
   useEffect(() => {
@@ -128,16 +134,21 @@ export function useBootstrap(): BootstrapState {
       .then(() => !cancelled && setState({ status: 'ready' }))
       .catch((error: unknown) => {
         pending = null;
+        logError('Bootstrap failed', error);
         if (cancelled) return;
         setState({
           status: 'error',
           error: error instanceof Error ? error : new Error(String(error)),
+          retry: () => {
+            setState({ status: 'loading' });
+            setAttempt((value) => value + 1);
+          },
         });
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   return state;
 }
