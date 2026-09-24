@@ -23,8 +23,8 @@ gratuita para isso:
   - `targets/widget/Snapshot.swift` → `appGroup`
   - depois: `npx expo prebuild --clean`
 - [ ] **Nome na loja** (até 30 caracteres). Ex.: "Habits: Hábitos e Agenda".
-- [ ] Preencher `[NOME DO DESENVOLVEDOR]` e `[E-MAIL DE CONTATO]` em
-      `src/features/legal/privacy.json` e rodar `npm run legal`.
+- [x] Nome e e-mail de contato na política (`src/features/legal/privacy.pt.json` /
+      `privacy.en.json`; depois de editar, `npm run legal`).
 - [ ] Sync na nuvem: publicar **com** (configure o Supabase — `docs/SUPABASE.md`) ou **sem**
       (não defina as variáveis; a seção de conta some e a política continua correta).
 - [ ] `ios.appleTeamId` no `app.json` (Apple Developer → Membership → Team ID). Necessário para o
@@ -55,19 +55,7 @@ Perfis (`eas.json`):
    Depois disso, `npx eas-cli@latest submit -p android` funciona com uma chave de conta de serviço.
 4. **Contas pessoais novas precisam de teste fechado com pelo menos 12 testadores por 14 dias**
    antes de liberar produção. Comece cedo (amigos, grupos de dev).
-5. Formulários do Play Console:
-   - **Segurança dos dados** (Data safety):
-     - Sem conta: "Não coleta dados" e "Não compartilha dados".
-     - Com sync: coleta **E-mail** (gerenciamento de conta) e **Outro conteúdo gerado pelo
-       usuário** (funcionalidade do app); criptografado em trânsito; o usuário pode pedir exclusão
-       (no app: Excluir conta). Não compartilhado com terceiros.
-   - **Classificação de conteúdo**: questionário → categoria "Utilitário/Produtividade", sem
-     violência, sem interação entre usuários → Livre.
-   - **Público-alvo**: 13+ (não direcionado a crianças).
-   - **Anúncios**: não contém anúncios.
-   - **Acesso ao app**: tudo disponível sem login (a conta é opcional).
-   - **Exclusão de conta** (se usar sync): informe que é feita no app e o link da política.
-   - **Política de privacidade**: `https://SEU-SITE/privacidade.html`
+5. Formulários do Play Console (Conteúdo do app): respostas prontas na seção 9.
 6. Ficha da loja: textos da seção 6, ícone 512×512 (use `assets/images/icon.png`), imagem de
    destaque 1024×500 e pelo menos 2 capturas de tela do celular.
 
@@ -79,10 +67,7 @@ Perfis (`eas.json`):
    App Group do widget automaticamente).
 3. `npx eas-cli@latest submit -p ios` → o build aparece no **TestFlight**. Teste no iPhone,
    incluindo os widgets (primeira compilação do widget iOS — espere ajustes).
-4. **Privacidade do app** (App Privacy):
-   - Sem conta: "Dados não coletados".
-   - Com sync: **Informações de contato → E-mail** e **Conteúdo do usuário → Outro conteúdo**,
-     vinculados à identidade, usados só para "Funcionalidade do app", sem rastreamento.
+4. **Privacidade do app** (App Privacy) e **classificação etária**: respostas prontas na seção 9.
 5. Revisão:
    - Exclusão de conta dentro do app: ✅ (Ajustes → Excluir conta).
    - "Sign in with Apple" **não** é exigido (o login é por e-mail, não por redes sociais).
@@ -100,8 +85,8 @@ npx expo export -p web      # gera dist/
 
 Publique `dist/` no Cloudflare Pages ou Netlify (arraste a pasta ou conecte o GitHub).
 `public/_headers` (COOP/COEP, exigidos pelo banco no navegador) e `public/_redirects` (rotas da
-SPA) já vão junto. A política fica em `https://SEU-SITE/privacidade.html` — é essa URL que vai
-nas lojas.
+SPA) já vão junto. Hoje a web está no EAS Hosting (`npx eas-cli@latest deploy --prod`), e a política fica em
+https://habits-raul.expo.app/privacidade.html — é essa URL que vai nas lojas.
 
 ## 6. Textos da ficha (pt-BR)
 
@@ -160,3 +145,72 @@ na barra de status.
 - [ ] Tema escuro, fonte grande do sistema e leitor de tela (TalkBack/VoiceOver) nas telas principais.
 - [ ] Modo avião: tudo funciona.
 - [ ] `npm run check` verde e versão (`version` no `app.json`) atualizada.
+
+## 9. Formulários de privacidade e classificação (respostas prontas)
+
+Valem para o app **com** sync (o build de loja tem o Supabase configurado). Sem conta nada sai do
+aparelho, mas as lojas perguntam pelo que o app _pode_ coletar, então declare o que a conta envia.
+Se o app mudar o que coleta, atualize a política (`src/features/legal/privacy.*.json`,
+`npm run legal`, publicar a web) **e** estes formulários.
+
+URLs públicas (EAS Hosting):
+
+- Política: https://habits-raul.expo.app/privacidade.html (inglês: `/privacy.html`)
+- Exclusão de conta: https://habits-raul.expo.app/excluir-conta.html (inglês: `/delete-account.html`)
+
+### Google Play — Segurança dos dados (Data safety)
+
+- O app coleta ou compartilha dados? **Sim** (coleta; não compartilha).
+- Todos os dados são criptografados em trânsito? **Sim** (só HTTPS).
+- O usuário pode pedir a exclusão dos dados? **Sim** — no app e pela URL de exclusão acima.
+- Conta: o app permite criar conta → **URL de exclusão de conta** = a de cima; "exclusão de
+  dados sem excluir a conta": não é oferecida pelo servidor (no aparelho: Ajustes > Apagar dados).
+- Tipos de dados (todos: **coletado**, **não compartilhado**, **não efêmero**, **opcional**
+  — o usuário escolhe criar conta):
+
+| Categoria → tipo                                      | Finalidades                                               |
+| ----------------------------------------------------- | --------------------------------------------------------- |
+| Informações pessoais → Endereço de e-mail             | Funcionalidade do app, Gerenciamento de conta             |
+| Informações pessoais → Nome                           | Funcionalidade do app (nome da saudação, sincronizado)    |
+| Informações pessoais → IDs do usuário                 | Funcionalidade do app, Gerenciamento de conta             |
+| Atividade no app → Outro conteúdo gerado pelo usuário | Funcionalidade do app (hábitos, registros, agenda, metas) |
+
+- **Não** declarar: localização, contatos, fotos, identificadores do dispositivo, diagnósticos,
+  analytics, publicidade (nada disso é coletado). O IP e os horários de login que o Supabase
+  registra por segurança não têm tipo próprio no formulário (não derivamos localização).
+- Os hábitos são texto livre do usuário; não declaramos "Saúde e fitness" porque o app não pede
+  nem calcula dado de saúde. Se um dia integrar Apple Saúde/Health Connect, isso muda.
+- Outros itens de Conteúdo do app: **Anúncios**: não. **Acesso ao app**: tudo funciona sem
+  login (a conta é opcional). **Público-alvo**: 13–15, 16–17 e 18+ (sem faixas abaixo de 13,
+  para o app não entrar na política de Famílias/COPPA). **App de saúde**: não. **Governo /
+  financeiro / notícias**: não.
+- **Classificação de conteúdo (IARC)**: categoria "Todos os outros tipos de app"
+  (produtividade); tudo "Não" (violência, sexo, linguagem, drogas, apostas, interação entre
+  usuários, compartilhamento de localização, compras digitais) → **Livre / PEGI 3 / Everyone**.
+- Permissões do Android (manifesto final): `INTERNET`, `ACCESS_NETWORK_STATE`, `VIBRATE`,
+  `POST_NOTIFICATIONS` e `RECEIVE_BOOT_COMPLETED` (lembretes locais), `USE_BIOMETRIC` /
+  `USE_FINGERPRINT` (bloqueio opcional). Nenhuma exige declaração no Play Console (não usamos
+  `SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM`, localização, SMS, contatos nem armazenamento).
+
+### Apple — Privacidade do app (App Privacy)
+
+- Coleta dados? **Sim.** Rastreamento (tracking)? **Não** para todos os tipos.
+- Tipos (todos **vinculados à identidade**, finalidade só **Funcionalidade do app**):
+  - Informações de contato → **Endereço de e-mail**
+  - Informações de contato → **Nome**
+  - Identificadores → **ID do usuário**
+  - Conteúdo do usuário → **Outro conteúdo do usuário**
+- **Não** declarar: saúde/fitness, localização, contatos, dados de uso, diagnósticos,
+  identificadores do dispositivo, compras (nada disso sai do aparelho). A biometria do bloqueio
+  é verificada pelo sistema; o app não recebe dado biométrico.
+- URL da política: a de cima. Textos de permissão no `Info.plist`: só Face ID
+  (`NSFaceIDUsageDescription`, pt-BR e inglês via `locales` no `app.json`); notificações não
+  pedem texto.
+
+### Apple — Classificação etária (questionário de 2025)
+
+Tudo **"Nenhum"/"Não"**: violência, temas adultos/sexuais, linguagem, drogas/álcool/tabaco,
+terror, jogos de azar, concursos, temas médicos ou de tratamento, acesso irrestrito à web,
+conteúdo gerado pelo usuário visível a outros, mensagens/chat, controles parentais, verificação
+de idade → **4+**. Hábitos de bem-estar (beber água, exercício) não contam como informação médica.
+Não marcar "Feito para crianças" (Kids Category).

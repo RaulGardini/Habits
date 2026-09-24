@@ -12,6 +12,7 @@
   main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
   article { background: var(--card); border-radius: 16px; padding: 24px; }
   h1 { font-size: 28px; margin: 0 0 4px; } h2 { font-size: 19px; margin: 28px 0 8px; }
+  a { color: inherit; }
   .muted { color: var(--muted); margin: 0 0 8px; }
 </style>
 </head>
@@ -23,28 +24,46 @@
 <p>O Habits é gratuito, sem anúncios e sem rastreamento. Seus hábitos, registros, compromissos da agenda e metas ficam guardados no seu próprio aparelho. Nós não vendemos, não compartilhamos e não analisamos seus dados.</p>
 <p>A conta é opcional. Sem conta, nenhum dado seu sai do aparelho.</p>
 <h2>Quem é o responsável</h2>
-<p>Este aplicativo é desenvolvido por Raul Passos Gardini. Contato para qualquer assunto de privacidade: rap.gardini@gmail.com.</p>
+<p>Este aplicativo é desenvolvido por Raul Passos Gardini, controlador dos dados para fins da LGPD (Lei 13.709/2018) e do GDPR (Regulamento Geral de Proteção de Dados da União Europeia). Contato para qualquer assunto de privacidade, inclusive como encarregado: rap.gardini@gmail.com.</p>
 <h2>Dados guardados no seu aparelho</h2>
-<p>Tudo o que você cadastra no app (hábitos, registros diários, compromissos da agenda, metas e preferências como tema) é armazenado localmente, em um banco de dados no próprio aparelho ou navegador.</p>
+<p>Tudo o que você cadastra no app (hábitos, registros diários, compromissos da agenda, metas, o nome opcional usado na saudação e preferências como tema e idioma) é armazenado localmente, em um banco de dados no próprio aparelho ou navegador.</p>
 <p>Esses dados são usados apenas para o funcionamento do app: mostrar seus hábitos, calcular sequências e estatísticas, exibir os widgets e agendar lembretes.</p>
 <p>No celular, eles ficam no armazenamento privado do app, que outros apps não acessam e que o próprio sistema criptografa quando o aparelho tem senha (iOS e Android). O banco de dados do app não tem uma camada extra de criptografia própria. Na versão web, os dados ficam no armazenamento do navegador, deste site.</p>
-<p>Você pode ligar o bloqueio do app em Ajustes &gt; Privacidade: ele pede Face ID, digital ou o código do aparelho para abrir o app e esconde o conteúdo na lista de apps recentes. Os registros de erro do app não incluem o conteúdo dos seus dados.</p>
+<p>Você pode ligar o bloqueio do app em Ajustes &gt; Privacidade: ele pede Face ID, digital ou o código do aparelho para abrir o app e esconde o conteúdo na lista de apps recentes. A biometria é verificada pelo próprio sistema; o app nunca recebe sua digital nem seu rosto. Os registros de erro do app não incluem o conteúdo dos seus dados.</p>
 <h2>Conta e sincronização (opcional)</h2>
-<p>Se você criar uma conta, coletamos seu e-mail e uma senha (armazenada de forma criptografada pelo provedor de autenticação) e enviamos uma cópia dos seus dados do app para a nuvem, apenas para sincronizá-los entre os seus aparelhos e protegê-los contra perda.</p>
-<p>O serviço de nuvem utilizado é o Supabase (supabase.com), que atua como operador dos dados. A conexão é criptografada e cada conta só consegue acessar os próprios dados.</p>
+<p>Se você criar uma conta, coletamos seu e-mail e uma senha (armazenada de forma criptografada pelo provedor de autenticação) e enviamos uma cópia dos seus dados do app para a nuvem, apenas para sincronizá-los entre os seus aparelhos e protegê-los contra perda. A conta recebe um identificador interno aleatório, que não é usado para nenhuma outra finalidade.</p>
+<p>O serviço de nuvem utilizado é o Supabase (supabase.com), que atua como operador dos dados. A conexão é criptografada e cada conta só consegue acessar os próprios dados. Para proteger as contas contra abuso, o Supabase registra dados técnicos de acesso, como endereço IP e horário de login.</p>
 <p>No celular, a sessão da conta fica guardada no armazenamento seguro do sistema (Keychain no iPhone, Keystore no Android), nunca em texto simples.</p>
 <p>Ao criar uma conta ou trocar a senha, o app verifica se a senha escolhida já apareceu em vazamentos de dados conhecidos, usando o serviço gratuito Have I Been Pwned (haveibeenpwned.com). A senha nunca é enviada: só os 5 primeiros caracteres de um resumo criptográfico (hash SHA-1) dela, que correspondem a centenas de senhas diferentes, e a comparação final é feita no próprio aparelho.</p>
 <p>Você pode sair da conta a qualquer momento: os dados da conta são apagados deste aparelho, continuam na nuvem e voltam quando você entrar de novo. Também pode excluí-la em Ajustes &gt; Conta e sincronização &gt; Excluir conta, o que apaga permanentemente a conta e todos os dados guardados na nuvem.</p>
+<h2>Por que tratamos seus dados (bases legais)</h2>
+<p>Dados da conta e da sincronização: para prestar o serviço que você pediu ao criar a conta (execução de contrato; art. 7º, V, da LGPD e art. 6(1)(b) do GDPR).</p>
+<p>Dados técnicos de acesso, verificação de senhas vazadas e cópias de segurança da nuvem: para manter as contas seguras e evitar perda de dados (legítimo interesse; art. 7º, IX, da LGPD e art. 6(1)(f) do GDPR).</p>
+<p>Não tomamos decisões automatizadas sobre você nem criamos perfis.</p>
+<h2>Quem mais recebe dados</h2>
+<p>Só com conta: Supabase (banco de dados e autenticação na nuvem) e GitHub (guarda uma cópia de segurança semanal do banco da nuvem, criptografada com uma chave que só o desenvolvedor tem). Na criação ou troca de senha: Have I Been Pwned, apenas o trecho do hash descrito acima.</p>
+<p>A versão web e as atualizações do app são entregues pela Expo (expo.dev), que, como qualquer servidor, registra dados técnicos de acesso (como endereço IP) para operar o serviço.</p>
+<p>Essas empresas podem tratar dados fora do Brasil e da União Europeia (por exemplo, nos Estados Unidos). Usamos apenas provedores que assumem, em contrato, obrigações de proteção de dados compatíveis com a LGPD e o GDPR, como as cláusulas contratuais padrão.</p>
+<p>Não vendemos nem compartilhamos dados com mais ninguém, e só os entregaríamos a uma autoridade por ordem legal.</p>
+<h2>Por quanto tempo guardamos</h2>
+<p>No aparelho: até você apagar os dados, sair da conta ou desinstalar o app.</p>
+<p>Na nuvem: enquanto a conta existir. O app também guarda na sua conta as 8 cópias de segurança semanais mais recentes, que você vê e restaura em Ajustes. Ao excluir a conta, tudo isso é apagado na hora; só as cópias de segurança criptografadas do banco (GitHub) duram até 90 dias, até serem apagadas automaticamente, e não são usadas para mais nada.</p>
 <h2>Notificações</h2>
 <p>Os lembretes são notificações locais, agendadas pelo próprio aparelho. Não usamos servidor de notificações nem identificadores de push.</p>
 <h2>Backup</h2>
-<p>A função de backup gera um arquivo com os seus dados, que você salva ou compartilha onde quiser. Nós não temos acesso a esse arquivo.</p>
+<p>A função de backup gera um arquivo com os seus dados, que você salva ou compartilha onde quiser. O arquivo é texto simples, sem criptografia: guarde-o em um lugar seguro. Nós não temos acesso a esse arquivo.</p>
 <h2>O que não fazemos</h2>
 <p>Não exibimos anúncios, não usamos ferramentas de análise ou rastreamento, não coletamos localização, contatos, fotos ou identificadores de publicidade e não vendemos dados.</p>
-<h2>Seus direitos (LGPD)</h2>
-<p>Você pode acessar, exportar (Ajustes &gt; Backup), corrigir e apagar seus dados a qualquer momento pelo próprio app (Ajustes &gt; Apagar dados). Para dados na nuvem, use Excluir conta ou entre em contato pelo e-mail acima.</p>
+<h2>Seus direitos (LGPD e GDPR)</h2>
+<p>Você pode pedir a confirmação de que tratamos seus dados, acessar, corrigir, exportar (portabilidade) e apagar seus dados, saber com quem são compartilhados e se opor a um tratamento ou limitá-lo.</p>
+<p>Quase tudo pode ser feito pelo próprio app, a qualquer momento: exportar em Ajustes &gt; Backup, corrigir editando os itens, apagar em Ajustes &gt; Apagar dados e, para os dados da nuvem, em Ajustes &gt; Conta e sincronização &gt; Excluir conta. Para o resto, escreva para o e-mail acima: respondemos em até 15 dias.</p>
+<p>Você também pode reclamar à Autoridade Nacional de Proteção de Dados (ANPD, gov.br/anpd) ou, na União Europeia, à autoridade de proteção de dados do seu país.</p>
+<h2 id="excluir-conta">Como excluir sua conta</h2>
+<p>No app (celular ou web, em habits-raul.expo.app): Ajustes &gt; Conta e sincronização &gt; Excluir conta. A conta e todos os dados dela na nuvem são apagados na hora.</p>
+<p>Sem acesso ao app: envie um e-mail para rap.gardini@gmail.com a partir do endereço da conta, pedindo a exclusão. Ela é feita em até 15 dias e confirmada por e-mail.</p>
+<p>O que é apagado: e-mail, senha, identificador da conta, todos os dados sincronizados (hábitos, registros, agenda, metas, nome e preferências) e as cópias de segurança da conta. O que fica: nada é usado depois da exclusão; só as cópias de segurança criptografadas do banco da nuvem duram até 90 dias, até serem apagadas automaticamente. Os dados guardados no aparelho continuam lá até você apagá-los (Ajustes &gt; Apagar dados) ou desinstalar o app.</p>
 <h2>Crianças</h2>
-<p>O app não é direcionado a crianças menores de 13 anos e não coleta intencionalmente dados delas.</p>
+<p>O app não é direcionado a crianças menores de 13 anos e não coleta intencionalmente dados delas. Menores de 13 anos não devem criar uma conta; se isso acontecer, escreva para o e-mail acima e a conta será excluída.</p>
 <h2>Alterações</h2>
 <p>Se esta política mudar, a nova versão será publicada nesta página e dentro do app, com a data de atualização.</p>
 </article></main>

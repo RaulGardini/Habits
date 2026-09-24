@@ -17,6 +17,7 @@
       },
       "supportsTablet": false,
       "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false,
@@ -43,6 +44,10 @@
     "web": {
       "output": "single",
       "favicon": "./assets/images/favicon.png"
+    },
+    "locales": {
+      "en": "./assets/locales/en.json",
+      "pt": "./assets/locales/pt.json"
     },
     "plugins": [
       [

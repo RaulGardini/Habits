@@ -1,0 +1,5 @@
+{
+  "ios": {
+    "NSFaceIDUsageDescription": "Habits uses Face ID to unlock the app when the lock is turned on in Settings."
+  }
+}

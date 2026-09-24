@@ -30,7 +30,7 @@ npm run test:tz      # date tests once per device time zone (Jest cannot switch 
 npm run db:generate  # generate a migration after editing src/db/schema.ts
 npm run format       # prettier
 npm run assets       # regenerate icon/splash/favicon/widget previews (scripts/generate-assets.mjs)
-npm run legal        # rebuild public/privacidade.html from src/features/legal/privacy.json
+npm run legal        # rebuild the public policy + account deletion pages (src/features/legal)
 ```
 
 Always add Expo packages with `npx expo install <pkg>` (SDK-compatible versions).
@@ -280,8 +280,13 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 
 - Icons, splash, favicon and widget previews are generated from SVG by `npm run assets`
   (resvg). Edit the script, not the PNGs.
-- Privacy policy source: `src/features/legal/privacy.json` → in-app `/privacy` screen and
-  `public/privacidade.html` (`npm run legal`). Keep the text in sync with what the app collects.
+- Privacy policy source: `src/features/legal/privacy.{pt,en}.json` → in-app `/privacy` screen,
+  `public/privacidade.html` / `privacy.html` and the account deletion page Google Play requires
+  (`excluir-conta.html` / `delete-account.html`, built from the section with an `id`) via
+  `npm run legal`. Keep the text, and the store form answers in docs/PUBLISHING.md §9, in sync
+  with what the app collects; then redeploy the web.
+- iOS permission texts are localized through `locales` in `app.json` (`assets/locales/*.json`,
+  needs `CFBundleAllowMixedLocalizations`); the only one today is Face ID.
 - `eas.json` profiles: `development` (dev client), `preview` (internal APK), `production`
   (auto-increment, remote app version), `apk` (production-signed APK for direct install, no store).
 - Bundle id / package `com.raulgardini.habits`, App Group `group.com.raulgardini.habits` (final;

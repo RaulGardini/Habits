@@ -12,6 +12,7 @@
   main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
   article { background: var(--card); border-radius: 16px; padding: 24px; }
   h1 { font-size: 28px; margin: 0 0 4px; } h2 { font-size: 19px; margin: 28px 0 8px; }
+  a { color: inherit; }
   .muted { color: var(--muted); margin: 0 0 8px; }
 </style>
 </head>
@@ -23,28 +24,46 @@
 <p>Habits is free, with no ads and no tracking. Your habits, entries, agenda events and goals are stored on your own device. We do not sell, share or analyse your data.</p>
 <p>The account is optional. Without an account, none of your data leaves the device.</p>
 <h2>Who is responsible</h2>
-<p>This app is developed by Raul Passos Gardini. Contact for any privacy matter: rap.gardini@gmail.com.</p>
+<p>This app is developed by Raul Passos Gardini, the data controller under the LGPD (Brazilian Law 13,709/2018) and the GDPR (EU General Data Protection Regulation). Contact for any privacy matter, including as data protection officer: rap.gardini@gmail.com.</p>
 <h2>Data stored on your device</h2>
-<p>Everything you enter in the app (habits, daily entries, agenda events, goals and preferences such as the theme) is stored locally, in a database on the device or browser itself.</p>
+<p>Everything you enter in the app (habits, daily entries, agenda events, goals, the optional name used in the greeting and preferences such as theme and language) is stored locally, in a database on the device or browser itself.</p>
 <p>This data is used only to run the app: showing your habits, computing streaks and statistics, drawing the widgets and scheduling reminders.</p>
 <p>On phones, it lives in the app's private storage, which other apps cannot access and which the system itself encrypts when the device has a passcode (iOS and Android). The app's database has no extra encryption layer of its own. In the web version, data stays in this site's browser storage.</p>
-<p>You can turn on the app lock in Settings &gt; Privacy: it asks for Face ID, fingerprint or the device passcode to open the app and hides the content in the recent apps list. The app's error logs do not include the content of your data.</p>
+<p>You can turn on the app lock in Settings &gt; Privacy: it asks for Face ID, fingerprint or the device passcode to open the app and hides the content in the recent apps list. Biometrics are checked by the system itself; the app never receives your fingerprint or face. The app's error logs do not include the content of your data.</p>
 <h2>Account and sync (optional)</h2>
-<p>If you create an account, we collect your e-mail and a password (stored encrypted by the authentication provider) and send a copy of your app data to the cloud, only to sync it between your devices and protect it against loss.</p>
-<p>The cloud service used is Supabase (supabase.com), acting as data processor. The connection is encrypted and each account can only access its own data.</p>
+<p>If you create an account, we collect your e-mail and a password (stored encrypted by the authentication provider) and send a copy of your app data to the cloud, only to sync it between your devices and protect it against loss. The account gets a random internal identifier, which is not used for any other purpose.</p>
+<p>The cloud service used is Supabase (supabase.com), acting as data processor. The connection is encrypted and each account can only access its own data. To protect accounts against abuse, Supabase records technical access data, such as IP address and sign-in time.</p>
 <p>On phones, the account session is kept in the system's secure storage (Keychain on iPhone, Keystore on Android), never as plain text.</p>
 <p>When you create an account or change your password, the app checks whether the chosen password has appeared in known data breaches, using the free Have I Been Pwned service (haveibeenpwned.com). The password is never sent: only the first 5 characters of a cryptographic digest of it (SHA-1 hash), shared by hundreds of different passwords, and the final comparison happens on the device.</p>
 <p>You can sign out at any time: the account's data is removed from this device, stays in the cloud and comes back when you sign in again. You can also delete the account in Settings &gt; Account and sync &gt; Delete account, which permanently deletes the account and all data stored in the cloud.</p>
+<h2>Why we process your data (legal bases)</h2>
+<p>Account and sync data: to provide the service you asked for when creating the account (performance of a contract; LGPD art. 7, V, and GDPR art. 6(1)(b)).</p>
+<p>Technical access data, the leaked-password check and cloud backups: to keep accounts secure and prevent data loss (legitimate interest; LGPD art. 7, IX, and GDPR art. 6(1)(f)).</p>
+<p>We make no automated decisions about you and build no profiles.</p>
+<h2>Who else receives data</h2>
+<p>Only with an account: Supabase (cloud database and authentication) and GitHub (keeps a weekly backup of the cloud database, encrypted with a key only the developer holds). When creating or changing a password: Have I Been Pwned, only the hash fragment described above.</p>
+<p>The web version and app updates are delivered by Expo (expo.dev), which, like any server, records technical access data (such as IP address) to run the service.</p>
+<p>These companies may process data outside Brazil and the European Union (for example, in the United States). We only use providers that contractually commit to data protection obligations compatible with the LGPD and the GDPR, such as the standard contractual clauses.</p>
+<p>We do not sell or share data with anyone else, and would only hand it to an authority under a legal order.</p>
+<h2>How long we keep it</h2>
+<p>On the device: until you delete the data, sign out or uninstall the app.</p>
+<p>In the cloud: while the account exists. The app also keeps the 8 most recent weekly backups in your account, which you can see and restore in Settings. When you delete the account, all of this is erased at once; only the encrypted database backups (GitHub) last up to 90 days, until they are deleted automatically, and are not used for anything else.</p>
 <h2>Notifications</h2>
 <p>Reminders are local notifications, scheduled by the device itself. We use no notification server and no push identifiers.</p>
 <h2>Backup</h2>
-<p>The backup feature creates a file with your data, which you save or share wherever you want. We have no access to that file.</p>
+<p>The backup feature creates a file with your data, which you save or share wherever you want. The file is plain text, without encryption: keep it somewhere safe. We have no access to that file.</p>
 <h2>What we do not do</h2>
 <p>We show no ads, use no analytics or tracking tools, collect no location, contacts, photos or advertising identifiers, and never sell data.</p>
-<h2>Your rights</h2>
-<p>You can access, export (Settings &gt; Backup), correct and delete your data at any time in the app itself (Settings &gt; Delete data). For cloud data, use Delete account or get in touch at the e-mail above.</p>
+<h2>Your rights (LGPD and GDPR)</h2>
+<p>You can ask for confirmation that we process your data, access, correct, export (portability) and delete your data, learn who it is shared with, and object to or restrict its processing.</p>
+<p>Almost everything can be done in the app itself, at any time: export in Settings &gt; Backup, correct by editing the items, delete in Settings &gt; Delete data and, for cloud data, in Settings &gt; Account and sync &gt; Delete account. For anything else, write to the e-mail above: we reply within 15 days.</p>
+<p>You can also lodge a complaint with Brazil's data protection authority (ANPD, gov.br/anpd) or, in the European Union, with the data protection authority of your country.</p>
+<h2 id="delete-account">How to delete your account</h2>
+<p>In the app (phone or web, at habits-raul.expo.app): Settings &gt; Account and sync &gt; Delete account. The account and all its cloud data are deleted at once.</p>
+<p>Without access to the app: send an e-mail to rap.gardini@gmail.com from the account's address asking for deletion. It is done within 15 days and confirmed by e-mail.</p>
+<p>What is deleted: e-mail, password, account identifier, all synced data (habits, entries, agenda, goals, name and preferences) and the account's backups. What remains: nothing is used after deletion; only the encrypted backups of the cloud database last up to 90 days, until they are deleted automatically. Data stored on the device stays there until you delete it (Settings &gt; Delete data) or uninstall the app.</p>
 <h2>Children</h2>
-<p>The app is not directed to children under 13 and does not knowingly collect their data.</p>
+<p>The app is not directed to children under 13 and does not knowingly collect their data. Children under 13 should not create an account; if that happens, write to the e-mail above and the account will be deleted.</p>
 <h2>Changes</h2>
 <p>If this policy changes, the new version will be published on this page and inside the app, with the update date.</p>
 </article></main>
