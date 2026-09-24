@@ -15,6 +15,9 @@ Built in phases; see "Roadmap". **Do not start a new phase without the owner's a
 - `t` is a plain function (no hook), so it works in `src/core` too; the root layout remounts the
   tree on a language change (`key={language}`), which is why module-level option arrays must be
   functions (see `THEME_OPTIONS()`), not constants.
+- The React Compiler caches JSX with no reactive inputs, so `t()` in a component that is NOT
+  remounted on a language change keeps the old language (root layout titles did): put such JSX
+  in a child rendered under the `key={language}` subtree (see `RootStack`).
 - Dates: `formatWith(date, ptPattern, enPattern)` and `dateLocale()`; never import `ptBR` directly.
 - The language lives in the settings store (synced setting `language`), defaulting to the device
   locale. Android/iOS home screen widgets are still pt-BR only.
