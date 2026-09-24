@@ -201,7 +201,10 @@ function bubbleDetail(
     return `${formatClock(timerSeconds ?? 0)}/${Math.round(habit.tracking.targetSeconds / 60)} min`;
   }
   if (quota)
-    return `${quota.done}/${quota.target} ${quota.unit === 'week' ? 'na semana' : 'no mês'}`;
+    return t(quota.unit === 'week' ? '{done}/{target} na semana' : '{done}/{target} no mês', {
+      done: quota.done,
+      target: quota.target,
+    });
   return null;
 }
 

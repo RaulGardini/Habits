@@ -109,11 +109,15 @@ function GoalItem({ goal, entries }: { goal: Goal; entries: Parameters<typeof go
         <View style={styles.controls}>
           <IconButton
             icon="minus"
-            label={`Diminuir ${goal.title}`}
+            label={t('Diminuir {name}', { name: goal.title })}
             onPress={() => change(-1)}
             disabled={goal.current <= 0}
           />
-          <IconButton icon="plus" label={`Aumentar ${goal.title}`} onPress={() => change(1)} />
+          <IconButton
+            icon="plus"
+            label={t('Aumentar {name}', { name: goal.title })}
+            onPress={() => change(1)}
+          />
         </View>
       ) : null}
     </View>

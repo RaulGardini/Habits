@@ -81,9 +81,14 @@ export function StatsScreen() {
           today={today}
           selected={selected}
           onSelect={setSelected}
-          accessibilityLabel={`Mapa de calor de ${rangeLabel}: média de ${
-            summary.averageRatio === null ? '0%' : formatPercent(summary.averageRatio)
-          } de conclusão, ${summary.perfectDays} dias perfeitos.`}
+          accessibilityLabel={t(
+            'Mapa de calor de {range}: média de {percent} de conclusão, {days} dias perfeitos.',
+            {
+              range: rangeLabel,
+              percent: summary.averageRatio === null ? '0%' : formatPercent(summary.averageRatio),
+              days: summary.perfectDays,
+            },
+          )}
         />
         <HeatmapLegend color={colors.primary} />
         <AppText tone="muted" accessibilityLiveRegion="polite">

@@ -160,7 +160,7 @@ export function TodayScreen() {
                   {encouragement(progress.completed, progress.total)}
                 </AppText>
                 <AppText variant="label" tone="muted">
-                  {progress.completed} de {progress.total}
+                  {t('{done} de {total}', { done: progress.completed, total: progress.total })}
                 </AppText>
               </View>
               <ProgressBar

@@ -279,7 +279,7 @@ function QuantityEditor({
       <View style={styles.stepper}>
         <IconButton
           icon="minus"
-          label={`Remover ${formatNumber(step)} ${unit}`}
+          label={t('Remover {amount}', { amount: `${formatNumber(step)} ${unit}` })}
           onPress={() => setValue((v) => Math.max(0, Math.round((v - step) * 1000) / 1000))}
           disabled={value <= 0}
           color={color.solid}
@@ -290,12 +290,12 @@ function QuantityEditor({
             {formatNumber(value)}
           </AppText>
           <AppText variant="caption" tone="muted">
-            de {formatNumber(target)} {unit}
+            {t('de {target} {unit}', { target: formatNumber(target), unit })}
           </AppText>
         </View>
         <IconButton
           icon="plus"
-          label={`Adicionar ${formatNumber(step)} ${unit}`}
+          label={t('Adicionar {amount}', { amount: `${formatNumber(step)} ${unit}` })}
           onPress={() => setValue((v) => Math.round((v + step) * 1000) / 1000)}
           color={color.solid}
           size={30}
@@ -317,7 +317,7 @@ function QuantityEditor({
         disabled={value === initial}
       />
       <AppText variant="caption" tone="muted" style={styles.center}>
-        Passo de {formatNumber(step)} {unit}
+        {t('Passo de {step} {unit}', { step: formatNumber(step), unit })}
       </AppText>
     </View>
   );

@@ -52,7 +52,7 @@ export function IconPicker({ value, color, onChange }: IconPickerProps) {
       </ScrollView>
       <View
         accessibilityRole="radiogroup"
-        accessibilityLabel={`Ícones: ${group?.title ?? ''}`}
+        accessibilityLabel={t('Ícones: {group}', { group: group?.title ?? '' })}
         style={styles.grid}
       >
         {group?.icons.map((option) => {

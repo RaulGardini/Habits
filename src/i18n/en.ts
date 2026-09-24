@@ -455,6 +455,17 @@ export const EN: Record<string, string> = {
   'Esta tela teve um problema. Seus dados continuam salvos.':
     'This screen ran into a problem. Your data is still saved.',
   'Tentar de novo': 'Try again',
+  '{done} de {total}': '{done} of {total}',
+  'de {target} {unit}': 'of {target} {unit}',
+  'Remover {amount}': 'Remove {amount}',
+  'Adicionar {amount}': 'Add {amount}',
+  '{done}/{target} na semana': '{done}/{target} this week',
+  '{done}/{target} no mês': '{done}/{target} this month',
+  'Mapa de calor de {range}: média de {percent} de conclusão, {days} dias perfeitos.':
+    'Heatmap of {range}: {percent} average completion, {days} perfect days.',
+  'Diminuir {name}': 'Decrease {name}',
+  'Aumentar {name}': 'Increase {name}',
+  'Ícones: {group}': 'Icons: {group}',
   'Ajuda e contato': 'Help and contact',
   'Abre a página de suporte no navegador': 'Opens the support page in the browser',
   'Não foi possível abrir a página de suporte.': 'The support page could not be opened.',
