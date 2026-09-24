@@ -171,7 +171,7 @@ export function SettingsScreen() {
         onPress={() => router.push('/privacy')}
       />
       <AppText variant="caption" tone="muted" style={styles.about}>
-        {t('Habits {version} · gratuito e sem anúncios.', {
+        {t('Duck Habits {version} · gratuito e sem anúncios.', {
           version: Constants.expoConfig?.version ?? '',
         })}
       </AppText>

@@ -49,7 +49,7 @@ export function AppLockGate({ children }: { children: ReactNode }) {
         >
           <Icon name="lock-outline" size={40} color={colors.accent} />
           <AppText variant="heading" accessibilityRole="header">
-            Habits
+            Duck Habits
           </AppText>
           {locked ? (
             <>

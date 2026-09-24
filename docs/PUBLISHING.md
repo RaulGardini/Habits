@@ -22,7 +22,7 @@ gratuita para isso:
   - `src/widgets/iosPayload.ts` → `APP_GROUP`
   - `targets/widget/Snapshot.swift` → `appGroup`
   - depois: `npx expo prebuild --clean`
-- [ ] **Nome na loja** (até 30 caracteres). Ex.: "Habits: Hábitos e Agenda".
+- [x] **Nome na loja** (até 30 caracteres): "Duck Habits: Hábitos e Agenda" (embaixo do ícone: "Duck Habits").
 - [x] Nome e e-mail de contato na política (`src/features/legal/privacy.pt.json` /
       `privacy.en.json`; depois de editar, `npm run legal`).
 - [ ] Sync na nuvem: publicar **com** (configure o Supabase — `docs/SUPABASE.md`) ou **sem**
@@ -105,7 +105,7 @@ conta no app, página de suporte, política e página de exclusão de conta publ
 
 **Notas para o revisor** (em inglês — os revisores leem inglês):
 
-> Habits is a free habit tracker and agenda with no ads and no tracking. Everything works
+> Duck Habits is a free habit tracker and agenda with no ads and no tracking. Everything works
 > without an account and offline; the account (e-mail + password) is optional and only syncs
 > data between the user's devices. A demo account with sample data is provided above.
 > Account deletion: Settings > Account and sync > Delete account (deletes the account and all
@@ -129,7 +129,7 @@ https://habits-raul.expo.app/privacidade.html — é essa URL que vai nas lojas.
 
 ## 6. Textos da ficha (pt-BR)
 
-**Nome (30):** Habits: Hábitos e Agenda
+**Nome (30):** Duck Habits: Hábitos e Agenda
 
 **Subtítulo iOS (30):** Rotina, metas e agenda
 
@@ -163,7 +163,7 @@ https://habits-raul.expo.app/privacidade.html — é essa URL que vai nas lojas.
 
 ## 6.1 Textos da ficha (English)
 
-**Name (30):** Habits: Habit Tracker & Agenda
+**Name (30):** Duck Habits: Habit Tracker
 
 **Subtitle (30):** Routines, goals and agenda
 

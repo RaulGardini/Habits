@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Habits",
+    "name": "Duck Habits",
     "slug": "habits",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -181,7 +181,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "O Habits usa o Face ID para desbloquear o app quando o bloqueio está ligado nos Ajustes."
+          "faceIDPermission": "O Duck Habits usa o Face ID para desbloquear o app quando o bloqueio está ligado nos Ajustes."
         }
       ],
       [

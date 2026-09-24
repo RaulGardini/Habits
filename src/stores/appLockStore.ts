@@ -49,7 +49,7 @@ export const useAppLockStore = create<AppLockState>()((set, get) => ({
 
   unlock() {
     // The system prompt itself moves the app to "inactive": never stack two prompts.
-    unlocking ??= authenticate(t('Desbloquear o Habits'))
+    unlocking ??= authenticate(t('Desbloquear o Duck Habits'))
       .then((success) => {
         if (success) set({ locked: false });
         return success;

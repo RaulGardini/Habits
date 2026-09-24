@@ -32,7 +32,7 @@ const page = ({ lang, title, body }) => `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escape(title)} — Habits</title>
+<title>${escape(title)} — Duck Habits</title>
 <style>
   :root { color-scheme: light dark; --bg: #f5f5f7; --fg: #17171c; --muted: #5c5c66; --card: #fff; }
   @media (prefers-color-scheme: dark) { :root { --bg: #0e0e11; --fg: #f2f2f5; --muted: #a3a3ad; --card: #1a1a1f; } }
@@ -78,7 +78,7 @@ for (const { file, deletionFile, source, lang, updated, fullPolicy } of policies
     page({
       lang,
       title: deletion.title,
-      body: `<h1>Habits — ${escape(deletion.title)}</h1>\n${date}\n${deletion.paragraphs
+      body: `<h1>Duck Habits — ${escape(deletion.title)}</h1>\n${date}\n${deletion.paragraphs
         .map((p) => `<p>${escape(p)}</p>`)
         .join('\n')}\n<p><a href="${file}#${deletion.id}">${fullPolicy}</a></p>`,
     }),
@@ -118,7 +118,7 @@ for (const { file, source, lang, updated, links } of supportPages) {
     page({
       lang,
       title: support.title,
-      body: `<h1>Habits — ${escape(support.title)}</h1>\n<p class="muted">${updated} ${escape(support.updatedAt)}</p>\n${support.sections.map(renderSection).join('\n')}\n<p>${footer}</p>`,
+      body: `<h1>Duck Habits — ${escape(support.title)}</h1>\n<p class="muted">${updated} ${escape(support.updatedAt)}</p>\n${support.sections.map(renderSection).join('\n')}\n<p>${footer}</p>`,
     }),
   );
 }

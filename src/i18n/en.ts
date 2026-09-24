@@ -458,7 +458,7 @@ export const EN: Record<string, string> = {
   'Ajuda e contato': 'Help and contact',
   'Abre a página de suporte no navegador': 'Opens the support page in the browser',
   'Não foi possível abrir a página de suporte.': 'The support page could not be opened.',
-  'Habits {version} · gratuito e sem anúncios.': 'Habits {version} · free and ad-free.',
+  'Duck Habits {version} · gratuito e sem anúncios.': 'Duck Habits {version} · free and ad-free.',
   'Sincronizando…': 'Syncing…',
   'Falha na sincronização.': 'Sync failed.',
   'Conectado como': 'Signed in as',
@@ -822,7 +822,7 @@ export const EN: Record<string, string> = {
   'Pede Face ID, digital ou o código do aparelho ao abrir o app e ao voltar depois de 30 s fora dele. Os widgets continuam mostrando seus hábitos na tela inicial.':
     'Asks for Face ID, fingerprint or the device passcode when opening the app and when coming back after 30 s away. Widgets still show your habits on the home screen.',
   'Confirme para ligar o bloqueio': 'Confirm to turn on the lock',
-  'Desbloquear o Habits': 'Unlock Habits',
+  'Desbloquear o Duck Habits': 'Unlock Duck Habits',
   'O app está bloqueado.': 'The app is locked.',
   Desbloquear: 'Unlock',
 };

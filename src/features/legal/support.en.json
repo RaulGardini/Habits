@@ -18,7 +18,7 @@
     {
       "title": "Reminders do not arrive",
       "paragraphs": [
-        "Check that notifications are allowed for Habits in the device settings (in the app: Settings > Reminders > Allow notifications). A habit already done or skipped that day gets no more reminders that day. Reminders do not work in the browser."
+        "Check that notifications are allowed for Duck Habits in the device settings (in the app: Settings > Reminders > Allow notifications). A habit already done or skipped that day gets no more reminders that day. Reminders do not work in the browser."
       ]
     },
     {

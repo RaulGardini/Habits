@@ -1,5 +1,5 @@
 {
   "ios": {
-    "NSFaceIDUsageDescription": "O Habits usa o Face ID para desbloquear o app quando o bloqueio está ligado nos Ajustes."
+    "NSFaceIDUsageDescription": "O Duck Habits usa o Face ID para desbloquear o app quando o bloqueio está ligado nos Ajustes."
   }
 }
