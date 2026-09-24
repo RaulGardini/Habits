@@ -1,40 +1,48 @@
 // Generates every app image from code (SVG → PNG with resvg), so the brand stays consistent:
 //   npm run assets
-// Logo: a 3×3 "habit heatmap" of rounded squares; the last cell holds a check mark.
+// Logo: a front-facing rubber duck with a wavy quiff, on the brand yellow.
 import { writeFileSync } from 'node:fs';
 import { Resvg } from '@resvg/resvg-js';
 
 const OUT = new URL('../assets/images/', import.meta.url);
 const INDIGO = '#4f46e5';
-const VIOLET = '#7c3aed';
+const YELLOW = '#f6c343'; // brand primary (src/theme/tokens.ts)
+const DUCK = '#ffe27a';
+const DUCK_SHADE = '#e9a91c';
+const EYE = '#3b2412';
+const BEAK = '#ff8a1f';
+const BEAK_SHADE = '#e86f0a';
 
-/** 3×3 grid centered in a `size` canvas, `grid` px wide. */
-function logo({ size, grid, cell, check, checkColor, mask = false }) {
-  const gap = grid * 0.08;
-  const step = (grid - gap * 2) / 3;
-  const origin = (size - grid) / 2;
-  const radius = step * 0.24;
-  const opacities = [0.35, 0.6, 1, 0.6, 1, 0.35, 1, 0.6, 1];
-  const cells = opacities.map((opacity, i) => {
-    const x = origin + (i % 3) * (step + gap);
-    const y = origin + Math.floor(i / 3) * (step + gap);
-    return `<rect x="${x}" y="${y}" width="${step}" height="${step}" rx="${radius}" fill="${cell}" fill-opacity="${i === 8 ? 1 : opacity}"/>`;
-  });
-  // Check mark inside the last cell.
-  const x = origin + 2 * (step + gap);
-  const y = origin + 2 * (step + gap);
-  const path = `M ${x + step * 0.24} ${y + step * 0.53} L ${x + step * 0.43} ${y + step * 0.72} L ${x + step * 0.77} ${y + step * 0.3}`;
-  const stroke = `stroke-width="${step * 0.14}" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
-  if (mask) {
-    // Monochrome icons are alpha-only: punch the check out of the cell.
-    return `<defs><mask id="m"><rect width="${size}" height="${size}" fill="white"/><path d="${path}" stroke="black" ${stroke}/></mask></defs>
-      <g mask="url(#m)">${cells.join('')}</g>`;
-  }
-  return `${cells.join('')}<path d="${path}" stroke="${checkColor ?? check}" ${stroke}/>`;
+/**
+ * The duck, drawn on a 1024 canvas (about 640 × 800 around the center), scaled by `scale`.
+ * `silhouette`: one flat color with the eyes cut out (Android monochrome icon).
+ */
+function duck({ scale = 1, silhouette, shadow = true } = {}) {
+  const body = silhouette ?? DUCK;
+  const shade = silhouette ?? DUCK_SHADE;
+  const eyes = silhouette
+    ? ''
+    : `<ellipse cx="428" cy="392" rx="30" ry="38" fill="${EYE}"/>
+       <ellipse cx="596" cy="392" rx="30" ry="38" fill="${EYE}"/>
+       <circle cx="438" cy="378" r="11" fill="#ffffff"/>
+       <circle cx="606" cy="378" r="11" fill="#ffffff"/>
+       <path d="M402 476 q110 -56 220 0 q-24 70 -110 74 q-86 -4 -110 -74 z" fill="${BEAK}"/>
+       <path d="M436 510 q76 32 152 0" fill="none" stroke="${BEAK_SHADE}" stroke-width="13" stroke-linecap="round"/>`;
+  const shape = `
+    <ellipse cx="512" cy="700" rx="300" ry="190" fill="${body}"/>
+    <path d="M232 690 q-40 -70 30 -110 q40 60 10 130 z" fill="${shade}"/>
+    <path d="M792 690 q40 -70 -30 -110 q-40 60 -10 130 z" fill="${shade}"/>
+    <path d="M470 236 C 440 170, 470 120, 520 118 C 500 150, 505 180, 520 214 C 525 160, 560 120, 612 132 C 580 152, 566 190, 560 228 Z" fill="${body}"/>
+    ${silhouette ? '' : `<path d="M520 214 C 505 180, 500 150, 520 118" fill="none" stroke="${DUCK_SHADE}" stroke-width="10" stroke-linecap="round" opacity="0.7"/>`}
+    <circle cx="512" cy="430" r="215" fill="${body}"/>`;
+  const cutEyes = silhouette
+    ? `<defs><mask id="eyes"><rect width="1024" height="1024" fill="white"/>
+         <ellipse cx="428" cy="392" rx="30" ry="38" fill="black"/><ellipse cx="596" cy="392" rx="30" ry="38" fill="black"/>
+       </mask></defs>`
+    : '';
+  const drawing = `${shadow && !silhouette ? `<ellipse cx="512" cy="890" rx="250" ry="34" fill="${DUCK_SHADE}" opacity="0.35"/>` : ''}${shape}${eyes}`;
+  return `${cutEyes}<g transform="translate(512 521) scale(${scale}) translate(-512 -521)"${silhouette ? ' mask="url(#eyes)"' : ''}>${drawing}</g>`;
 }
-
-const gradient = `<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-  <stop offset="0" stop-color="${INDIGO}"/><stop offset="1" stop-color="${VIOLET}"/></linearGradient></defs>`;
 
 const svg = (size, body) =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${body}</svg>`;
@@ -46,34 +54,22 @@ function png(name, markup, width) {
 }
 
 // iOS / generic icon: full-bleed, no transparency (iOS applies its own mask).
-png(
-  'icon.png',
-  svg(
-    1024,
-    `${gradient}<rect width="1024" height="1024" fill="url(#bg)"/>${logo({ size: 1024, grid: 600, cell: '#ffffff', check: INDIGO })}`,
-  ),
-);
-// Android adaptive icon: logo inside the 66% safe zone on a separate background layer.
-png(
-  'android-icon-foreground.png',
-  svg(1024, logo({ size: 1024, grid: 520, cell: '#ffffff', check: INDIGO })),
-);
+png('icon.png', svg(1024, `<rect width="1024" height="1024" fill="${YELLOW}"/>${duck()}`));
+// Android adaptive icon: duck inside the 66% safe zone on a separate background layer.
+png('android-icon-foreground.png', svg(1024, duck({ scale: 0.62, shadow: false })));
 png(
   'android-icon-background.png',
-  svg(1024, `${gradient}<rect width="1024" height="1024" fill="url(#bg)"/>`),
+  svg(1024, `<rect width="1024" height="1024" fill="${YELLOW}"/>`),
 );
-png(
-  'android-icon-monochrome.png',
-  svg(1024, logo({ size: 1024, grid: 520, cell: '#ffffff', mask: true })),
-);
-// Splash: logo on transparent (background color comes from app.json, light and dark).
-png('splash-icon.png', svg(1024, logo({ size: 1024, grid: 1024, cell: INDIGO, check: '#ffffff' })));
+png('android-icon-monochrome.png', svg(1024, duck({ scale: 0.62, silhouette: '#ffffff' })));
+// Splash: the duck on transparent (background color comes from app.json, light and dark).
+png('splash-icon.png', svg(1024, duck({ shadow: false })));
 // Web favicon.
 png(
   'favicon.png',
   svg(
     1024,
-    `${gradient}<rect width="1024" height="1024" rx="220" fill="url(#bg)"/>${logo({ size: 1024, grid: 680, cell: '#ffffff', check: INDIGO })}`,
+    `<rect width="1024" height="1024" rx="220" fill="${YELLOW}"/>${duck({ scale: 1.05, shadow: false })}`,
   ),
   64,
 );
