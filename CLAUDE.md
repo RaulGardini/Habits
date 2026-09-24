@@ -246,6 +246,23 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
 - Sync: `src/sync/engine.test.ts` (two sql.js devices + `createFakeRemote()`), and
   `npm run test:sql` (runs `supabase/schema.sql` on PGlite). `npm run check` runs both.
 
+## Data on the device
+
+- Never `console.*` in `src/` (ESLint `no-console`): use `logError` (`src/lib/log.ts`), which in
+  production logs only the context and error type/code — error messages may carry query
+  parameters or rows with personal data.
+- No SQLCipher (not available in Expo Go): the DB relies on the OS sandbox + file encryption,
+  as the privacy policy says. Revisit (`expo-sqlite` `useSQLCipher`) once store builds replace
+  Expo Go.
+- Optional app lock: `useAppLockStore` + `AppLockGate` (root layout) + `src/lib/localAuth.ts`
+  (`.web.ts`: not offered). Device-only setting `appLock` (in `LOCAL_ONLY_SETTINGS`). Locks on
+  cold start and after 30 s in the background (`shouldLockOnReturn`); covers the content in the
+  app switcher. Face ID text comes from the `expo-local-authentication` plugin; keep it listed
+  BEFORE `expo-secure-store` (`faceIDPermission: false`), which would otherwise remove it.
+- Backup import: `parseBackup` checks format, version and every value (`invalidColumn`:
+  enums, dates, times, numbers, JSON settings); `importMerge` is one transaction.
+- `ios.infoPlist.NSAppTransportSecurity` pins `NSAllowsArbitraryLoads: false` (HTTPS only).
+
 ## Remote database security & backup (docs/SUPABASE.md)
 
 - RLS on every table (`own rows`, `user_id = auth.uid()` in `using` and `with check`),

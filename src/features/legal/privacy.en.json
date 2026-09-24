@@ -19,7 +19,9 @@
       "title": "Data stored on your device",
       "paragraphs": [
         "Everything you enter in the app (habits, daily entries, agenda events, goals and preferences such as the theme) is stored locally, in a database on the device or browser itself.",
-        "This data is used only to run the app: showing your habits, computing streaks and statistics, drawing the widgets and scheduling reminders."
+        "This data is used only to run the app: showing your habits, computing streaks and statistics, drawing the widgets and scheduling reminders.",
+        "On phones, it lives in the app's private storage, which other apps cannot access and which the system itself encrypts when the device has a passcode (iOS and Android). The app's database has no extra encryption layer of its own. In the web version, data stays in this site's browser storage.",
+        "You can turn on the app lock in Settings > Privacy: it asks for Face ID, fingerprint or the device passcode to open the app and hides the content in the recent apps list. The app's error logs do not include the content of your data."
       ]
     },
     {

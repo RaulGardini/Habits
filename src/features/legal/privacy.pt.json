@@ -19,7 +19,9 @@
       "title": "Dados guardados no seu aparelho",
       "paragraphs": [
         "Tudo o que você cadastra no app (hábitos, registros diários, compromissos da agenda, metas e preferências como tema) é armazenado localmente, em um banco de dados no próprio aparelho ou navegador.",
-        "Esses dados são usados apenas para o funcionamento do app: mostrar seus hábitos, calcular sequências e estatísticas, exibir os widgets e agendar lembretes."
+        "Esses dados são usados apenas para o funcionamento do app: mostrar seus hábitos, calcular sequências e estatísticas, exibir os widgets e agendar lembretes.",
+        "No celular, eles ficam no armazenamento privado do app, que outros apps não acessam e que o próprio sistema criptografa quando o aparelho tem senha (iOS e Android). O banco de dados do app não tem uma camada extra de criptografia própria. Na versão web, os dados ficam no armazenamento do navegador, deste site.",
+        "Você pode ligar o bloqueio do app em Ajustes > Privacidade: ele pede Face ID, digital ou o código do aparelho para abrir o app e esconde o conteúdo na lista de apps recentes. Os registros de erro do app não incluem o conteúdo dos seus dados."
       ]
     },
     {
