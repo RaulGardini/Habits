@@ -71,11 +71,11 @@ export function goalPeriodRange(scope: GoalScope, period: string): DateRange {
 export function linkedGoalUnit(habit: Habit): string {
   switch (habit.tracking.type) {
     case 'boolean':
-      return 'vezes';
+      return t('vezes');
     case 'quantity':
       return habit.tracking.unit;
     case 'timer':
-      return 'horas';
+      return t('horas');
   }
 }
 

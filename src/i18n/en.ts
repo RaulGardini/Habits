@@ -128,6 +128,7 @@ export const EN: Record<string, string> = {
   '{count}x por mês': '{count}x per month',
   dias: 'days',
   vezes: 'times',
+  horas: 'hours',
   intervalo: 'interval',
   'Contado a partir da data de início.': 'Counted from the start date.',
   'Sim/Não': 'Yes/No',
