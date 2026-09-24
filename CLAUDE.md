@@ -317,6 +317,8 @@ src/lib/          Small platform helpers (ids, haptics, navigation).
   with what the app collects; then redeploy the web.
 - iOS permission texts are localized through `locales` in `app.json` (`assets/locales/*.json`,
   needs `CFBundleAllowMixedLocalizations`); the only one today is Face ID.
+- EAS builds pin `"node": "24.13.1"` (npm 11, same as local and CI): the builder default (Node 22 / npm 10)
+  rejects our lockfile (`Missing: typescript@5.9.3`, an optional peer npm 10 resolves differently).
 - `eas.json` profiles: `development` (dev client), `preview` (internal APK), `production`
   (auto-increment, remote app version), `apk` (production-signed APK for direct install, no store).
 - Bundle id / package `com.raulgardini.habits`, App Group `group.com.raulgardini.habits` (final;
