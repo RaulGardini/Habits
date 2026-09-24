@@ -146,10 +146,16 @@ describe('sign up', () => {
       password: 'uma frase longa',
       options: { emailRedirectTo: 'habits://auth/callback?next=confirm' },
     });
-    // Another e-mail within a minute is refused by the app.
-    expect((await useSyncStore.getState().requestPasswordReset('new@example.com')).text).toContain(
-      'Tente de novo',
+    // Another e-mail to the same address within a minute is refused by the app…
+    expect((await useSyncStore.getState().requestPasswordReset('New@Example.com ')).text).toBe(
+      'Aguarde 60 s para pedir outro e-mail.',
     );
+    // …but another address is not blocked.
+    auth.signUp.mockClear();
+    expect(await useSyncStore.getState().signUp('other@example.com', 'uma frase longa')).toBe(
+      'confirm',
+    );
+    expect(auth.signUp).toHaveBeenCalledTimes(1);
   });
 });
 

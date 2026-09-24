@@ -78,7 +78,12 @@ let running: Promise<void> | null = null;
 /** Wrong passwords in a row, and until when sign-in is blocked (client-side throttling). */
 let signInFailures = 0;
 let signInBlockedUntil = 0;
-let lastEmailSentAt = 0;
+/**
+ * When each address last got an e-mail (confirmation, reset). Per address, like the server: a
+ * sign-up with one e-mail must not block a sign-up with another.
+ */
+const lastEmailSentAt = new Map<string, number>();
+const emailKey = (email: string) => email.trim().toLowerCase();
 /** Set while the user signs out, so that SIGNED_OUT is not taken for an expired session. */
 let signingOut = false;
 
@@ -107,10 +112,12 @@ async function newPasswordProblem(password: string, email: string): Promise<stri
   return null;
 }
 
-/** Message while the app must wait before asking the server for another e-mail. */
-function emailWait(): string | null {
-  const wait = lastEmailSentAt + EMAIL_COOLDOWN_MS - Date.now();
-  return wait > 0 ? formatWait(wait) : null;
+/** Message while the app must wait before asking for another e-mail to this address. */
+function emailWait(email: string): string | null {
+  const wait = (lastEmailSentAt.get(emailKey(email)) ?? 0) + EMAIL_COOLDOWN_MS - Date.now();
+  return wait > 0
+    ? t('Aguarde {seconds} s para pedir outro e-mail.', { seconds: Math.ceil(wait / 1000) })
+    : null;
 }
 let again = false;
 let failures = 0;
@@ -201,7 +208,7 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
 
     async signUp(email, password) {
       if (!supabase) return t('Sincronização indisponível.');
-      const problem = emailWait() ?? (await newPasswordProblem(password, email));
+      const problem = emailWait(email) ?? (await newPasswordProblem(password, email));
       if (problem) return problem;
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -209,7 +216,7 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
         options: { emailRedirectTo: authRedirectUrl('confirm') },
       });
       if (error) return authErrorMessage(error.message);
-      lastEmailSentAt = Date.now();
+      lastEmailSentAt.set(emailKey(email), Date.now());
       if (!data.session) return 'confirm';
       set({ userId: data.session.user.id, email: data.session.user.email ?? email.trim() });
       await get().syncNow();
@@ -218,13 +225,13 @@ export const useSyncStore = create<SyncStoreState>()((set, get) => {
 
     async requestPasswordReset(email) {
       if (!supabase) return { text: t('Sincronização indisponível.'), error: true };
-      const wait = emailWait();
+      const wait = emailWait(email);
       if (wait) return { text: wait, error: true };
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: authRedirectUrl('reset'),
       });
       if (error) return { text: authErrorMessage(error.message), error: true };
-      lastEmailSentAt = Date.now();
+      lastEmailSentAt.set(emailKey(email), Date.now());
       return {
         text: t(
           'Se existir uma conta com este e-mail, enviamos um link para criar uma nova senha. Abra-o neste aparelho.',
